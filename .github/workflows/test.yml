@@ -1,7 +1,11 @@
 # QODIQA Test Pipeline
 #
-# The main automated quality gate. Runs on every push/PR to main/master/
-# release/hotfix branches. Every job below must pass before merge.
+# The main automated quality gate.
+# On every push/PR to main/master/release/hotfix branches: architecture, lint and typecheck, unit tests and the timing-sensitive unit suites.
+# On pushes to main as well: crypto regression, accessibility, the JavaScript and Python SDKs and webhook conformance.
+# Run by hand (workflow_dispatch): Integration Tests, Coverage Gate, the red-team suite, concurrency, fuzz, chaos, compatibility and cross-platform.
+# Integration Tests and Coverage Gate do not pass on GitHub yet: some of their tests depend on the CI environment (script path, database role, CORS, Redis URL).
+# Separate workflows: documentation checks and the secret and dependency scans run on every push; the Kubernetes manifest checks run when the manifests change; the quickstart smoke test runs on pushes to main and release branches.
 #
 # This workflow exists to close a Critical CI-enforcement gap (TEST-1):
 # previously, only a narrow "hardening[.]" hardening pattern (6 files) ran in CI
