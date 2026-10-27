@@ -1,0 +1,183 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>QODIQA — Operational Dashboard</title>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    :root {
+      --bg:        #0f1117;
+      --surface:   #1a1d27;
+      --surface2:  #222536;
+      --border:    #2e3147;
+      --accent:    #5b7cfa;
+      --green:     #22c55e;
+      --red:       #ef4444;
+      --yellow:    #eab308;
+      --text:      #e2e8f0;
+      --muted:     #64748b;
+      --radius:    8px;
+      --font:      'Inter', system-ui, sans-serif;
+    }
+    body { background: var(--bg); color: var(--text); font-family: var(--font); font-size: 14px; min-height: 100vh; }
+    header { background: var(--surface); border-bottom: 1px solid var(--border); padding: 12px 24px; display: flex; align-items: center; gap: 16px; }
+    header h1 { font-size: 18px; font-weight: 600; letter-spacing: 0.03em; }
+    header span { font-size: 12px; color: var(--muted); }
+    #stream-status { margin-left: auto; font-size: 12px; display: flex; align-items: center; gap: 6px; }
+    #stream-dot { width: 8px; height: 8px; border-radius: 50%; background: var(--muted); }
+    #stream-dot.live { background: var(--green); animation: pulse 2s infinite; }
+    @keyframes pulse { 0%,100%{opacity:1} 50%{opacity:.5} }
+    nav { display: flex; gap: 2px; padding: 12px 24px; background: var(--surface); border-bottom: 1px solid var(--border); flex-wrap: wrap; }
+    nav button { background: none; border: none; color: var(--muted); cursor: pointer; padding: 6px 14px; border-radius: var(--radius); font-size: 13px; transition: all .15s; }
+    nav button:hover { background: var(--surface2); color: var(--text); }
+    nav button.active { background: var(--accent); color: #fff; }
+    main { padding: 24px; max-width: 1400px; margin: 0 auto; }
+    .panel { display: none; }
+    .panel.active { display: block; }
+    .cards { display: grid; grid-template-columns: repeat(auto-fill, minmax(180px, 1fr)); gap: 16px; margin-bottom: 24px; }
+    .card { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); padding: 16px; }
+    .card .label { font-size: 11px; text-transform: uppercase; letter-spacing: .08em; color: var(--muted); margin-bottom: 8px; }
+    .card .value { font-size: 28px; font-weight: 700; }
+    .card .value.green { color: var(--green); }
+    .card .value.red   { color: var(--red);   }
+    .card .value.yellow{ color: var(--yellow); }
+    .section { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); margin-bottom: 24px; }
+    .section-header { padding: 14px 18px; border-bottom: 1px solid var(--border); font-weight: 600; font-size: 13px; display: flex; align-items: center; gap: 8px; }
+    .badge { font-size: 11px; padding: 2px 8px; border-radius: 99px; background: var(--surface2); color: var(--muted); }
+    table { width: 100%; border-collapse: collapse; }
+    th { text-align: left; padding: 10px 18px; font-size: 11px; text-transform: uppercase; letter-spacing: .06em; color: var(--muted); background: var(--surface2); }
+    td { padding: 10px 18px; border-top: 1px solid var(--border); font-size: 12px; font-family: monospace; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 260px; }
+    tr:hover td { background: var(--surface2); }
+    .decision-allow { color: var(--green); font-weight: 600; }
+    .decision-block { color: var(--red);   font-weight: 600; }
+    .empty { padding: 32px 18px; text-align: center; color: var(--muted); font-size: 13px; }
+    .status-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(260px, 1fr)); gap: 16px; padding: 18px; }
+    .comp-card { background: var(--surface2); border: 1px solid var(--border); border-radius: var(--radius); padding: 14px; display: flex; align-items: center; gap: 12px; }
+    .comp-dot { width: 10px; height: 10px; border-radius: 50%; flex-shrink: 0; }
+    .comp-dot.ready { background: var(--green); }
+    .comp-dot.degraded { background: var(--red); }
+    .comp-name { font-size: 12px; font-weight: 500; }
+    .comp-sub  { font-size: 11px; color: var(--muted); margin-top: 2px; }
+    .reason-bars { padding: 18px; }
+    .reason-row { display: flex; align-items: center; gap: 10px; margin-bottom: 8px; font-size: 12px; }
+    .reason-label { width: 220px; flex-shrink: 0; color: var(--muted); font-family: monospace; }
+    .reason-bar-bg { flex: 1; height: 6px; background: var(--surface2); border-radius: 3px; }
+    .reason-bar-fill { height: 100%; border-radius: 3px; background: var(--red); min-width: 2px; }
+    .reason-count { width: 40px; text-align: right; color: var(--muted); }
+    .activity-chart { padding: 18px; overflow-x: auto; }
+    .chart-svg { display: block; }
+    .pagination { display: flex; align-items: center; gap: 8px; padding: 12px 18px; border-top: 1px solid var(--border); font-size: 12px; }
+    .pagination button { background: var(--surface2); border: 1px solid var(--border); color: var(--text); padding: 4px 12px; border-radius: 4px; cursor: pointer; }
+    .pagination button:disabled { opacity: .4; cursor: default; }
+    .integrity-full { color: var(--green); }
+    .integrity-degraded { color: var(--red); }
+  </style>
+</head>
+<body>
+<header>
+  <h1>QODIQA Ops</h1>
+  <span id="last-updated">Loading…</span>
+  <div id="stream-status">
+    <div id="stream-dot"></div>
+    <span id="stream-label">Connecting…</span>
+  </div>
+</header>
+<nav>
+  <button class="active" data-panel="overview">Overview</button>
+  <button data-panel="executions">Executions</button>
+  <button data-panel="blocked">Blocked</button>
+  <button data-panel="replays">Replays</button>
+  <button data-panel="anomalies">Anomalies</button>
+  <button data-panel="status">System Status</button>
+  <button data-panel="activity">Activity</button>
+</nav>
+<main>
+
+<!-- Overview Panel -->
+<div id="panel-overview" class="panel active">
+  <div class="cards">
+    <div class="card"><div class="label">Total Requests</div><div class="value" id="ov-total">—</div></div>
+    <div class="card"><div class="label">Allowed</div><div class="value green" id="ov-allowed">—</div></div>
+    <div class="card"><div class="label">Blocked</div><div class="value red" id="ov-blocked">—</div></div>
+    <div class="card"><div class="label">Replay Attempts</div><div class="value yellow" id="ov-replays">—</div></div>
+    <div class="card"><div class="label">Anomalies</div><div class="value yellow" id="ov-anomalies">—</div></div>
+    <div class="card"><div class="label">Integrity</div><div class="value" id="ov-integrity">—</div></div>
+    <div class="card"><div class="label">Uptime</div><div class="value" id="ov-uptime">—</div></div>
+  </div>
+  <div class="section">
+    <div class="section-header">Block Reason Distribution</div>
+    <div class="reason-bars" id="reason-bars"><div class="empty">No blocked requests.</div></div>
+  </div>
+</div>
+
+<!-- Executions Panel -->
+<div id="panel-executions" class="panel">
+  <div class="section">
+    <div class="section-header">Recent Executions <span class="badge" id="exec-total">0</span></div>
+    <div id="exec-table-wrap"></div>
+    <div class="pagination" id="exec-pager"></div>
+  </div>
+</div>
+
+<!-- Blocked Panel -->
+<div id="panel-blocked" class="panel">
+  <div class="section">
+    <div class="section-header">Blocked Requests <span class="badge" id="blk-total">0</span></div>
+    <div id="blk-table-wrap"></div>
+    <div class="pagination" id="blk-pager"></div>
+  </div>
+</div>
+
+<!-- Replays Panel -->
+<div id="panel-replays" class="panel">
+  <div class="section">
+    <div class="section-header">Replay Attempts <span class="badge" id="rpl-total">0</span></div>
+    <div id="rpl-table-wrap"></div>
+    <div class="pagination" id="rpl-pager"></div>
+  </div>
+</div>
+
+<!-- Anomalies Panel -->
+<div id="panel-anomalies" class="panel">
+  <div class="section">
+    <div class="section-header">Anomaly Events <span class="badge" id="ano-total">0</span></div>
+    <div id="ano-table-wrap"></div>
+    <div class="pagination" id="ano-pager"></div>
+  </div>
+</div>
+
+<!-- System Status Panel -->
+<div id="panel-status" class="panel">
+  <div class="cards">
+    <div class="card"><div class="label">Service</div><div class="value" id="st-service">—</div></div>
+    <div class="card"><div class="label">Version</div><div class="value" id="st-version">—</div></div>
+    <div class="card"><div class="label">Status</div><div class="value" id="st-status">—</div></div>
+    <div class="card"><div class="label">Memory (RSS)</div><div class="value" id="st-mem">—</div></div>
+    <div class="card"><div class="label">PID</div><div class="value" id="st-pid">—</div></div>
+    <div class="card"><div class="label">Node</div><div class="value" id="st-node">—</div></div>
+  </div>
+  <div class="section">
+    <div class="section-header">Component Health</div>
+    <div class="status-grid" id="comp-grid"></div>
+  </div>
+</div>
+
+<!-- Activity Panel -->
+<div id="panel-activity" class="panel">
+  <div class="section">
+    <div class="section-header">Request Activity (last 60 minutes)</div>
+    <div class="activity-chart" id="activity-chart"><div class="empty">Loading…</div></div>
+  </div>
+</div>
+
+</main>
+
+<!-- shared frontend infrastructure — load order matters (esc before pagination/actions) -->
+<script src="/js/common/adminAuth.js" defer></script>
+<script src="/js/common/esc.js" defer></script>
+<script src="/js/common/pagination.js" defer></script>
+<script src="/js/common/actions.js" defer></script>
+<script src="/js/dashboard.js" defer></script>
+</body>
+</html>

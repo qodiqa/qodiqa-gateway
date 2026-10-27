@@ -1,0 +1,67 @@
+# Persistent Volume Claims for QODIQA — shared across both topology overlays.
+#
+# Only ONE PVC is defined here: qodiqa-keystore (encrypted key store,
+# data/keys.json). It is shared, mounted read-write by every QODIQA replica
+# simultaneously, in either topology.
+#
+# The audit log is NOT provisioned here. In the single-node overlay, each
+# replica requires its own exclusive audit-log volume (see
+# overlays/single-node/statefulset.yaml) — those per-pod PVCs are generated
+# automatically by the StatefulSet's volumeClaimTemplates, named
+# "auditlog-qodiqa-<ordinal>". Do not add a shared "qodiqa-auditlog" PVC
+# here; two pods writing the same audit log file produces a corrupted,
+# divergent hash chain ("Audit log — single writer per
+# file path"). The distributed overlay has no audit-log volume at all —
+# PostgreSQL is the ordering authority there (see
+# overlays/distributed/deployment.yaml).
+#
+# ── Why qodiqa-keystore must be ReadWriteMany ────────────────────────────
+# docs/deployment/production.md requires "all pods must share the same
+# QODIQA_CLIENT_ID and key store" — key resolution is by client ID, and a
+# split keystore would let one replica sign with a key another replica
+# cannot find, breaking verification. `topologySpreadConstraints` in
+# overlays/single-node/statefulset.yaml (and overlays/distributed/deployment.yaml)
+# forces replicas onto different nodes for availability, so a ReadWriteOnce
+# volume (which only one node can attach at a time) would leave every pod
+# but the first stuck unable to attach it — this was the root cause of
+# on the keystore side, mirroring the audit-log side. ReadWriteMany,
+# backed by a network filesystem, is required so every node can attach it
+# concurrently.
+#
+# Use a ReadWriteMany-capable StorageClass/provisioner, e.g.:
+#   - AWS EFS (aws-efs-csi-driver)
+#   - Azure Files (azurefile-csi-driver)
+#   - GCP Filestore (filestore.csi.storage.gke.io)
+#   - An NFS provisioner (nfs-subdir-external-provisioner or similar)
+#
+# Standard block-storage classes (AWS EBS gp2/gp3, GCP Persistent Disk,
+# Azure Managed Disk) do NOT support ReadWriteMany and must not be used here.
+#
+# Alternative: if no ReadWriteMany-capable storage class is available in your
+# cluster, docs/deployment/topology.md documents a per-pod keystore copy as a fallback
+# (each replica gets its own independent keys.json via a volumeClaimTemplate,
+# same as the audit log). That trades away the automatic Redis-locked
+# rotation reload described in docs/security/key-management.md — rotation then requires
+# manually copying the rotated file to every replica's volume and restarting
+# them all. Prefer the shared ReadWriteMany PVC below unless your cluster
+# genuinely has no RWX-capable storage class.
+#
+# Size guidance:
+#   qodiqa-keystore: 100Mi is ample (keys.json is < 10 KiB per active key)
+#
+---
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: qodiqa-keystore
+  namespace: qodiqa
+  labels:
+    app.kubernetes.io/name:      qodiqa
+    app.kubernetes.io/component: keystore
+spec:
+  accessModes:
+    - ReadWriteMany
+  storageClassName: efs-sc   # Placeholder — replace with your cluster's ReadWriteMany-capable StorageClass
+  resources:
+    requests:
+      storage: 100Mi

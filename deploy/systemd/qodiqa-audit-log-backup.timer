@@ -1,0 +1,12 @@
+# Fires qodiqa-audit-log-backup.service every 5 minutes — the schedule
+# docs/operations/backup-runbook.md §5.1 always documented, now real.
+[Unit]
+Description=QODIQA audit-chain file backup schedule (5 minutes)
+
+[Timer]
+OnCalendar=*:0/5
+Persistent=true
+RandomizedDelaySec=15
+
+[Install]
+WantedBy=timers.target

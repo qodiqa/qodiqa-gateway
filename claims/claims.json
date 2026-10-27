@@ -1,0 +1,481 @@
+{
+  "schema": "qodiqa-claims/1",
+  "description": "Registry of product claims: every public statement about what QODIQA does maps to evidence that is checked by `npm run claims:check`. Status vocabulary: PROVEN, PROVEN-CAVEAT, IN-SAMPLE, SIMULATED, NOT-DELIVERED, OWNER-PENDING, RETRACTED. When in doubt the weaker status applies.",
+  "claims": [
+    {
+      "id": "C-007",
+      "claim": "The intent of a request is written (write-ahead log, fsync) before the provider is called; at boot, entries left open are closed.",
+      "scope": "README | docs",
+      "status": "PROVEN-CAVEAT",
+      "caveat": "There is no explicit COMMIT entry yet; a stream open at a crash is closed as STREAM_OUTCOME_UNKNOWN; durability across a sudden power loss is not demonstrated on hardware.",
+      "evidence": [
+        {
+          "type": "code",
+          "path": "src/core/audit/lifecycleReconciler.js",
+          "regex": "STREAM_OUTCOME_UNKNOWN"
+        },
+        {
+          "type": "test",
+          "path": "src/core/audit/__tests__/bootReconcile.test.js",
+          "regex": "BR-"
+        }
+      ],
+      "matrix": [
+        134
+      ],
+      "verifiedAt": "2026-10-21"
+    },
+    {
+      "id": "C-009",
+      "claim": "Offline verifiers with no dependency on QODIQA code exist in JavaScript and Python, with published test vectors.",
+      "scope": "README | site | docs",
+      "status": "PROVEN-CAVEAT",
+      "caveat": "To rely on a verification independently of the instance, the public keys must come from a source other than that instance.",
+      "evidence": [
+        {
+          "type": "code",
+          "path": "scripts/protocol/verify-vectors.js",
+          "regex": "independent|no production code"
+        },
+        {
+          "type": "test",
+          "path": "scripts/protocol/__tests__/contractDrift.test.js",
+          "regex": "vectors|drift"
+        },
+        {
+          "type": "cmd",
+          "cmd": "npm run protocol:check",
+          "runInCI": true
+        }
+      ],
+      "matrix": [
+        12,
+        13,
+        279
+      ],
+      "verifiedAt": "2026-10-21"
+    },
+    {
+      "id": "C-017",
+      "claim": "Adapters exist for Azure OpenAI and AWS Bedrock.",
+      "scope": "README | docs",
+      "status": "SIMULATED",
+      "caveat": "Verified only with simulated transport; no calls to the real hosted services have been made.",
+      "evidence": [
+        {
+          "type": "code",
+          "path": "services/providers/azure.js",
+          "regex": "DEPLOYMENT_RE"
+        },
+        {
+          "type": "code",
+          "path": "services/providers/bedrock.js",
+          "regex": "."
+        },
+        {
+          "type": "test",
+          "path": "services/providers/__tests__/cloud.test.js",
+          "regex": "describe"
+        }
+      ],
+      "matrix": [
+        224,
+        225
+      ],
+      "verifiedAt": "2026-10-21"
+    },
+    {
+      "id": "C-020",
+      "claim": "Logs are sanitized automatically (PII, tokens). Automatic redaction of AI prompt content is not available.",
+      "scope": "README | docs",
+      "status": "PROVEN-CAVEAT",
+      "caveat": "Log sanitization only; no data-loss-prevention on prompts or responses.",
+      "evidence": [
+        {
+          "type": "code",
+          "path": "services/logSanitizer.js",
+          "regex": "sanitize|redact"
+        },
+        {
+          "type": "test",
+          "path": "services/__tests__/logSanitizer.test.js",
+          "regex": "describe"
+        }
+      ],
+      "matrix": [
+        173,
+        181
+      ],
+      "forbiddenIfNot": [
+        "DLP",
+        "prompt redaction",
+        "data loss prevention"
+      ],
+      "verifiedAt": "2026-10-21"
+    },
+    {
+      "id": "C-021",
+      "claim": "Technical features that support GDPR work are present: data-subject requests, lawful basis recording and retention.",
+      "scope": "README | docs",
+      "status": "PROVEN-CAVEAT",
+      "caveat": "These are technical controls, not a certification or a legal assessment.",
+      "evidence": [
+        {
+          "type": "code",
+          "path": "src/core/dsr/pageAll.js",
+          "regex": "page"
+        },
+        {
+          "type": "test",
+          "path": "src/core/dsr/__tests__/pageAll.test.js",
+          "regex": "describe"
+        }
+      ],
+      "matrix": [
+        200,
+        276
+      ],
+      "verifiedAt": "2026-10-21"
+    },
+    {
+      "id": "C-024",
+      "claim": "The OpenAPI specification is generated from the code and checked in CI; an API reference is available and checked against it.",
+      "scope": "README | site | docs",
+      "status": "PROVEN",
+      "caveat": null,
+      "evidence": [
+        {
+          "type": "code",
+          "path": "scripts/openapi/contract.js",
+          "regex": "openapi"
+        },
+        {
+          "type": "test",
+          "path": "scripts/docs/__tests__/apiReferenceMatchesContract.test.js",
+          "regex": "F2-DOC-02"
+        },
+        {
+          "type": "cmd",
+          "cmd": "npm run contract:check",
+          "runInCI": true
+        }
+      ],
+      "matrix": [
+        245
+      ],
+      "verifiedAt": "2026-10-21"
+    },
+    {
+      "id": "C-027",
+      "claim": "SDKs for TypeScript, Python, Go and Java are available in the repository; each covers every operation of the API contract through generated descriptor tables, and verifies artifacts offline.",
+      "scope": "README | docs",
+      "status": "PROVEN-CAVEAT",
+      "caveat": "Not published to any registry. Go and Java implement protocol V1 only. The generated operation layer is verified against the contract, not exercised operation by operation against a live gateway; the sign, verify, chat, generic-call and error-mapping paths were run against an installed gateway.",
+      "evidence": [
+        {
+          "type": "code",
+          "path": "sdk/javascript/src/verification/artifactVerifier.ts",
+          "regex": "class ArtifactVerifier"
+        },
+        {
+          "type": "test",
+          "path": "sdk/javascript/tests/verification/artifact-verifier.test.ts",
+          "regex": "describe"
+        },
+        {
+          "type": "test",
+          "path": "sdk/python/tests/test_artifact_verifier.py",
+          "regex": "class Test"
+        },
+        {
+          "type": "test",
+          "path": "sdk/go/conformance_test.go",
+          "regex": "func Test"
+        },
+        {
+          "type": "test",
+          "path": "sdk/java/src/test/java/dev/qodiqa/sdk/ConformanceTest.java",
+          "regex": "Test"
+        },
+        {
+          "type": "test",
+          "path": "scripts/sdk/__tests__/generateOperations.test.js",
+          "regex": "describe"
+        }
+      ],
+      "matrix": [
+        241,
+        242
+      ],
+      "verifiedAt": "2026-10-23"
+    },
+    {
+      "id": "C-030",
+      "claim": "Kustomize, Helm, Terraform, Docker Compose and systemd deployment assets exist, and backup and restore are documented.",
+      "scope": "README | docs",
+      "status": "PROVEN-CAVEAT",
+      "caveat": "Kubernetes and the Helm chart were exercised only on local kind clusters in the development profile; the production profile (TLS to PostgreSQL and Redis, a shared keystore volume, NetworkPolicy enforcement) was rendered and validated, not run on a real cluster. Incremental backup and point-in-time recovery are not supported.",
+      "evidence": [
+        {
+          "type": "code",
+          "path": "scripts/pg-backup.sh",
+          "regex": "incremental"
+        },
+        {
+          "type": "test",
+          "path": "test/dr/postgresFullCoverage.integration.test.js",
+          "regex": "restore"
+        },
+        {
+          "type": "test",
+          "path": "scripts/__tests__/shippedDeploymentPosture.test.js",
+          "regex": "helm"
+        },
+        {
+          "type": "run",
+          "path": "docs/operations/helm.md",
+          "regex": "Not verified"
+        }
+      ],
+      "matrix": [
+        254,
+        256,
+        259
+      ],
+      "verifiedAt": "2026-10-23"
+    },
+    {
+      "id": "C-031",
+      "claim": "A protocol-V2 artifact binds the request's query string and the headers the issuer chose, in addition to the method, path and body; changing any of them makes the request fail with REQUEST_MISMATCH.",
+      "scope": "docs",
+      "status": "PROVEN-CAVEAT",
+      "caveat": "Protocol V2 issuance is off by default (QODIQA_PROTOCOL_V2_ISSUE); V1 artifacts keep binding method, path and body only. A raw + or ; in a bound query is refused (use %20, %2B, %3B).",
+      "evidence": [
+        {
+          "type": "code",
+          "path": "src/validation/requestBindingV2.js",
+          "regex": "REQUEST_DOMAIN_V2"
+        },
+        {
+          "type": "test",
+          "path": "src/api/routes/__tests__/protocolV2.endToEnd.test.js",
+          "regex": "F4-E2E-0"
+        },
+        {
+          "type": "run",
+          "path": "docs/protocol/vectors/v2-request.json",
+          "regex": "V2-REQ-113"
+        }
+      ],
+      "matrix": [
+        15
+      ],
+      "verifiedAt": "2026-10-21"
+    },
+    {
+      "id": "C-032",
+      "claim": "A decision can come with a signed receipt that anyone can verify offline with the gateway's public transparency keys; the receipt proves the gateway recorded the decision, not that the decision was correct.",
+      "scope": "docs",
+      "status": "PROVEN-CAVEAT",
+      "caveat": "Present only when the audit entry and the transparency leaf are persisted (otherwise absent); streaming responses carry no receipt yet; retrieval by request id works for a bounded window (default one hour).",
+      "evidence": [
+        {
+          "type": "code",
+          "path": "src/core/transparency/receipt.js",
+          "regex": "QODIQA::RECEIPT|ARTIFACT_DOMAINS.RECEIPT"
+        },
+        {
+          "type": "test",
+          "path": "src/api/routes/__tests__/aiChat.receipt.test.js",
+          "regex": "RCPT-01"
+        },
+        {
+          "type": "run",
+          "path": "docs/protocol/vectors/receipt.json",
+          "regex": "V2-RECEIPT-048"
+        }
+      ],
+      "matrix": [
+        155
+      ],
+      "verifiedAt": "2026-10-21"
+    },
+    {
+      "id": "C-034",
+      "claim": "An operator can revoke a single signed artifact before it is used; a revoked artifact is refused before its nonce is consumed.",
+      "scope": "docs",
+      "status": "PROVEN",
+      "evidence": [
+        {
+          "type": "code",
+          "path": "src/core/artifactRevocation/index.js",
+          "regex": "artrev:v1"
+        },
+        {
+          "type": "test",
+          "path": "src/core/artifactRevocation/__tests__/artifactRevocation.test.js",
+          "regex": "AR-08"
+        },
+        {
+          "type": "run",
+          "path": "test/integration/artifactRevocation.redis.integration.test.js",
+          "regex": "ARR-01"
+        }
+      ],
+      "matrix": [
+        48
+      ],
+      "verifiedAt": "2026-10-21"
+    },
+    {
+      "id": "C-035",
+      "claim": "With audit schema v8 enabled, every request whose provider executed ends with a COMMIT audit entry written after the response: the exact number of output bytes delivered, the hash of the delivered text and how the delivery ended (complete, client disconnected, timeout, cancelled, error); a stream that stops half-way commits the bytes that did reach the client.",
+      "status": "PROVEN-CAVEAT",
+      "caveat": "Audit schema v8 is off by default (owner decision), so no COMMIT is written until it is enabled; a request whose process dies between its DECISION and its COMMIT gets a COMMIT with completionStatus OUTCOME_UNKNOWN and 0 bytes (unknown) written by the next boot, not the true delivery record; a COMMIT refused by the audit store is queued durably.",
+      "evidence": [
+        {
+          "type": "code",
+          "path": "src/core/audit/commitEntry.js",
+          "regex": "recordCommit"
+        },
+        {
+          "type": "test",
+          "path": "src/api/routes/__tests__/commit.endToEnd.test.js",
+          "regex": "CE-01"
+        },
+        {
+          "type": "test",
+          "path": "src/streaming/__tests__/streamCommit.test.js",
+          "regex": "SC-01"
+        }
+      ],
+      "matrix": [
+        134
+      ],
+      "scope": "docs",
+      "verifiedAt": "2026-10-21"
+    },
+    {
+      "id": "C-038",
+      "claim": "With two or more co-signing witnesses configured, an audit checkpoint is exported as anchored only when at least two cosignatures verify under the trusted witness keys; each witness keeps its own key and its own append-only log and refuses rollback, equivocation and forks, so one compromised or unreachable witness can neither anchor a checkpoint alone nor make the other cosign a different head.",
+      "status": "PROVEN-CAVEAT",
+      "caveat": "The witnesses run as separate processes with their own keys in the tests; whether two witnesses are operated by independent parties is a deployment fact (owner-level, FO.10), not something the software can check. With fewer than two witnesses configured the quorum is one.",
+      "evidence": [
+        {
+          "type": "code",
+          "path": "src/core/audit/anchoring/anchors.js",
+          "regex": "WITNESS_QUORUM_NOT_MET"
+        },
+        {
+          "type": "test",
+          "path": "src/core/audit/anchoring/__tests__/multiWitness.test.js",
+          "regex": "MW-03"
+        },
+        {
+          "type": "test",
+          "path": "src/core/audit/anchoring/__tests__/multiWitness.test.js",
+          "regex": "MW-04"
+        }
+      ],
+      "matrix": [
+        144,
+        280
+      ],
+      "scope": "docs",
+      "verifiedAt": "2026-10-22"
+    },
+    {
+      "id": "C-039",
+      "claim": "Audit history can be exported as a sealed archive without deleting anything: the chain segment up to a signed checkpoint, the checkpoint, a manifest of file hashes and a seal signed by the audit-checkpoint key, marked in an append-only hash-chained index and verifiable offline years later; ENFORCEMENT audit events are never deleted automatically, and removing history from the hot store remains an operator-run command that archives and verifies first.",
+      "status": "PROVEN-CAVEAT",
+      "caveat": "The exporter covers the file chain; PostgreSQL-authoritative deployments rely on the database backup and the prune archive; moving archives to cold storage and verifying them on a schedule are operator steps.",
+      "evidence": [
+        {
+          "type": "code",
+          "path": "scripts/audit/archive-export.js",
+          "regex": "SEAL_DOMAIN"
+        },
+        {
+          "type": "test",
+          "path": "scripts/audit/__tests__/archiveExport.test.js",
+          "regex": "AE-05"
+        },
+        {
+          "type": "code",
+          "path": "src/core/audit/retention.js",
+          "regex": "ENFORCEMENT category events are NEVER subject to automated deletion"
+        }
+      ],
+      "matrix": [
+        140
+      ],
+      "scope": "docs",
+      "verifiedAt": "2026-10-22"
+    },
+    {
+      "matrix": [],
+      "verifiedAt": "2026-10-23",
+      "id": "C-042",
+      "claim": "A local sandbox (`qodiqa dev`) starts a gateway with a simulated AI provider and disposable PostgreSQL and Redis for development.",
+      "scope": "README | docs",
+      "status": "PROVEN-CAVEAT",
+      "caveat": "Local only. A hosted sandbox is specified (docs/operations/hosted-sandbox-spec.md) but not operated; nothing is offered publicly.",
+      "evidence": [
+        {
+          "type": "code",
+          "path": "scripts/dev/qodiqa-dev.js",
+          "regex": "sandbox"
+        },
+        {
+          "type": "test",
+          "path": "test/integration/qodiqaDev.integration.test.js",
+          "regex": "describe"
+        },
+        {
+          "type": "run",
+          "path": "docs/guides/quickstart.md",
+          "regex": "qodiqa dev"
+        }
+      ]
+    },
+    {
+      "matrix": [],
+      "verifiedAt": "2026-10-23",
+      "id": "C-046",
+      "claim": "Authority can be delegated from one agent to another as a chain of signed grants that only ever narrow (classes, tools, actions, lifetime, depth), verifiable offline, and revocable.",
+      "scope": "docs",
+      "status": "PROVEN-CAVEAT",
+      "caveat": "Pinned by shared test vectors re-derived by three implementations; revocation and agent state are gateway-side. Modelled in TLA+ within small bounds (docs/formal), not proven.",
+      "evidence": [
+        {
+          "type": "code",
+          "path": "src/core/delegation/delegationToken.js",
+          "regex": "DELEGATION_ATTENUATION_VIOLATION"
+        },
+        {
+          "type": "test",
+          "path": "src/core/delegation/__tests__/delegationToken.test.js",
+          "regex": "describe"
+        },
+        {
+          "type": "run",
+          "path": "docs/protocol/DELEGATION.md",
+          "regex": "chain"
+        }
+      ]
+    }
+  ],
+  "forbiddenGlobal": [
+    "production-ready",
+    "enterprise-ready",
+    "enterprise-grade",
+    "zero-trust",
+    "military-grade",
+    "100% secure",
+    "unhackable"
+  ],
+  "publicFiles": [
+    "README.md",
+    "SECURITY.md"
+  ]
+}

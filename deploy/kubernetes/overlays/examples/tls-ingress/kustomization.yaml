@@ -1,0 +1,15 @@
+# TLS Ingress reference overlay. EXAMPLE — opt-in, not applied by default.
+#
+# An Ingress (ingress-nginx class, cert-manager-issued certificate) in front of the single-node Service. Replace the
+# host, the ClusterIssuer and the class with yours. Two things this overlay deliberately does NOT do:
+#   - it does not widen TRUSTED_PROXY: set it to your ingress controller's pod CIDR yourself (docs/deployment/production.md,
+#     "Proxy trust"); until then client-IP keyed controls see the ingress pod's address;
+#   - no HorizontalPodAutoscaler: the single-node topology is a StatefulSet whose replicas: 1 is a correctness bound,
+#     and the multi-replica (distributed) topology is refused in production until there is nothing an HPA could
+#     safely scale.
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+
+resources:
+  - ../../single-node
+  - ingress.yaml

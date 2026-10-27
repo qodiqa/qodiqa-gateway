@@ -1,0 +1,732 @@
+# QODIQA Scheduled Backup CronJobs.
+#
+# Before this file existed, QODIQA shipped a complete PostgreSQL backup
+# script (scripts/pg-backup.sh) and a complete file+Postgres DR framework
+# (scripts/dr/*.js) with NOTHING actually invoking either one on a schedule
+# — see docs/operations/backup-scheduling.md for the full root-cause
+# writeup. These CronJobs are the fix: they run the EXISTING scripts
+# unmodified (beyond the additive tiered-retention/metrics/alert changes
+# also part of this remediation), on a schedule, with fail-closed job
+# settings so a failure is always visible and never silently retried away.
+#
+# Image: qodiqa-backup:1.0.0, built from deploy/docker/backup.Dockerfile at the repo root
+# (NOT the production Dockerfile's image — that image deliberately strips
+# scripts/ and docs/; see deploy/docker/backup.Dockerfile's header comment for why a
+# second image exists).
+#
+# Configuration: every retention count, path, and timeout is sourced from
+# backup-configmap.yaml / secret.yaml — nothing is hardcoded in the command
+# strings below beyond the mode/tier selector, which IS the intended
+# per-CronJob identity (a "daily" CronJob choosing the daily tier is
+# configuration, not a magic number). Per-environment schedule overrides
+# belong in a Kustomize overlay patch targeting `spec.schedule` /
+# `spec.timeZone` — see docs/operations/backup-scheduling.md.
+#
+# ── Known scope boundary — file-based DR backup / restore validation ────────
+# scripts/dr/backup.js and scripts/dr/cycle.js also cover three file-based
+# components: the audit chain (audit.log), the policy store
+# (policy-store.json), and organizations/tenants caches. In QODIQA's
+# documented multi-replica Kubernetes topology (statefulset.yaml), the audit
+# log is a per-pod EXCLUSIVE ReadWriteOnce volume and the policy/org/tenant
+# files are not persisted to any shared volume at all (see statefulset.yaml
+# / pvc.yaml) — a separate CronJob pod has no safe, correct way to read
+# them. The qodiqa-dr-backup and qodiqa-dr-restore-validation CronJobs below
+# are therefore SCOPED to what a standalone pod can reach: the encrypted key
+# store (via the existing ReadWriteMany qodiqa-keystore PVC) and the entire
+# PostgreSQL-backed state (every table, including the audit_chain and
+# transparency_log_entries mirrors — see docs/protocol/AUDIT-SCHEMA-V8.md
+# for why the PG mirror is a valid rebuild source). Their manifests/validation
+# results correctly and honestly record auditLog/policyStore/organizations/
+# tenants as `present: false` — this is disclosed, expected behavior in this
+# topology, not a bug. Operators who need full-fidelity restore validation
+# including the per-pod file components should run scripts/dr/cycle.js via
+# `kubectl exec` against a live replica instead (documented in
+# docs/operations/backup-scheduling.md), where those env vars already point
+# at real mounted files.
+#
+# (post-H113 integration audit) — CORRECTED CLAIM: this comment
+# previously said an operator could "distinguish 'the reachable components
+# validated cleanly' from 'nothing validated'" via cycle.js's per-probe
+# DR_VALIDATE_COMPLETE log line. That was never actually reachable, in
+# EITHER of these two CronJobs, before or after validateComponents()'s
+# REQUIRED_COMPONENT_MISSING check (pre-H113, for the unconditionally
+# `critical` auditLog component) — and, fixed that specific
+# defect, restore.js's mode-aware gate defaulting to 'single-node'
+# and then finding no restored audit.log (AUDIT_LOG_NOT_RESTORED) — both
+# throw and crash the job BEFORE cycle.js ever reaches DR_VALIDATE_COMPLETE.
+# qodiqa-dr-restore-validation was therefore failing on every single
+# scheduled run, indefinitely, in this topology — not gracefully degrading.
+# Fixed by setting QODIQA_DEPLOYMENT_MODE=distributed in
+# backup-configmap.yaml (envFrom'd by every CronJob here): this pod's own
+# audit evidence is PostgreSQL's audit_chain table regardless of which
+# topology overlay the app itself runs under (it can never reach the app's
+# per-pod file volume either way — see the paragraph above), so this is the
+# factually correct signal to send, not merely a workaround. With it set,
+# scripts/dr/cycle.js now genuinely completes RESTORE_COMPLETE for the
+# reachable PostgreSQL-authoritative evidence, and DR_VALIDATE_COMPLETE's
+# per-probe fields (auditChainValid, policyStoreValid, postgresValid) become
+# actually reachable and meaningful, distinguishing "the reachable
+# components validated cleanly" from "nothing validated" as originally
+# intended.
+#
+apiVersion: batch/v1
+kind: CronJob
+metadata:
+  name: qodiqa-pg-backup-daily
+  namespace: qodiqa
+  labels:
+    app.kubernetes.io/name:      qodiqa
+    app.kubernetes.io/component: backup
+spec:
+  schedule: "0 2 * * *"
+  timeZone: "Etc/UTC"   # Change per-environment via a Kustomize overlay patch
+  concurrencyPolicy: Forbid
+  startingDeadlineSeconds: 300
+  successfulJobsHistoryLimit: 3
+  failedJobsHistoryLimit: 3
+  jobTemplate:
+    spec:
+      backoffLimit: 2
+      activeDeadlineSeconds: 3600
+      template:
+        metadata:
+          labels:
+            app.kubernetes.io/name:      qodiqa
+            app.kubernetes.io/component: backup
+        spec:
+          serviceAccountName: qodiqa-backup   # dedicated token-less SA (base/serviceaccount.yaml)
+          automountServiceAccountToken: false
+          restartPolicy: OnFailure
+          securityContext:
+            runAsNonRoot: true
+            runAsUser: 1000
+            runAsGroup: 1000
+            fsGroup: 1000
+            seccompProfile: { type: RuntimeDefault }
+          containers:
+            - name: pg-backup
+              image: YOUR_REGISTRY/qodiqa-backup:1.0.0   # Pin to a digest in production
+              imagePullPolicy: Always
+              command: ["/app/scripts/pg-backup.sh", "full", "daily"]
+              securityContext:
+                readOnlyRootFilesystem: true
+                allowPrivilegeEscalation: false
+                capabilities: { drop: [ALL] }
+              envFrom:
+                - configMapRef: { name: qodiqa-backup-config }
+              env:
+                - name: PGPASSWORD
+                  valueFrom: { secretKeyRef: { name: qodiqa-secrets, key: postgres-backup-password } }
+                - name: QODIQA_BACKUP_HMAC_KEY  # dedicated seal key, never the application KEK
+                  valueFrom: { secretKeyRef: { name: qodiqa-secrets, key: backup-hmac-key } }
+                # encryption at rest (required by qodiqa-backup-config QODIQA_BACKUP_REQUIRE_ENCRYPTION)
+                - name: QODIQA_BACKUP_ENCRYPTION_KEY
+                  valueFrom: { secretKeyRef: { name: qodiqa-secrets, key: backup-encryption-key } }
+                - name: ALERT_WEBHOOK_URL
+                  valueFrom: { secretKeyRef: { name: qodiqa-secrets, key: alert-webhook-url, optional: true } }
+              volumeMounts:
+                - { name: pg-backups, mountPath: /backups/pg }
+                - { name: tmp, mountPath: /tmp }
+                - { name: pg-tls, mountPath: /etc/qodiqa-pg-tls, readOnly: true }   # optional PG CA (backup-configmap.yaml PGSSLMODE)
+              resources:
+                requests: { cpu: 100m, memory: 128Mi }
+                limits:   { cpu: 1,    memory: 512Mi }
+          volumes:
+            - name: pg-backups
+              persistentVolumeClaim: { claimName: qodiqa-pg-backups }
+            - name: tmp
+              emptyDir: { sizeLimit: 256Mi }   #
+            - name: pg-tls
+              secret: { secretName: qodiqa-pg-tls, optional: true, defaultMode: 0440 }
+---
+apiVersion: batch/v1
+kind: CronJob
+metadata:
+  name: qodiqa-pg-backup-weekly
+  namespace: qodiqa
+  labels:
+    app.kubernetes.io/name:      qodiqa
+    app.kubernetes.io/component: backup
+spec:
+  schedule: "0 3 * * 0"
+  timeZone: "Etc/UTC"
+  concurrencyPolicy: Forbid
+  startingDeadlineSeconds: 300
+  successfulJobsHistoryLimit: 3
+  failedJobsHistoryLimit: 3
+  jobTemplate:
+    spec:
+      backoffLimit: 2
+      activeDeadlineSeconds: 3600
+      template:
+        metadata:
+          labels:
+            app.kubernetes.io/name:      qodiqa
+            app.kubernetes.io/component: backup
+        spec:
+          serviceAccountName: qodiqa-backup   # dedicated token-less SA (base/serviceaccount.yaml)
+          automountServiceAccountToken: false
+          restartPolicy: OnFailure
+          securityContext:
+            runAsNonRoot: true
+            runAsUser: 1000
+            runAsGroup: 1000
+            fsGroup: 1000
+            seccompProfile: { type: RuntimeDefault }
+          containers:
+            - name: pg-backup
+              image: YOUR_REGISTRY/qodiqa-backup:1.0.0
+              imagePullPolicy: Always
+              command: ["/app/scripts/pg-backup.sh", "full", "weekly"]
+              securityContext:
+                readOnlyRootFilesystem: true
+                allowPrivilegeEscalation: false
+                capabilities: { drop: [ALL] }
+              envFrom:
+                - configMapRef: { name: qodiqa-backup-config }
+              env:
+                - name: PGPASSWORD
+                  valueFrom: { secretKeyRef: { name: qodiqa-secrets, key: postgres-backup-password } }
+                - name: QODIQA_BACKUP_HMAC_KEY  # dedicated seal key, never the application KEK
+                  valueFrom: { secretKeyRef: { name: qodiqa-secrets, key: backup-hmac-key } }
+                # encryption at rest (required by qodiqa-backup-config QODIQA_BACKUP_REQUIRE_ENCRYPTION)
+                - name: QODIQA_BACKUP_ENCRYPTION_KEY
+                  valueFrom: { secretKeyRef: { name: qodiqa-secrets, key: backup-encryption-key } }
+                - name: ALERT_WEBHOOK_URL
+                  valueFrom: { secretKeyRef: { name: qodiqa-secrets, key: alert-webhook-url, optional: true } }
+              volumeMounts:
+                - { name: pg-backups, mountPath: /backups/pg }
+                - { name: tmp, mountPath: /tmp }
+                - { name: pg-tls, mountPath: /etc/qodiqa-pg-tls, readOnly: true }   # optional PG CA (backup-configmap.yaml PGSSLMODE)
+              resources:
+                requests: { cpu: 100m, memory: 128Mi }
+                limits:   { cpu: 1,    memory: 512Mi }
+          volumes:
+            - name: pg-backups
+              persistentVolumeClaim: { claimName: qodiqa-pg-backups }
+            - name: tmp
+              emptyDir: { sizeLimit: 256Mi }   #
+            - name: pg-tls
+              secret: { secretName: qodiqa-pg-tls, optional: true, defaultMode: 0440 }
+---
+apiVersion: batch/v1
+kind: CronJob
+metadata:
+  name: qodiqa-pg-backup-monthly
+  namespace: qodiqa
+  labels:
+    app.kubernetes.io/name:      qodiqa
+    app.kubernetes.io/component: backup
+spec:
+  schedule: "0 4 1 * *"
+  timeZone: "Etc/UTC"
+  concurrencyPolicy: Forbid
+  startingDeadlineSeconds: 300
+  successfulJobsHistoryLimit: 3
+  failedJobsHistoryLimit: 3
+  jobTemplate:
+    spec:
+      backoffLimit: 2
+      activeDeadlineSeconds: 3600
+      template:
+        metadata:
+          labels:
+            app.kubernetes.io/name:      qodiqa
+            app.kubernetes.io/component: backup
+        spec:
+          serviceAccountName: qodiqa-backup   # dedicated token-less SA (base/serviceaccount.yaml)
+          automountServiceAccountToken: false
+          restartPolicy: OnFailure
+          securityContext:
+            runAsNonRoot: true
+            runAsUser: 1000
+            runAsGroup: 1000
+            fsGroup: 1000
+            seccompProfile: { type: RuntimeDefault }
+          containers:
+            - name: pg-backup
+              image: YOUR_REGISTRY/qodiqa-backup:1.0.0
+              imagePullPolicy: Always
+              command: ["/app/scripts/pg-backup.sh", "full", "monthly"]
+              securityContext:
+                readOnlyRootFilesystem: true
+                allowPrivilegeEscalation: false
+                capabilities: { drop: [ALL] }
+              envFrom:
+                - configMapRef: { name: qodiqa-backup-config }
+              env:
+                - name: PGPASSWORD
+                  valueFrom: { secretKeyRef: { name: qodiqa-secrets, key: postgres-backup-password } }
+                - name: QODIQA_BACKUP_HMAC_KEY  # dedicated seal key, never the application KEK
+                  valueFrom: { secretKeyRef: { name: qodiqa-secrets, key: backup-hmac-key } }
+                # encryption at rest (required by qodiqa-backup-config QODIQA_BACKUP_REQUIRE_ENCRYPTION)
+                - name: QODIQA_BACKUP_ENCRYPTION_KEY
+                  valueFrom: { secretKeyRef: { name: qodiqa-secrets, key: backup-encryption-key } }
+                - name: ALERT_WEBHOOK_URL
+                  valueFrom: { secretKeyRef: { name: qodiqa-secrets, key: alert-webhook-url, optional: true } }
+              volumeMounts:
+                - { name: pg-backups, mountPath: /backups/pg }
+                - { name: tmp, mountPath: /tmp }
+                - { name: pg-tls, mountPath: /etc/qodiqa-pg-tls, readOnly: true }   # optional PG CA (backup-configmap.yaml PGSSLMODE)
+              resources:
+                requests: { cpu: 100m, memory: 128Mi }
+                limits:   { cpu: 1,    memory: 512Mi }
+          volumes:
+            - name: pg-backups
+              persistentVolumeClaim: { claimName: qodiqa-pg-backups }
+            - name: tmp
+              emptyDir: { sizeLimit: 256Mi }   #
+            - name: pg-tls
+              secret: { secretName: qodiqa-pg-tls, optional: true, defaultMode: 0440 }
+---
+# Incremental (WAL streaming via pg_basebackup) — requires wal_level=replica,
+# archive_mode=on, and REPLICATION privilege for the backup role. See
+# scripts/pg-backup.sh's run_incremental_backup() header comment.
+apiVersion: batch/v1
+kind: CronJob
+metadata:
+  name: qodiqa-pg-backup-incremental
+  namespace: qodiqa
+  labels:
+    app.kubernetes.io/name:      qodiqa
+    app.kubernetes.io/component: backup
+spec:
+  # SUSPENDED — pg-backup.sh incremental is unsupported until a decision is made on
+  # REPLICATION for qodiqa_backup (the script now refuses it with BACKUP_INCREMENTAL_UNSUPPORTED, exit 2).
+  suspend: true
+  schedule: "0 */6 * * *"
+  timeZone: "Etc/UTC"
+  concurrencyPolicy: Forbid
+  startingDeadlineSeconds: 300
+  successfulJobsHistoryLimit: 3
+  failedJobsHistoryLimit: 3
+  jobTemplate:
+    spec:
+      backoffLimit: 2
+      activeDeadlineSeconds: 1800
+      template:
+        metadata:
+          labels:
+            app.kubernetes.io/name:      qodiqa
+            app.kubernetes.io/component: backup
+        spec:
+          serviceAccountName: qodiqa-backup   # dedicated token-less SA (base/serviceaccount.yaml)
+          automountServiceAccountToken: false
+          restartPolicy: OnFailure
+          securityContext:
+            runAsNonRoot: true
+            runAsUser: 1000
+            runAsGroup: 1000
+            fsGroup: 1000
+            seccompProfile: { type: RuntimeDefault }
+          containers:
+            - name: pg-backup-incremental
+              image: YOUR_REGISTRY/qodiqa-backup:1.0.0
+              imagePullPolicy: Always
+              command: ["/app/scripts/pg-backup.sh", "incremental"]
+              securityContext:
+                readOnlyRootFilesystem: true
+                allowPrivilegeEscalation: false
+                capabilities: { drop: [ALL] }
+              envFrom:
+                - configMapRef: { name: qodiqa-backup-config }
+              env:
+                - name: PGPASSWORD
+                  valueFrom: { secretKeyRef: { name: qodiqa-secrets, key: postgres-backup-password } }
+                - name: ALERT_WEBHOOK_URL
+                  valueFrom: { secretKeyRef: { name: qodiqa-secrets, key: alert-webhook-url, optional: true } }
+              volumeMounts:
+                - { name: pg-backups, mountPath: /backups/pg }
+                - { name: tmp, mountPath: /tmp }
+                - { name: pg-tls, mountPath: /etc/qodiqa-pg-tls, readOnly: true }   # optional PG CA (backup-configmap.yaml PGSSLMODE)
+              resources:
+                requests: { cpu: 100m, memory: 128Mi }
+                limits:   { cpu: 1,    memory: 512Mi }
+          volumes:
+            - name: pg-backups
+              persistentVolumeClaim: { claimName: qodiqa-pg-backups }
+            - name: tmp
+              emptyDir: { sizeLimit: 256Mi }   #
+            - name: pg-tls
+              secret: { secretName: qodiqa-pg-tls, optional: true, defaultMode: 0440 }
+---
+# Backup verification — non-destructive: seal check, pg_restore --list, and
+# full-table-coverage check against the latest daily-tier backup.
+# Deliberately scheduled 30 minutes after the daily backup, not concurrently.
+apiVersion: batch/v1
+kind: CronJob
+metadata:
+  name: qodiqa-pg-backup-verify
+  namespace: qodiqa
+  labels:
+    app.kubernetes.io/name:      qodiqa
+    app.kubernetes.io/component: backup
+spec:
+  schedule: "30 2 * * *"
+  timeZone: "Etc/UTC"
+  concurrencyPolicy: Forbid
+  startingDeadlineSeconds: 300
+  successfulJobsHistoryLimit: 3
+  failedJobsHistoryLimit: 3
+  jobTemplate:
+    spec:
+      backoffLimit: 1   # verification must never be masked by silent retry
+      activeDeadlineSeconds: 900
+      template:
+        metadata:
+          labels:
+            app.kubernetes.io/name:      qodiqa
+            app.kubernetes.io/component: backup
+        spec:
+          serviceAccountName: qodiqa-backup   # dedicated token-less SA (base/serviceaccount.yaml)
+          automountServiceAccountToken: false
+          restartPolicy: OnFailure
+          securityContext:
+            runAsNonRoot: true
+            runAsUser: 1000
+            runAsGroup: 1000
+            fsGroup: 1000
+            seccompProfile: { type: RuntimeDefault }
+          containers:
+            - name: pg-backup-verify
+              image: YOUR_REGISTRY/qodiqa-backup:1.0.0
+              imagePullPolicy: Always
+              command: ["/app/scripts/pg-backup.sh", "verify", "daily"]
+              securityContext:
+                readOnlyRootFilesystem: true
+                allowPrivilegeEscalation: false
+                capabilities: { drop: [ALL] }
+              envFrom:
+                - configMapRef: { name: qodiqa-backup-config }
+              env:
+                - name: PGPASSWORD
+                  valueFrom: { secretKeyRef: { name: qodiqa-secrets, key: postgres-backup-password } }
+                - name: QODIQA_BACKUP_HMAC_KEY  # dedicated seal key, never the application KEK
+                  valueFrom: { secretKeyRef: { name: qodiqa-secrets, key: backup-hmac-key } }
+                # encryption at rest (required by qodiqa-backup-config QODIQA_BACKUP_REQUIRE_ENCRYPTION)
+                - name: QODIQA_BACKUP_ENCRYPTION_KEY
+                  valueFrom: { secretKeyRef: { name: qodiqa-secrets, key: backup-encryption-key } }
+                - name: ALERT_WEBHOOK_URL
+                  valueFrom: { secretKeyRef: { name: qodiqa-secrets, key: alert-webhook-url, optional: true } }
+              volumeMounts:
+                - { name: pg-backups, mountPath: /backups/pg }
+                - { name: tmp, mountPath: /tmp }
+                - { name: pg-tls, mountPath: /etc/qodiqa-pg-tls, readOnly: true }   # optional PG CA (backup-configmap.yaml PGSSLMODE)
+              resources:
+                requests: { cpu: 100m, memory: 128Mi }
+                limits:   { cpu: 500m,  memory: 256Mi }
+          volumes:
+            - name: pg-backups
+              persistentVolumeClaim: { claimName: qodiqa-pg-backups }
+            - name: tmp
+              emptyDir: { sizeLimit: 256Mi }   #
+            - name: pg-tls
+              secret: { secretName: qodiqa-pg-tls, optional: true, defaultMode: 0440 }
+---
+# File + Postgres DR JSON export (scripts/dr/backup.js --with-postgres).
+# See the "Known scope boundary" note at the top of this file — audit.log
+# and policy-store.json are not reachable from this standalone pod in the
+# default multi-replica topology; the encrypted key store (via the existing
+# ReadWriteMany qodiqa-keystore PVC) and the FULL PostgreSQL-backed state
+# (every table, including the audit_chain/transparency_log_entries mirrors)
+# are what this CronJob captures and what its --retain flag prunes.
+apiVersion: batch/v1
+kind: CronJob
+metadata:
+  name: qodiqa-dr-backup
+  namespace: qodiqa
+  labels:
+    app.kubernetes.io/name:      qodiqa
+    app.kubernetes.io/component: backup
+spec:
+  schedule: "0 * * * *"
+  timeZone: "Etc/UTC"
+  concurrencyPolicy: Forbid
+  startingDeadlineSeconds: 300
+  successfulJobsHistoryLimit: 3
+  failedJobsHistoryLimit: 3
+  jobTemplate:
+    spec:
+      backoffLimit: 2
+      activeDeadlineSeconds: 1200
+      template:
+        metadata:
+          labels:
+            app.kubernetes.io/name:      qodiqa
+            app.kubernetes.io/component: backup
+        spec:
+          serviceAccountName: qodiqa-backup   # dedicated token-less SA (base/serviceaccount.yaml)
+          automountServiceAccountToken: false
+          restartPolicy: OnFailure
+          securityContext:
+            runAsNonRoot: true
+            runAsUser: 1000
+            runAsGroup: 1000
+            fsGroup: 1000
+            seccompProfile: { type: RuntimeDefault }
+          containers:
+            - name: dr-backup
+              image: YOUR_REGISTRY/qodiqa-backup:1.0.0
+              imagePullPolicy: Always
+              # `set -eu`, and verify the backup THIS run wrote (OUT_DIR) before
+              # retention. Previously there was no `set -e` and the job's exit status was that of verify.js run on
+              # the NEWEST EXISTING backup — i.e. the previous good one when backup.js failed — so a failed backup
+              # ended Succeeded. Mirrors deploy/systemd/dr-backup-run.sh.
+              # verify.js writes its own textfile (…_verify.prom) — backup.js and verify.js used to
+              # replace each other's metrics in the same file.
+              command:
+                - sh
+                - -c
+                - |
+                  set -eu
+                  OUT_DIR="/dr-backups/qodiqa-backup-$(date -u +%Y%m%dT%H%M%SZ)"
+                  node scripts/dr/backup.js "${OUT_DIR}" --with-postgres
+                  QODIQA_BACKUP_METRICS_FILE="${QODIQA_BACKUP_METRICS_FILE%.prom}_verify.prom" \
+                    node scripts/dr/verify.js "${OUT_DIR}"
+                  node scripts/dr/retention.js /dr-backups \
+                    --daily="${QODIQA_DR_RETAIN_DAILY}" \
+                    --weekly="${QODIQA_DR_RETAIN_WEEKLY}" \
+                    --monthly="${QODIQA_DR_RETAIN_MONTHLY}"
+              securityContext:
+                readOnlyRootFilesystem: true
+                allowPrivilegeEscalation: false
+                capabilities: { drop: [ALL] }
+              envFrom:
+                - configMapRef: { name: qodiqa-backup-config }
+              env:
+                - name: QODIQA_BACKUP_METRICS_FILE
+                  value: "/dr-backups/metrics/qodiqa_dr_backup.prom"
+                - name: PGUSER
+                  valueFrom: { configMapKeyRef: { name: qodiqa-backup-config, key: PGUSER } }
+                - name: PGPASSWORD
+                  valueFrom: { secretKeyRef: { name: qodiqa-secrets, key: postgres-backup-password } }
+                - name: PGHOST
+                  valueFrom: { configMapKeyRef: { name: qodiqa-backup-config, key: PGHOST } }
+                - name: PGPORT
+                  valueFrom: { configMapKeyRef: { name: qodiqa-backup-config, key: PGPORT } }
+                - name: PGDATABASE
+                  valueFrom: { configMapKeyRef: { name: qodiqa-backup-config, key: PGDATABASE } }
+                - name: QODIQA_PG_URL
+                  value: "postgresql://$(PGUSER):$(PGPASSWORD)@$(PGHOST):$(PGPORT)/$(PGDATABASE)?sslmode=verify-full"
+                # `verify-full` is what the bundled node-postgres ALREADY does for
+                # `sslmode=require` (it aliases prefer/require/verify-ca to verify-full and warns that its next major
+                # adopts the weaker libpq meaning) — spelling it out keeps certificate verification across that upgrade.
+                # Private-CA / managed-DB certificate: append &sslrootcert=/etc/qodiqa-pg-tls/ca.crt (Secret qodiqa-pg-tls).
+                - name: QODIQA_KEYS_PATH
+                  value: "/keystore/keys.json"
+                - name: QODIQA_KEYS_ARCHIVE_PATH
+                  value: "/keystore/key-archive.json"
+                # the DR JSON export holds every tenant's rows — it is encrypted at rest with the
+                # SAME scheme and keys as qodiqa-pg-backup (scripts/dr/archiveCrypto.js = pg-backup.sh's openssl
+                # AES-256-CBC/PBKDF2 + HMAC encrypt-then-MAC seal). Pinned here as well as in qodiqa-backup-config so an
+                # overlay that drops the ConfigMap key cannot silently re-enable plaintext; backup.js refuses to write
+                # without the key (BACKUP_ENCRYPTION_REQUIRED) and verify.js refuses a plaintext backup. The secret keys
+                # are REQUIRED (not optional): the pod does not start without them.
+                - name: QODIQA_BACKUP_REQUIRE_ENCRYPTION
+                  value: "true"
+                - name: QODIQA_BACKUP_ENCRYPTION_KEY
+                  valueFrom: { secretKeyRef: { name: qodiqa-secrets, key: backup-encryption-key } }
+                - name: QODIQA_BACKUP_HMAC_KEY  # dedicated seal key, never the application KEK
+                  valueFrom: { secretKeyRef: { name: qodiqa-secrets, key: backup-hmac-key } }
+                - name: ALERT_WEBHOOK_URL
+                  valueFrom: { secretKeyRef: { name: qodiqa-secrets, key: alert-webhook-url, optional: true } }
+              volumeMounts:
+                - { name: dr-backups, mountPath: /dr-backups }
+                - { name: keystore, mountPath: /keystore, readOnly: true }
+                - { name: tmp, mountPath: /tmp }
+                - { name: pg-tls, mountPath: /etc/qodiqa-pg-tls, readOnly: true }   # optional PG CA (backup-configmap.yaml PGSSLMODE)
+              resources:
+                requests: { cpu: 100m, memory: 128Mi }
+                limits:   { cpu: 1,    memory: 512Mi }
+          volumes:
+            - name: dr-backups
+              persistentVolumeClaim: { claimName: qodiqa-dr-backups }
+            - name: keystore
+              persistentVolumeClaim: { claimName: qodiqa-keystore, readOnly: true }
+            - name: tmp
+              emptyDir: { sizeLimit: 256Mi }   #
+            - name: pg-tls
+              secret: { secretName: qodiqa-pg-tls, optional: true, defaultMode: 0440 }
+---
+# Scheduled restore validation (scripts/dr/cycle.js) — backs up, restores
+# into the ISOLATED qodiqa_restore_validation database (never the live one —
+# restore.js itself refuses to write into a non-empty targetRoot, and
+# postgres.js's restore path uses QODIQA_PG_RESTORE_URL specifically so it
+# never restores over the live database either), then validates via the real
+# production modules. See the "Known scope boundary" note at the top of this
+# file: in this standalone-pod topology, expect
+# auditChainValid/policyStoreValid to report false (file components not
+# reachable here) while postgresValid reports the meaningful, achievable
+# signal — check DR_VALIDATE_COMPLETE in this Job's logs for the per-probe
+# breakdown rather than only the aggregate exit code.
+apiVersion: batch/v1
+kind: CronJob
+metadata:
+  name: qodiqa-dr-restore-validation
+  namespace: qodiqa
+  labels:
+    app.kubernetes.io/name:      qodiqa
+    app.kubernetes.io/component: backup
+spec:
+  schedule: "0 5 * * 1"
+  timeZone: "Etc/UTC"
+  concurrencyPolicy: Forbid
+  startingDeadlineSeconds: 600
+  successfulJobsHistoryLimit: 3
+  failedJobsHistoryLimit: 3
+  jobTemplate:
+    spec:
+      backoffLimit: 1
+      activeDeadlineSeconds: 1800
+      template:
+        metadata:
+          labels:
+            app.kubernetes.io/name:      qodiqa
+            app.kubernetes.io/component: backup
+        spec:
+          serviceAccountName: qodiqa-backup   # dedicated token-less SA (base/serviceaccount.yaml)
+          automountServiceAccountToken: false
+          restartPolicy: OnFailure
+          securityContext:
+            runAsNonRoot: true
+            runAsUser: 1000
+            runAsGroup: 1000
+            fsGroup: 1000
+            seccompProfile: { type: RuntimeDefault }
+          containers:
+            - name: dr-restore-validation
+              image: YOUR_REGISTRY/qodiqa-backup:1.0.0
+              imagePullPolicy: Always
+              command: ["node", "scripts/dr/cycle.js"]
+              securityContext:
+                readOnlyRootFilesystem: true
+                allowPrivilegeEscalation: false
+                capabilities: { drop: [ALL] }
+              envFrom:
+                - configMapRef: { name: qodiqa-backup-config }
+              env:
+                - name: QODIQA_BACKUP_METRICS_FILE
+                  value: "/dr-backups/metrics/qodiqa_dr_restore_validation.prom"
+                - name: PGUSER
+                  valueFrom: { configMapKeyRef: { name: qodiqa-backup-config, key: PGUSER } }
+                - name: PGPASSWORD   # the DUMP side reads as qodiqa_backup (PGUSER in the ConfigMap)
+                  valueFrom: { secretKeyRef: { name: qodiqa-secrets, key: postgres-backup-password } }
+                - name: QODIQA_PG_RESTORE_USER   # the restore-target WRITER — unchanged identity, own credentials
+                  valueFrom: { configMapKeyRef: { name: qodiqa-backup-config, key: QODIQA_PG_RESTORE_USER } }
+                - name: QODIQA_PG_RESTORE_PASSWORD
+                  valueFrom: { secretKeyRef: { name: qodiqa-secrets, key: postgres-password } }
+                - name: PGHOST
+                  valueFrom: { configMapKeyRef: { name: qodiqa-backup-config, key: PGHOST } }
+                - name: PGPORT
+                  valueFrom: { configMapKeyRef: { name: qodiqa-backup-config, key: PGPORT } }
+                - name: PGDATABASE
+                  valueFrom: { configMapKeyRef: { name: qodiqa-backup-config, key: PGDATABASE } }
+                - name: QODIQA_PG_RESTORE_DATABASE
+                  valueFrom: { configMapKeyRef: { name: qodiqa-backup-config, key: QODIQA_PG_RESTORE_DATABASE } }
+                - name: QODIQA_PG_URL
+                  value: "postgresql://$(PGUSER):$(PGPASSWORD)@$(PGHOST):$(PGPORT)/$(PGDATABASE)?sslmode=verify-full"
+                - name: QODIQA_PG_RESTORE_URL
+                  value: "postgresql://$(QODIQA_PG_RESTORE_USER):$(QODIQA_PG_RESTORE_PASSWORD)@$(PGHOST):$(PGPORT)/$(QODIQA_PG_RESTORE_DATABASE)?sslmode=verify-full"
+                - name: DR_CYCLE_DIR
+                  value: "/tmp"
+                # the drill's own backup (in /tmp) is encrypted like qodiqa-dr-backup's, and restore verifies
+                # the HMAC seal before decrypting — so this job needs both keys too.
+                - name: QODIQA_BACKUP_REQUIRE_ENCRYPTION
+                  value: "true"
+                - name: QODIQA_BACKUP_ENCRYPTION_KEY
+                  valueFrom: { secretKeyRef: { name: qodiqa-secrets, key: backup-encryption-key } }
+                - name: QODIQA_BACKUP_HMAC_KEY
+                  valueFrom: { secretKeyRef: { name: qodiqa-secrets, key: backup-hmac-key } }
+                - name: ALERT_WEBHOOK_URL
+                  valueFrom: { secretKeyRef: { name: qodiqa-secrets, key: alert-webhook-url, optional: true } }
+              volumeMounts:
+                - { name: dr-backups, mountPath: /dr-backups }
+                - { name: tmp, mountPath: /tmp }
+                - { name: pg-tls, mountPath: /etc/qodiqa-pg-tls, readOnly: true }   # optional PG CA (backup-configmap.yaml PGSSLMODE)
+              resources:
+                requests: { cpu: 200m, memory: 256Mi }
+                limits:   { cpu: 1,    memory: 1Gi }
+          volumes:
+            - name: dr-backups
+              persistentVolumeClaim: { claimName: qodiqa-dr-backups }
+            - name: tmp
+              # bounded node-disk use. DR_CYCLE_DIR=/tmp holds one full DR backup during validation —
+              # raise this (overlay patch) if a single qodiqa-dr-backups run is larger than 8Gi.
+              emptyDir: { sizeLimit: 8Gi }   #
+            - name: pg-tls
+              secret: { secretName: qodiqa-pg-tls, optional: true, defaultMode: 0440 }
+---
+# WAL-archive staleness/integrity verification (remediation — continuous
+# WAL archiving). Deliberately a SEPARATE, cheap, 5-minute CronJob rather
+# than folded into qodiqa-pg-backup-verify above: that job's full-table-
+# coverage check is slower and only meaningful once a day, whereas this one
+# must run on the same cadence as archive_timeout to actually prove the
+# RPO — coupling them would force a choice between "verify hourly" (loses
+# the point) or "run the expensive check every 5 minutes" (wasteful).
+#
+# Requires the PostgreSQL server's own archive_command to be configured to
+# write into the same storage QODIQA_WAL_ARCHIVE_DIR resolves to below (see
+# docs/operations/backup-runbook.md's WAL-archiving prerequisites block) —
+# this CronJob only verifies archiving is happening, it cannot itself
+# configure the external/managed PostgreSQL server to do so.
+apiVersion: batch/v1
+kind: CronJob
+metadata:
+  name: qodiqa-pg-backup-verify-wal
+  namespace: qodiqa
+  labels:
+    app.kubernetes.io/name:      qodiqa
+    app.kubernetes.io/component: backup
+spec:
+  schedule: "*/5 * * * *"
+  timeZone: "Etc/UTC"
+  concurrencyPolicy: Forbid
+  startingDeadlineSeconds: 120
+  successfulJobsHistoryLimit: 3
+  failedJobsHistoryLimit: 3
+  jobTemplate:
+    spec:
+      backoffLimit: 1   # matches qodiqa-pg-backup-verify: a stale/failed check must never be masked by silent retry
+      activeDeadlineSeconds: 180
+      template:
+        metadata:
+          labels:
+            app.kubernetes.io/name:      qodiqa
+            app.kubernetes.io/component: backup
+        spec:
+          serviceAccountName: qodiqa-backup   # dedicated token-less SA (base/serviceaccount.yaml)
+          automountServiceAccountToken: false
+          restartPolicy: OnFailure
+          securityContext:
+            runAsNonRoot: true
+            runAsUser: 1000
+            runAsGroup: 1000
+            fsGroup: 1000
+            seccompProfile: { type: RuntimeDefault }
+          containers:
+            - name: pg-wal-archive-verify
+              image: YOUR_REGISTRY/qodiqa-backup:1.0.0
+              imagePullPolicy: Always
+              command: ["/app/scripts/pg-wal-archive.sh", "--verify"]
+              securityContext:
+                readOnlyRootFilesystem: true
+                allowPrivilegeEscalation: false
+                capabilities: { drop: [ALL] }
+              envFrom:
+                - configMapRef: { name: qodiqa-backup-config }
+              env:
+                - name: QODIQA_BACKUP_HMAC_KEY  # dedicated seal key, never the application KEK
+                  valueFrom: { secretKeyRef: { name: qodiqa-secrets, key: backup-hmac-key } }
+                - name: ALERT_WEBHOOK_URL
+                  valueFrom: { secretKeyRef: { name: qodiqa-secrets, key: alert-webhook-url, optional: true } }
+              volumeMounts:
+                - { name: pg-backups, mountPath: /backups/pg }
+                - { name: tmp, mountPath: /tmp }
+              resources:
+                requests: { cpu: 50m,  memory: 64Mi }
+                limits:   { cpu: 200m, memory: 128Mi }
+          volumes:
+            - name: pg-backups
+              persistentVolumeClaim: { claimName: qodiqa-pg-backups }
+            - name: tmp
+              emptyDir: { sizeLimit: 256Mi }   #

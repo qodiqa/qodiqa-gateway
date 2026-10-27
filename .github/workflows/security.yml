@@ -1,0 +1,163 @@
+# QODIQA Security Pipeline —
+#
+# Runs on every pull request and push to main/release branches.
+# All jobs must pass before merge is permitted.
+#
+# Jobs:
+#   dependency-audit   — npm audit + supply chain verification
+#   secret-scan        — gitleaks full history scan
+#   sbom               — generate and upload SBOM artifact
+#   dep-verify         — installed deps match lock file
+#
+# This workflow previously also had a "Security Test Suite" job that ran
+# `npm test -- --testPathPattern='phase46'` — i.e. only the 6-file phase46
+# hardening pattern — under a name that strongly implied it covered the
+# repository's actual security/adversarial/red-team test suite. It did not:
+# the real suite (security|adversarial|replayRegression patterns, plus the
+# root-level protocol harness scripts) never ran in CI at all. That job has
+# been removed from here and replaced by test.yml's `security-redteam` job,
+# which runs both the phase46 pattern AND the real security/adversarial/
+# replay-regression suite under an accurately-named job — see test.yml.
+
+name: Security
+
+on:
+  # callable by .github/workflows/release.yml, which requires every gate to pass before a release.
+  workflow_call: {}
+  push:
+    branches: [main, master, release/**, hotfix/**]
+  pull_request:
+    branches: [main, master, release/**]
+  schedule:
+    # Run daily at 06:00 UTC to catch newly published CVEs
+    - cron: '0 6 * * *'
+
+permissions:
+  contents:      read
+  security-events: write   # For SARIF upload to GitHub Security tab
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.event_name }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  # ── Job 1: npm audit + supply chain ────────────────────────────────────────
+  dependency-audit:
+    name: Dependency Audit
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+        with:
+          fetch-depth: 1
+
+      - name: Setup Node.js
+        uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4
+        with:
+          node-version: '22'
+          cache: 'npm'
+
+      - name: Install dependencies (clean install)
+        run: npm ci --omit=dev --ignore-scripts
+
+      - name: npm audit (high + critical)
+        run: node scripts/audit-gate.js
+        # Non-zero exit fails the job
+
+      - name: Supply chain verification
+        run: node scripts/verify-supply-chain.js
+        env:
+          SUPPLY_CHAIN_FAIL_ON_WARN: 'false'
+          NPM_AUDIT_LEVEL: 'high'
+
+  # ── Job 2: secret scanning ──────────────────────────────────────────────────
+  # `npm run security:scan-secrets` (scripts/scan-secrets.sh, the same
+  # entry point the local pre-commit hook uses) is the mandatory, required
+  # check here — not just the gitleaks-action below — so that a repo-native
+  # `npm run` invocation is what actually gates merge, independent of any
+  # third-party action's internals.
+  secret-scan:
+    name: Secret Scan
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout (full history)
+        uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+        with:
+          fetch-depth: 0   # Full history required for gitleaks detect
+
+      - name: Setup Node.js
+        uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4
+        with:
+          node-version: '22'
+          cache: 'npm'
+
+      - name: Install gitleaks
+        run: |
+          # pinned release binary, checksum verified
+          curl -sSfL -o "$RUNNER_TEMP/gitleaks.tgz" https://github.com/gitleaks/gitleaks/releases/download/v8.30.1/gitleaks_8.30.1_linux_x64.tar.gz
+          echo "551f6fc83ea457d62a0d98237cbad105af8d557003051f41f3e7ca7b3f2470eb  $RUNNER_TEMP/gitleaks.tgz" | sha256sum -c -
+          mkdir -p "$HOME/.local/bin" && tar xzf "$RUNNER_TEMP/gitleaks.tgz" -C "$HOME/.local/bin" gitleaks
+          echo "$HOME/.local/bin" >> "$GITHUB_PATH"
+
+      - name: npm run security:scan-secrets
+        run: npm run security:scan-secrets
+
+
+
+  # ── Job 3: SBOM generation ──────────────────────────────────────────────────
+  sbom:
+    name: Generate SBOM
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+        with:
+          fetch-depth: 1
+
+      - name: Setup Node.js
+        uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4
+        with:
+          node-version: '22'
+          cache: 'npm'
+
+      - name: Install production dependencies
+        run: npm ci --omit=dev --ignore-scripts
+
+      - name: Generate CycloneDX SBOM
+        run: node scripts/generate-sbom.js --prod-only --output sbom.cdx.json
+
+      - name: Upload SBOM artifact
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
+        with:
+          name: sbom-${{ github.sha }}
+          path: sbom.cdx.json
+          retention-days: 90
+
+      - name: Upload SBOM to GitHub Dependency Graph
+        uses: advanced-security/spdx-dependency-submission-action@5530bab9ee4bbe66420ce8280624036c77f89746 # v0.1.1
+        continue-on-error: true
+        with:
+          filePath: '.'
+          filePattern: 'sbom.cdx.json'
+
+  # ── Job 4: dependency integrity verification ─────────────────────────────────
+  dep-verify:
+    name: Dependency Integrity
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+        with:
+          fetch-depth: 1
+
+      - name: Setup Node.js
+        uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4
+        with:
+          node-version: '22'
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: npm ci --omit=dev --ignore-scripts
+
+      - name: Verify dependency integrity
+        run: node scripts/verify-deps.js

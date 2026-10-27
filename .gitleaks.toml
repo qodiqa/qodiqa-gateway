@@ -1,0 +1,324 @@
+# Gitleaks Configuration —
+# https://github.com/gitleaks/gitleaks
+#
+# Scans for secrets committed to git history or present in the working tree.
+# Run via: ./scripts/scan-secrets.sh
+# Pre-commit: gitleaks protect --staged --config=.gitleaks.toml
+#
+# Rule priority: custom rules defined here supplement gitleaks' built-in ruleset.
+
+title = "QODIQA Secret Scanning Configuration"
+
+[extend]
+# Use gitleaks built-in rules as the base (includes AWS keys, GCP, Azure,
+# GitHub tokens, generic high-entropy patterns, etc.)
+useDefault = true
+
+# ── QODIQA-specific rules ────────────────────────────────────────────────────
+
+[[rules]]
+id          = "qodiqa-kek"
+description = "QODIQA Key Encryption Key (64 hex chars)"
+regex       = '''(?i)QODIQA_KEY_ENCRYPTION_KEY\s*=\s*[0-9a-f]{64}'''
+tags        = ["secret", "key", "qodiqa"]
+
+[[rules]]
+id          = "qodiqa-ops-token"
+description = "QODIQA ops bearer token (ok_ prefix)"
+regex       = '''(?i)ok_[0-9a-f]{64}'''
+tags        = ["secret", "token", "qodiqa"]
+
+[[rules]]
+id          = "qodiqa-signing-api-key"
+description = "QODIQA per-identity signing API key (sk_ prefix) — TRUST-1"
+regex       = '''(?i)sk_[0-9a-f]{64}'''
+tags        = ["secret", "token", "qodiqa"]
+
+[[rules]]
+id          = "ed25519-private-key-pem"
+description = "Ed25519 private key in PEM format"
+regex       = '''-----BEGIN (PRIVATE|EC|RSA) KEY-----'''
+tags        = ["key", "pem", "private"]
+
+[[rules]]
+id          = "redis-password-env"
+description = "Redis password in environment variable"
+regex       = '''(?i)REDIS_PASSWORD\s*=\s*[^\s]{8,}'''
+tags        = ["secret", "redis"]
+
+[[rules]]
+id          = "pg-password-env"
+description = "PostgreSQL password in connection string or env var"
+regex       = '''(?i)(QODIQA_PG_PASSWORD\s*=\s*[^\s]{4,}|postgresql?://[^:]+:[^@]+@)'''
+tags        = ["secret", "postgres"]
+
+[[rules]]
+id          = "openai-key"
+description = "OpenAI API key"
+regex       = '''sk-[A-Za-z0-9]{20,}'''
+tags        = ["key", "openai", "api"]
+
+# ── Allowlist ────────────────────────────────────────────────────────────────
+# the previous version of this
+# allowlist blanket-exempted every test file, every harness/example script, and
+# all of docs/ (including README.md/QUICKSTART.md) by PATH alone — meaning a real
+# secret accidentally pasted into any test file or doc page would never be caught
+# by this scan, regardless of its content. Path-based blanket exemptions removed;
+# only a true fixture FILE (whose entire purpose is to show example env var
+# formats) is exempted by path. Everything else relies on the precise, content-
+# based `regexes` allowlist below (placeholder markers, all-zero/all-F dummy
+# keys) — narrow enough that a REAL secret's actual value still gets caught
+# wherever it appears, test/docs included.
+
+[[allowlists]]
+description = "QODIQA false-positive suppression"
+
+# Filenames where secret-like patterns are expected (test fixtures, examples).
+# Kept narrow and commented — see the note above this section for why the
+# broader test/docs path exemptions were removed.
+# the former whole-file exemption of deploy/env/production.env.example was removed — a
+# real value pasted into the example would have been invisible. Its placeholders are covered by the value patterns
+# below (REPLACE_WITH…, <YOUR_…>), so the file stays clean while a real secret in it is reported.
+paths = []
+
+# Regex patterns that should never be flagged regardless of file
+regexes = [
+  # Placeholder values used in documentation
+  '''REPLACE_WITH''',
+  '''your-.*-here''',
+  '''<YOUR_''',
+  # the literal placeholder token in documented connection-string templates (deploy/env/production.env.example PG_URL comment)
+  '''<password>''',
+  # Test dummy keys (all-zero, all-F, sequential patterns)
+  '''0{64}''',
+  '''f{64}''',
+  # npm integrity hashes (sha512 prefix)
+  '''sha512-[A-Za-z0-9+/=]{86,88}''',
+  # Git commit SHAs — ANCHORED: the unanchored [0-9a-f]{40} also matched inside every 64-hex KEK,
+  # invariant secret and ok_/sk_ key, so the scanner could never report one. Only a value that IS exactly a
+  # 40-hex string (a commit id) is exempt now.
+  '''^[0-9a-f]{40}$''',
+  # exact fixture-value exemptions, added after removing the
+  # blanket test/docs path exemptions above surfaced 11 findings, all confirmed
+  # test fixtures (never real credentials). Each entry matches ONLY its own
+  # literal test string, not a path or a broad pattern, so a genuinely leaked
+  # secret with different content still gets caught wherever it appears.
+  '''DECOY_SECRET_51b7e02fa4''',                                 # src/api/routes/__tests__/tenantPortalUsage.test.js
+  '''sk-realkey1234567890realkey12345678''',                     # src/infra/secrets/secretValidation.test.js — deliberately realistic-looking fixture for the "is this a placeholder" validator test
+  '''9f8e7d6c5b4a3f2e1d0c9b8a7f6e5d4c''',                         # src/infra/secrets/secretValidation.test.js
+  '''whatever-is-already-set''',                                 # src/infra/configSecrets/__tests__/envProvider.test.js
+  '''leftover-plaintext-from-dotenv-2f9a7c1e''',                 # src/infra/configSecrets/__tests__/negativeFailClosed.test.js
+  '''REDIS_PASSWORD\s*=\s*restore;''',                           # src/infra/configSecrets/__tests__/envProvider.test.js — variable name, not a value
+  '''REDIS_PASSWORD\s*=\s*'secret';''',                          # src/infra/redis/clientConfig.test.js
+  '''REDIS_PASSWORD\s*=\s*'testpass';''',                        # src/infra/redis/clientConfig.test.js
+  '''super-secret-redis-pass''',                                 # src/runtime/__tests__/startupDiagnostics.test.js
+  # src/alerting/notification/channels/__tests__/EmailChannel.smtp.test.js — a
+  # freshly-generated, never-used-anywhere-else RSA test key for exercising SMTP/TLS
+  # config handling; unrelated to QODIQA's own Ed25519 signing keys. This exempts
+  # the base64 body, caught by the `private-key` rule (which captures the full
+  # key). The SAME fixture also trips `ed25519-private-key-pem` (a header-only
+  # rule whose capture is just the generic word "PRIVATE" — too broad to
+  # exempt via regex without also hiding a real key's header) — that one is
+  # exempted precisely, by fingerprint, in .gitleaksignore instead.
+  '''MIIEvQIBADANBgkqhkiG9w0BAQEFAASCBKcwggSjAgEAAoIBAQCpR1zWChGTBkLI''',
+  # A canary-test value for the docs/ scanning check.
+  '''sk-abc123XYZ789def456UVW321ghi000jkl999''',
+  # ECS: the throwaway keys of test/pgBackupEncryption.test.js (never used anywhere else)
+  '''dep12-test-encryption-key-0123456789abcdef''',
+  '''dep12-test-hmac-key-fedcba9876543210-xyz''',
+]
+
+# Specific commits to ignore (after review — add only after confirming false positive)
+# commits = []
+
+# Reviewed findings: each block allows one rule in one file; the reason is in the description.
+[[allowlists]]
+description = "test fixture or published test vector with a synthetic value"
+targetRules = ["pg-password-env"]
+paths = ['''^deploy/kubernetes/base/backup-cronjobs\.yaml$''']
+
+[[allowlists]]
+description = "documentation or deployment example with a placeholder value (base64 of REPLACE_WITH_REAL_..., <PASSWORD>, or user:pass)"
+targetRules = ["generic-api-key"]
+paths = ['''^deploy/kubernetes/base/secret\.yaml$''']
+
+[[allowlists]]
+description = "documentation or deployment example with a placeholder value (base64 of REPLACE_WITH_REAL_..., <PASSWORD>, or user:pass)"
+targetRules = ["generic-api-key"]
+paths = ['''^deploy/kubernetes/overlays/examples/vault-transit/secret\.yaml$''']
+
+[[allowlists]]
+description = "documentation or deployment example with a placeholder value (base64 of REPLACE_WITH_REAL_..., <PASSWORD>, or user:pass)"
+targetRules = ["pg-password-env"]
+paths = ['''^deploy/systemd/backup\.env\.example$''']
+
+[[allowlists]]
+description = "documentation or deployment example with a placeholder value (base64 of REPLACE_WITH_REAL_..., <PASSWORD>, or user:pass)"
+targetRules = ["pg-password-env"]
+paths = ['''^docs/configuration/reference\.md$''']
+
+[[allowlists]]
+description = "documentation or deployment example with a placeholder value (base64 of REPLACE_WITH_REAL_..., <PASSWORD>, or user:pass)"
+targetRules = ["redis-password-env"]
+paths = ['''^docs/deployment/redis-tls\.md$''']
+
+[[allowlists]]
+description = "documentation or deployment example with a placeholder value (base64 of REPLACE_WITH_REAL_..., <PASSWORD>, or user:pass)"
+targetRules = ["pg-password-env"]
+paths = ['''^docs/guides/quickstart\.md$''']
+
+[[allowlists]]
+description = "documentation or deployment example with a placeholder value (base64 of REPLACE_WITH_REAL_..., <PASSWORD>, or user:pass)"
+targetRules = ["redis-password-env"]
+paths = ['''^docs/guides/quickstart\.md$''']
+
+[[allowlists]]
+description = "test fixture or published test vector with a synthetic value"
+targetRules = ["sentry-access-token"]
+paths = ['''^sdk/go/testdata/artifact-v1\.json$''']
+
+[[allowlists]]
+description = "test fixture or published test vector with a synthetic value"
+targetRules = ["sentry-access-token"]
+paths = ['''^sdk/java/src/test/resources/vectors/artifact-v1\.json$''']
+
+[[allowlists]]
+description = "test fixture or published test vector with a synthetic value"
+targetRules = ["ed25519-private-key-pem"]
+paths = ['''^services/__tests__/logSanitizer\.test\.js$''']
+
+[[allowlists]]
+description = "test fixture or published test vector with a synthetic value"
+targetRules = ["generic-api-key"]
+paths = ['''^services/__tests__/logSanitizer\.test\.js$''']
+
+[[allowlists]]
+description = "test fixture or published test vector with a synthetic value"
+targetRules = ["private-key"]
+paths = ['''^services/__tests__/logSanitizer\.test\.js$''']
+
+[[allowlists]]
+description = "test fixture or published test vector with a synthetic value"
+targetRules = ["stripe-access-token"]
+paths = ['''^services/__tests__/logSanitizer\.test\.js$''']
+
+[[allowlists]]
+description = "test fixture or published test vector with a synthetic value"
+targetRules = ["generic-api-key"]
+paths = ['''^src/core/audit/anchoring/__tests__/execWitness\.test\.js$''']
+
+[[allowlists]]
+description = "test fixture or published test vector with a synthetic value"
+targetRules = ["generic-api-key"]
+paths = ['''^src/infra/secrets/secretValidation\.test\.js$''']
+
+[[allowlists]]
+description = "test fixture or published test vector with a synthetic value"
+targetRules = ["generic-api-key"]
+paths = ['''^src/validation/__tests__/protocolSpecVectors\.conformance\.test\.js$''']
+
+[[allowlists]]
+description = "test fixture or published test vector with a synthetic value"
+targetRules = ["sentry-access-token"]
+paths = ['''^test-vectors/artifact-v1\.json$''']
+
+[[allowlists]]
+description = "test fixture or published test vector with a synthetic value"
+targetRules = ["generic-api-key"]
+paths = ['''^tests/acceptance/evidence/AT-098-restore-validate\.txt$''']
+
+[[allowlists]]
+description = "test fixture or published test vector with a synthetic value"
+targetRules = ["pg-password-env"]
+paths = ['''^tests/acceptance/helpers/__tests__/buildRawEnvCredentials\.test\.js$''']
+
+[[allowlists]]
+description = "test fixture or published test vector with a synthetic value"
+targetRules = ["pg-password-env"]
+paths = ['''^test/integration/alertStoreDedup\.integration\.test\.js$''']
+
+[[allowlists]]
+description = "test fixture or published test vector with a synthetic value"
+targetRules = ["pg-password-env"]
+paths = ['''^test/integration/audit-chain-distributed\.integration\.test\.js$''']
+
+[[allowlists]]
+description = "test fixture or published test vector with a synthetic value"
+targetRules = ["pg-password-env"]
+paths = ['''^test/integration/audit-chain-verifier-pg\.integration\.test\.js$''']
+
+[[allowlists]]
+description = "test fixture or published test vector with a synthetic value"
+targetRules = ["pg-password-env"]
+paths = ['''^test/integration/auditChainCircuitOpenRecovery\.integration\.test\.js$''']
+
+[[allowlists]]
+description = "test fixture or published test vector with a synthetic value"
+targetRules = ["pg-password-env"]
+paths = ['''^test/integration/auditChainPoolExhaustionRecovery\.integration\.test\.js$''']
+
+[[allowlists]]
+description = "test fixture or published test vector with a synthetic value"
+targetRules = ["pg-password-env"]
+paths = ['''^test/integration/consentActionSemantics\.integration\.test\.js$''']
+
+[[allowlists]]
+description = "test fixture or published test vector with a synthetic value"
+targetRules = ["pg-password-env"]
+paths = ['''^test/dr/preLiveDeployHardening\.test\.js$''']
+
+[[allowlists]]
+description = "test fixture or published test vector with a synthetic value"
+targetRules = ["pg-password-env"]
+paths = ['''^test/integration/evidenceVerifierRls\.integration\.test\.js$''']
+
+[[allowlists]]
+description = "test fixture or published test vector with a synthetic value"
+targetRules = ["pg-password-env"]
+paths = ['''^test/integration/replayHorizonPgUniqueness\.integration\.test\.js$''']
+
+[[allowlists]]
+description = "test fixture or published test vector with a synthetic value"
+targetRules = ["pg-password-env"]
+paths = ['''^test/integration/mirrorConsistencyCheckConcurrentReorder\.integration\.test\.js$''']
+
+[[allowlists]]
+description = "test fixture or published test vector with a synthetic value"
+targetRules = ["pg-password-env"]
+paths = ['''^test/persistence-recovery-durability\.test\.js$''']
+
+[[allowlists]]
+description = "test fixture or published test vector with a synthetic value"
+targetRules = ["generic-api-key"]
+paths = ['''^test/pgBackupSealPrimitive\.test\.js$''']
+
+[[allowlists]]
+description = "test fixture or published test vector with a synthetic value"
+targetRules = ["pg-password-env"]
+paths = ['''^test/integration/tenantConfigStore\.integration\.test\.js$''']
+
+[[allowlists]]
+description = "test fixture or published test vector with a synthetic value"
+targetRules = ["pg-password-env"]
+paths = ['''^test/integration/usageMeteringPg\.integration\.test\.js$''']
+
+[[allowlists]]
+description = "test fixture or published test vector with a synthetic value"
+targetRules = ["pg-password-env"]
+paths = ['''^test/integration/platformEventsAggregation\.integration\.test\.js$''']
+
+[[allowlists]]
+description = "test fixture or published test vector with a synthetic value"
+targetRules = ["pg-password-env"]
+paths = ['''^test/integration/requestTrails\.integration\.test\.js$''']
+
+[[allowlists]]
+description = "test fixture or published test vector with a synthetic value"
+targetRules = ["pg-password-env"]
+paths = ['''^test/integration/signedCheckpoints\.integration\.test\.js$''']
+
+[[allowlists]]
+description = "test fixture or published test vector with a synthetic value"
+targetRules = ["pg-password-env"]
+paths = ['''^test/integration/consumerConsistencyPg\.integration\.test\.js$''']
+

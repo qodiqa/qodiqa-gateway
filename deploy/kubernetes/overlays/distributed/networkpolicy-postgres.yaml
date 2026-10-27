@@ -1,0 +1,55 @@
+# PostgreSQL egress for the distributed audit-ordering topology (
+# finding this NetworkPolicy did not previously exist anywhere in the
+# repository, so the Deployment's pods had no path to PostgreSQL despite
+# QODIQA_PG_HOST/QODIQA_AUDIT_ORDERING_MODE=distributed requiring one).
+#
+# Scoped to `topology: distributed` (in addition to the usual
+# app.kubernetes.io/name/component labels) so this rule can never
+# accidentally widen egress for the single-node overlay's pods — those never
+# carry this label and get their own, identically-scoped PG egress from
+# overlays/single-node/networkpolicy-postgres.yaml.
+#
+# base/networkpolicy.yaml already grants this same pod selector (minus the
+# topology label) egress to Redis, the OpenAI API, and DNS — this file is
+# purely additive, egress rules from different NetworkPolicy objects
+# selecting the same pods are unioned by Kubernetes, not replaced.
+#
+# The rule below targets an in-namespace PostgreSQL Service via podSelector,
+# mirroring this repository's existing Redis egress pattern
+# (base/networkpolicy.yaml's qodiqa-egress-redis, which selects
+# `app.kubernetes.io/name: redis` — the DNS name `postgres-service` used in
+# configmap-distributed.yaml's QODIQA_PG_HOST mirrors `redis-service` the
+# same way). If your PostgreSQL is instead an external/managed instance
+# (RDS, Cloud SQL, Azure Database for PostgreSQL) with no in-cluster pod to
+# select, replace the `to.podSelector` below with an `ipBlock` covering the
+# database's CIDR, or a `namespaceSelector` + `podSelector` pair if it is
+# reachable in-cluster via a different namespace (e.g. a proxy/ExternalName
+# Service). Do not widen this to 0.0.0.0/0 — scope it to the actual
+# destination, as the existing OpenAI egress rule does.
+#
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: qodiqa-egress-postgres
+  namespace: qodiqa
+  labels:
+    app.kubernetes.io/name:      qodiqa
+    app.kubernetes.io/component: gateway
+    topology:                    distributed
+spec:
+  podSelector:
+    matchLabels:
+      app.kubernetes.io/name:      qodiqa
+      app.kubernetes.io/component: gateway
+      topology:                    distributed
+  policyTypes:
+    - Egress
+  egress:
+    # PostgreSQL (in-cluster Service, or adjust to ipBlock/namespaceSelector — see header comment)
+    - to:
+        - podSelector:
+            matchLabels:
+              app.kubernetes.io/name: postgres
+      ports:
+        - protocol: TCP
+          port:     5432

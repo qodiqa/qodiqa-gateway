@@ -1,0 +1,273 @@
+{
+ "format": "qodiqa-vectors/1",
+ "family": "audit-anchor",
+ "generatedBy": "scripts/protocol/gen-audit-vectors.js",
+ "specVersion": "v2-freeze-1",
+ "mode": "verify",
+ "nowMs": 0,
+ "inputSchema": {
+  "type": "object",
+  "description": "one line of anchors/<date>.jsonl; expected.digest is the SHA-256 (hex) of \"QODIQA::EXTERNAL_ANCHOR::V1\" followed by the canonical form of the statement, or expectedError.code is ANCHOR_LINE_MALFORMED / ANCHOR_DIGEST_MISMATCH (docs/protocol/VECTORS-FORMAT.md section 3.2)",
+  "required": [
+   "line"
+  ],
+  "properties": {
+   "line": {
+    "type": "string",
+    "description": "the raw text of one JSONL line"
+   }
+  }
+ },
+ "cases": [
+  {
+   "id": "AUDIT-ANCHOR-001",
+   "description": "a statement",
+   "input": {
+    "line": "{\"digest\":\"6e65d8b3e2d43cd0a23b1d33d5b8370fa55132f3aa65452c298a7a75e45242f9\",\"statement\":{\"v\":1,\"checkpointId\":\"0b8e6c1e-52a4-4a3b-9d8f-0123456789ab\",\"payloadHash\":\"aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa\",\"chainLength\":1500,\"headHash\":\"bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb\",\"createdAt\":\"2026-10-21T00:00:00.000Z\"}}"
+   },
+   "expected": {
+    "digest": "6e65d8b3e2d43cd0a23b1d33d5b8370fa55132f3aa65452c298a7a75e45242f9"
+   }
+  },
+  {
+   "id": "AUDIT-ANCHOR-002",
+   "description": "the first position",
+   "input": {
+    "line": "{\"digest\":\"0cdb1d3a6c54ef7fdeadfd23774687e707f60b98954ed79adc4bfe4b50c57a3e\",\"statement\":{\"v\":1,\"checkpointId\":\"0b8e6c1e-52a4-4a3b-9d8f-0123456789ab\",\"payloadHash\":\"aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa\",\"chainLength\":1,\"headHash\":\"bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb\",\"createdAt\":\"2026-10-21T00:00:00.000Z\"}}"
+   },
+   "expected": {
+    "digest": "0cdb1d3a6c54ef7fdeadfd23774687e707f60b98954ed79adc4bfe4b50c57a3e"
+   }
+  },
+  {
+   "id": "AUDIT-ANCHOR-003",
+   "description": "the largest safe integer position",
+   "input": {
+    "line": "{\"digest\":\"c84327ed7f29140d2461cdf6938364b4007776cb51e43a32a7f9eb9781f8ec3b\",\"statement\":{\"v\":1,\"checkpointId\":\"0b8e6c1e-52a4-4a3b-9d8f-0123456789ab\",\"payloadHash\":\"aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa\",\"chainLength\":9007199254740991,\"headHash\":\"bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb\",\"createdAt\":\"2026-10-21T00:00:00.000Z\"}}"
+   },
+   "expected": {
+    "digest": "c84327ed7f29140d2461cdf6938364b4007776cb51e43a32a7f9eb9781f8ec3b"
+   }
+  },
+  {
+   "id": "AUDIT-ANCHOR-004",
+   "description": "a creation time with milliseconds and another checkpoint id",
+   "input": {
+    "line": "{\"digest\":\"7cba5587686929a8ac63b3b8e6d410cd76a4c4e0fa56283fbfb2403af2ba4b7a\",\"statement\":{\"v\":1,\"checkpointId\":\"cp-2\",\"payloadHash\":\"aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa\",\"chainLength\":1500,\"headHash\":\"bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb\",\"createdAt\":\"2026-12-31T23:59:59.999Z\"}}"
+   },
+   "expected": {
+    "digest": "7cba5587686929a8ac63b3b8e6d410cd76a4c4e0fa56283fbfb2403af2ba4b7a"
+   }
+  },
+  {
+   "id": "AUDIT-ANCHOR-005",
+   "description": "keys in another order inside the line (the digest is over the canonical form)",
+   "input": {
+    "line": "{\"statement\":{\"v\":1,\"headHash\":\"bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb\",\"createdAt\":\"2026-10-21T00:00:00.000Z\",\"chainLength\":1500,\"checkpointId\":\"0b8e6c1e-52a4-4a3b-9d8f-0123456789ab\",\"payloadHash\":\"aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa\"},\"digest\":\"6e65d8b3e2d43cd0a23b1d33d5b8370fa55132f3aa65452c298a7a75e45242f9\"}"
+   },
+   "expected": {
+    "digest": "6e65d8b3e2d43cd0a23b1d33d5b8370fa55132f3aa65452c298a7a75e45242f9"
+   }
+  },
+  {
+   "id": "AUDIT-ANCHOR-006",
+   "description": "the digest of another statement",
+   "input": {
+    "line": "{\"digest\":\"0e65d8b3e2d43cd0a23b1d33d5b8370fa55132f3aa65452c298a7a75e45242f9\",\"statement\":{\"v\":1,\"checkpointId\":\"0b8e6c1e-52a4-4a3b-9d8f-0123456789ab\",\"payloadHash\":\"aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa\",\"chainLength\":1500,\"headHash\":\"bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb\",\"createdAt\":\"2026-10-21T00:00:00.000Z\"}}"
+   },
+   "expectedError": {
+    "code": "ANCHOR_DIGEST_MISMATCH"
+   }
+  },
+  {
+   "id": "AUDIT-ANCHOR-007",
+   "description": "a statement edited after the digest was taken",
+   "input": {
+    "line": "{\"digest\":\"6e65d8b3e2d43cd0a23b1d33d5b8370fa55132f3aa65452c298a7a75e45242f9\",\"statement\":{\"v\":1,\"checkpointId\":\"0b8e6c1e-52a4-4a3b-9d8f-0123456789ab\",\"payloadHash\":\"aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa\",\"chainLength\":1501,\"headHash\":\"bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb\",\"createdAt\":\"2026-10-21T00:00:00.000Z\"}}"
+   },
+   "expectedError": {
+    "code": "ANCHOR_DIGEST_MISMATCH"
+   }
+  },
+  {
+   "id": "AUDIT-ANCHOR-008",
+   "description": "no digest",
+   "input": {
+    "line": "{\"statement\":{\"v\":1,\"checkpointId\":\"0b8e6c1e-52a4-4a3b-9d8f-0123456789ab\",\"payloadHash\":\"aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa\",\"chainLength\":1500,\"headHash\":\"bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb\",\"createdAt\":\"2026-10-21T00:00:00.000Z\"}}"
+   },
+   "expectedError": {
+    "code": "ANCHOR_DIGEST_MISMATCH"
+   }
+  },
+  {
+   "id": "AUDIT-ANCHOR-009",
+   "description": "an extra statement field",
+   "input": {
+    "line": "{\"digest\":\"a75f0c939e34cf38509b58bc73d10efac527da2681fe247752563da6767de528\",\"statement\":{\"v\":1,\"checkpointId\":\"0b8e6c1e-52a4-4a3b-9d8f-0123456789ab\",\"payloadHash\":\"aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa\",\"chainLength\":1500,\"headHash\":\"bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb\",\"createdAt\":\"2026-10-21T00:00:00.000Z\",\"note\":\"x\"}}"
+   },
+   "expectedError": {
+    "code": "ANCHOR_LINE_MALFORMED"
+   }
+  },
+  {
+   "id": "AUDIT-ANCHOR-010",
+   "description": "a missing statement field",
+   "input": {
+    "line": "{\"digest\":\"0000000000000000000000000000000000000000000000000000000000000000\",\"statement\":{\"v\":1,\"checkpointId\":\"0b8e6c1e-52a4-4a3b-9d8f-0123456789ab\",\"payloadHash\":\"aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa\",\"chainLength\":1500,\"createdAt\":\"2026-10-21T00:00:00.000Z\"}}"
+   },
+   "expectedError": {
+    "code": "ANCHOR_LINE_MALFORMED"
+   }
+  },
+  {
+   "id": "AUDIT-ANCHOR-011",
+   "description": "statement version 2",
+   "input": {
+    "line": "{\"digest\":\"ec74e663c5b94d8abb4396824dad97e06fef6e40d00fe35edd1aaec847c83527\",\"statement\":{\"v\":2,\"checkpointId\":\"0b8e6c1e-52a4-4a3b-9d8f-0123456789ab\",\"payloadHash\":\"aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa\",\"chainLength\":1500,\"headHash\":\"bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb\",\"createdAt\":\"2026-10-21T00:00:00.000Z\"}}"
+   },
+   "expectedError": {
+    "code": "ANCHOR_LINE_MALFORMED"
+   }
+  },
+  {
+   "id": "AUDIT-ANCHOR-012",
+   "description": "an uppercase payload hash",
+   "input": {
+    "line": "{\"digest\":\"c28c880080273754583c48345da9c88d1fcc4b73471adf3a0512b714ad92baf5\",\"statement\":{\"v\":1,\"checkpointId\":\"0b8e6c1e-52a4-4a3b-9d8f-0123456789ab\",\"payloadHash\":\"AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA\",\"chainLength\":1500,\"headHash\":\"bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb\",\"createdAt\":\"2026-10-21T00:00:00.000Z\"}}"
+   },
+   "expectedError": {
+    "code": "ANCHOR_LINE_MALFORMED"
+   }
+  },
+  {
+   "id": "AUDIT-ANCHOR-013",
+   "description": "a short head hash",
+   "input": {
+    "line": "{\"digest\":\"7251225e4137f660917cb2678f41ea34c9511c47d81d5705735b531c999c8060\",\"statement\":{\"v\":1,\"checkpointId\":\"0b8e6c1e-52a4-4a3b-9d8f-0123456789ab\",\"payloadHash\":\"aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa\",\"chainLength\":1500,\"headHash\":\"abc\",\"createdAt\":\"2026-10-21T00:00:00.000Z\"}}"
+   },
+   "expectedError": {
+    "code": "ANCHOR_LINE_MALFORMED"
+   }
+  },
+  {
+   "id": "AUDIT-ANCHOR-014",
+   "description": "position zero",
+   "input": {
+    "line": "{\"digest\":\"bc7bbafa4ec7fce6b3b341c3102f7f35088040c1b6446a8e508655b825e2d6e4\",\"statement\":{\"v\":1,\"checkpointId\":\"0b8e6c1e-52a4-4a3b-9d8f-0123456789ab\",\"payloadHash\":\"aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa\",\"chainLength\":0,\"headHash\":\"bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb\",\"createdAt\":\"2026-10-21T00:00:00.000Z\"}}"
+   },
+   "expectedError": {
+    "code": "ANCHOR_LINE_MALFORMED"
+   }
+  },
+  {
+   "id": "AUDIT-ANCHOR-015",
+   "description": "a fractional position",
+   "input": {
+    "line": "{\"digest\":\"59876f5276f9b0e5a06aa812b9af188732ad5379cd47f7ccb13a3acedafe52bc\",\"statement\":{\"v\":1,\"checkpointId\":\"0b8e6c1e-52a4-4a3b-9d8f-0123456789ab\",\"payloadHash\":\"aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa\",\"chainLength\":1.5,\"headHash\":\"bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb\",\"createdAt\":\"2026-10-21T00:00:00.000Z\"}}"
+   },
+   "expectedError": {
+    "code": "ANCHOR_LINE_MALFORMED"
+   }
+  },
+  {
+   "id": "AUDIT-ANCHOR-016",
+   "description": "a position beyond the largest safe integer",
+   "input": {
+    "line": "{\"digest\":\"0000000000000000000000000000000000000000000000000000000000000000\",\"statement\":{\"v\":1,\"checkpointId\":\"c\",\"payloadHash\":\"aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa\",\"chainLength\":9007199254740993,\"headHash\":\"bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb\",\"createdAt\":\"t\"}}"
+   },
+   "expectedError": {
+    "code": "ANCHOR_LINE_MALFORMED"
+   }
+  },
+  {
+   "id": "AUDIT-ANCHOR-017",
+   "description": "a numeric checkpoint id",
+   "input": {
+    "line": "{\"digest\":\"5dcd5c9cbef02ba22f92b1622836a7daac7ee54fc6a252152bee11d18f8cd2bd\",\"statement\":{\"v\":1,\"checkpointId\":7,\"payloadHash\":\"aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa\",\"chainLength\":1500,\"headHash\":\"bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb\",\"createdAt\":\"2026-10-21T00:00:00.000Z\"}}"
+   },
+   "expectedError": {
+    "code": "ANCHOR_LINE_MALFORMED"
+   }
+  },
+  {
+   "id": "AUDIT-ANCHOR-018",
+   "description": "a creation time that is not text",
+   "input": {
+    "line": "{\"digest\":\"90ac085009848ac6bd6c7ef1650df3cb743d63a9ff9183e70e95f6396b7b25d8\",\"statement\":{\"v\":1,\"checkpointId\":\"0b8e6c1e-52a4-4a3b-9d8f-0123456789ab\",\"payloadHash\":\"aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa\",\"chainLength\":1500,\"headHash\":\"bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb\",\"createdAt\":1790000000000}}"
+   },
+   "expectedError": {
+    "code": "ANCHOR_LINE_MALFORMED"
+   }
+  },
+  {
+   "id": "AUDIT-ANCHOR-019",
+   "description": "a creation time with a UTC offset instead of Z",
+   "input": {
+    "line": "{\"digest\":\"7c024b90c36d7f6839f7583126fa35ed0886bcd9d1d2428c6f1a8fe287388605\",\"statement\":{\"v\":1,\"checkpointId\":\"0b8e6c1e-52a4-4a3b-9d8f-0123456789ab\",\"payloadHash\":\"aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa\",\"chainLength\":1500,\"headHash\":\"bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb\",\"createdAt\":\"2026-10-21T00:00:00.000+00:00\"}}"
+   },
+   "expectedError": {
+    "code": "ANCHOR_LINE_MALFORMED"
+   }
+  },
+  {
+   "id": "AUDIT-ANCHOR-020",
+   "description": "a creation time that is not a date",
+   "input": {
+    "line": "{\"digest\":\"cd6b2111b70728aa69c43495931c2fdf7d2d6c55221b10ba07908289583f1a9d\",\"statement\":{\"v\":1,\"checkpointId\":\"0b8e6c1e-52a4-4a3b-9d8f-0123456789ab\",\"payloadHash\":\"aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa\",\"chainLength\":1500,\"headHash\":\"bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb\",\"createdAt\":\"yesterday\"}}"
+   },
+   "expectedError": {
+    "code": "ANCHOR_LINE_MALFORMED"
+   }
+  },
+  {
+   "id": "AUDIT-ANCHOR-021",
+   "description": "a line ending with a carriage return",
+   "input": {
+    "line": "{\"digest\":\"6e65d8b3e2d43cd0a23b1d33d5b8370fa55132f3aa65452c298a7a75e45242f9\",\"statement\":{\"v\":1,\"checkpointId\":\"0b8e6c1e-52a4-4a3b-9d8f-0123456789ab\",\"payloadHash\":\"aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa\",\"chainLength\":1500,\"headHash\":\"bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb\",\"createdAt\":\"2026-10-21T00:00:00.000Z\"}}\r"
+   },
+   "expectedError": {
+    "code": "ANCHOR_LINE_MALFORMED"
+   }
+  },
+  {
+   "id": "AUDIT-ANCHOR-022",
+   "description": "a checkpoint id with a line separator",
+   "input": {
+    "line": "{\"digest\":\"f818d97ca7df2734acd05142e6e1b56a47bf31ffef9a8f58a8662089ba192a0a\",\"statement\":{\"v\":1,\"checkpointId\":\"c d\",\"payloadHash\":\"aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa\",\"chainLength\":1500,\"headHash\":\"bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb\",\"createdAt\":\"2026-10-21T00:00:00.000Z\"}}"
+   },
+   "expectedError": {
+    "code": "ANCHOR_LINE_MALFORMED"
+   }
+  },
+  {
+   "id": "AUDIT-ANCHOR-023",
+   "description": "not JSON",
+   "input": {
+    "line": "{\"digest\":"
+   },
+   "expectedError": {
+    "code": "ANCHOR_LINE_MALFORMED"
+   }
+  },
+  {
+   "id": "AUDIT-ANCHOR-024",
+   "description": "a JSON array",
+   "input": {
+    "line": "[]"
+   },
+   "expectedError": {
+    "code": "ANCHOR_LINE_MALFORMED"
+   }
+  },
+  {
+   "id": "AUDIT-ANCHOR-025",
+   "description": "the statement is null",
+   "input": {
+    "line": "{\"digest\":\"x\",\"statement\":null}"
+   },
+   "expectedError": {
+    "code": "ANCHOR_LINE_MALFORMED"
+   }
+  }
+ ]
+}

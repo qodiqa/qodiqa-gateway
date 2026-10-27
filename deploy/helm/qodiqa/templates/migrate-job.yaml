@@ -1,0 +1,106 @@
+{{- if .Values.migrations.enabled }}
+{{- include "qodiqa.validate" . -}}
+{{- $prod := eq .Values.profile "production" -}}
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: {{ include "qodiqa.fullname" . }}-migrate-{{ .Release.Revision }}
+  labels:
+    {{- include "qodiqa.labels" . | replace "component: gateway" "component: migrate" | nindent 4 }}
+  annotations:
+    # Runs before the gateway is installed or upgraded; the new pods only start once the schema is current.
+    helm.sh/hook: pre-install,pre-upgrade
+    helm.sh/hook-weight: "-5"
+    helm.sh/hook-delete-policy: before-hook-creation,hook-succeeded
+spec:
+  backoffLimit: {{ .Values.migrations.backoffLimit }}
+  activeDeadlineSeconds: {{ .Values.migrations.activeDeadlineSeconds }}
+  template:
+    metadata:
+      labels:
+        {{- include "qodiqa.selectorLabels" . | replace "component: gateway" "component: migrate" | nindent 8 }}
+    spec:
+      restartPolicy: Never
+      # the release's ServiceAccount does not exist yet when a pre-install hook runs: the namespace's default account is used (no token is mounted)
+      automountServiceAccountToken: false
+      {{- with .Values.imagePullSecrets }}
+      imagePullSecrets:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      securityContext:
+        runAsNonRoot: true
+        runAsUser: 1000
+        runAsGroup: 1000
+        seccompProfile: { type: RuntimeDefault }
+      containers:
+        - name: migrate
+          image: {{ include "qodiqa.image" . }}
+          imagePullPolicy: {{ .Values.image.pullPolicy }}
+          command:
+            - sh
+            - -c
+            - |
+              set -eu
+              node src/infra/postgres/migrate.js
+              {{- if .Values.migrations.rotateRolePasswords }}
+              # The migration chain creates the runtime roles with published placeholder passwords. Set the real ones (from the same Secret the gateway reads), then prove no role still accepts its placeholder.
+              for pair in qodiqa_app:QODIQA_PG_PASSWORD qodiqa_retention:QODIQA_PG_RETENTION_PASSWORD qodiqa_system:QODIQA_PG_SYSTEM_PASSWORD qodiqa_reporting:QODIQA_PG_REPORTING_PASSWORD qodiqa_control:QODIQA_PG_CONTROL_PASSWORD qodiqa_mig:QODIQA_PG_MIG_ROLE_PASSWORD qodiqa_backup:QODIQA_PG_BACKUP_PASSWORD; do
+                node scripts/db/role-credentials.js --rotate "${pair%%:*}" --password-env "${pair##*:}" --confirm
+              done
+              node scripts/db/role-credentials.js --harden-unused --confirm      # qodiqa_read has no runtime consumer: no login
+              node scripts/db/role-credentials.js --check || [ $? -eq 2 ]
+              {{- end }}
+          securityContext:
+            runAsNonRoot: true
+            readOnlyRootFilesystem: true
+            allowPrivilegeEscalation: false
+            capabilities: { drop: [ALL] }
+          env:
+            - name: NODE_ENV
+              value: {{ ternary "production" "development" $prod }}
+            - name: QODIQA_PG_HOST
+              value: {{ .Values.postgres.host | quote }}
+            - name: QODIQA_PG_PORT
+              value: {{ .Values.postgres.port | quote }}
+            - name: QODIQA_PG_DATABASE
+              value: {{ .Values.postgres.database | quote }}
+            - name: QODIQA_PG_SSL
+              value: {{ .Values.postgres.ssl | quote }}
+            {{- if .Values.postgres.sslCaFile }}
+            - name: QODIQA_PG_SSL_CA
+              value: {{ .Values.postgres.sslCaFile | quote }}
+            {{- end }}
+            - name: QODIQA_PG_MIG_USER
+              value: {{ .Values.migrations.user | quote }}
+            {{- include "qodiqa.secretEnv" (dict "name" "QODIQA_PG_MIG_PASSWORD" "key" .Values.migrations.passwordSecretKey "ctx" .) | nindent 12 }}
+            {{- if .Values.migrations.rotateRolePasswords }}
+            - name: QODIQA_PG_ADMIN_USER
+              value: {{ required "migrations.admin.user is required when migrations.rotateRolePasswords is true" .Values.migrations.admin.user | quote }}
+            {{- include "qodiqa.secretEnv" (dict "name" "QODIQA_PG_ADMIN_PASSWORD" "key" .Values.migrations.admin.passwordSecretKey "ctx" .) | nindent 12 }}
+            {{- include "qodiqa.secretEnv" (dict "name" "QODIQA_PG_MIG_ROLE_PASSWORD" "key" "postgres-mig-role-password" "ctx" .) | nindent 12 }}
+            {{- include "qodiqa.secretEnv" (dict "name" "QODIQA_PG_BACKUP_PASSWORD" "key" "postgres-backup-password" "ctx" .) | nindent 12 }}
+            {{- end }}
+            {{- include "qodiqa.secretEnv" (dict "name" "QODIQA_PG_PASSWORD" "key" "postgres-password" "ctx" .) | nindent 12 }}
+            {{- include "qodiqa.secretEnv" (dict "name" "QODIQA_PG_RETENTION_PASSWORD" "key" "postgres-retention-password" "ctx" .) | nindent 12 }}
+            {{- include "qodiqa.secretEnv" (dict "name" "QODIQA_PG_SYSTEM_PASSWORD" "key" "postgres-system-password" "ctx" .) | nindent 12 }}
+            {{- include "qodiqa.secretEnv" (dict "name" "QODIQA_PG_REPORTING_PASSWORD" "key" "postgres-reporting-password" "ctx" .) | nindent 12 }}
+            {{- include "qodiqa.secretEnv" (dict "name" "QODIQA_PG_CONTROL_PASSWORD" "key" "postgres-control-password" "ctx" .) | nindent 12 }}
+          resources:
+            requests: { cpu: 100m, memory: 256Mi }
+            limits: { cpu: 500m, memory: 512Mi }
+          volumeMounts:
+            - { name: tmp, mountPath: /tmp }
+            {{- if $prod }}
+            - { name: pg-tls, mountPath: /etc/qodiqa-pg-tls, readOnly: true }
+            {{- end }}
+      volumes:
+        - name: tmp
+          emptyDir: { sizeLimit: 64Mi }
+        {{- if $prod }}
+        - name: pg-tls
+          secret:
+            secretName: {{ .Values.secrets.pgTlsSecret }}
+            optional: true
+            defaultMode: 0440
+        {{- end }}
+{{- end }}

@@ -1,0 +1,75 @@
+[build-system]
+requires = ["setuptools>=68", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "qodiqa"
+version = "1.0.0"
+description = "Official Python SDK for the QODIQA AI enforcement platform"
+readme = "README.md"
+license = { text = "Apache-2.0" }
+authors = [{ name = "QODIQA", email = "contact@qodiqa.com" }]
+keywords = [
+    "qodiqa",
+    "ai",
+    "enforcement",
+    "verification",
+    "artifact",
+    "attestation",
+    "transparency",
+    "audit",
+    "sdk",
+]
+classifiers = [
+    "Development Status :: 4 - Beta",  # mock-tested, unpublished; was 5 - Production/Stable
+    "Intended Audience :: Developers",
+    "License :: OSI Approved :: Apache Software License",
+    "Operating System :: OS Independent",
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3.9",
+    "Programming Language :: Python :: 3.10",
+    "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
+    "Programming Language :: Python :: 3.13",
+    "Topic :: Software Development :: Libraries :: Python Modules",
+    "Topic :: Security",
+    "Typing :: Typed",
+]
+requires-python = ">=3.9"
+dependencies = [
+    "httpx>=0.25.0",
+    "cryptography>=41",
+]
+
+[project.optional-dependencies]
+dev = [
+    "pytest>=7.4",
+    "pytest-asyncio>=0.23",
+    "pytest-httpx>=0.30",
+    "anyio[trio]>=4.0",
+    "mypy>=1.8",
+    "django>=4.2",   # tests of qodiqa.middleware.django
+]
+
+[project.urls]
+Homepage = "https://github.com/qodiqa/qodiqa-gateway/tree/main/sdk/python"
+Repository = "https://github.com/qodiqa/sdk-python"
+"Bug Tracker" = "https://github.com/qodiqa/sdk-python/issues"
+Changelog = "https://github.com/qodiqa/sdk-python/blob/main/CHANGELOG.md"
+
+[tool.setuptools.packages.find]
+where = ["."]
+include = ["qodiqa*"]
+
+[tool.setuptools.package-data]
+qodiqa = ["py.typed"]
+
+[tool.pytest.ini_options]
+asyncio_mode = "auto"
+testpaths = ["tests"]
+addopts = "-v"
+
+[tool.mypy]
+strict = true
+python_version = "3.9"
+ignore_missing_imports = true

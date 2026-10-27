@@ -1,0 +1,41 @@
+# QODIQA — audit-chain file backup.
+#
+# Builds the schedule docs/operations/backup-runbook.md §5.1 has documented
+# but that never actually existed as a real script or
+# timer in this repo — the "audit chain RPO: 5 minutes" claim was
+# unenforced for exactly the reason found for PostgreSQL: a runbook
+# describing a cron job nothing ever built. This service is that fix, for
+# the self-hosted/systemd topology where the audit log file is directly
+# reachable (same host as the live qodiqa.service — see
+# qodiqa-dr-backup.service's header comment for the equivalent reasoning).
+[Unit]
+Description=QODIQA audit-chain file backup
+Wants=network-online.target
+After=network-online.target qodiqa.service
+
+[Service]
+Type=oneshot
+User=qodiqa
+Group=qodiqa
+EnvironmentFile=/etc/qodiqa/backup.env
+ExecStart=/opt/qodiqa/scripts/backup-audit-log.sh backup
+TimeoutStartSec=120
+
+NoNewPrivileges=yes
+ProtectSystem=strict
+ProtectHome=yes
+PrivateTmp=yes
+ReadWritePaths=/var/backups/qodiqa
+CapabilityBoundingSet=
+# further sandboxing — none of these affects what the unit legitimately does
+# (TCP/Unix sockets to PostgreSQL, files under ReadWritePaths). Check with `systemd-analyze security <unit>`.
+ProtectKernelTunables=yes
+ProtectKernelModules=yes
+ProtectKernelLogs=yes
+ProtectControlGroups=yes
+PrivateDevices=yes
+RestrictSUIDSGID=yes
+LockPersonality=yes
+RestrictNamespaces=yes
+RestrictAddressFamilies=AF_UNIX AF_INET AF_INET6
+SystemCallArchitectures=native

@@ -1,0 +1,1312 @@
+{
+ "format": "qodiqa-vectors/1",
+ "family": "v2-canon",
+ "generatedBy": "scripts/protocol/gen-v2-vectors.js",
+ "specVersion": "v2-freeze-1",
+ "mode": "compute",
+ "nowMs": 0,
+ "inputSchema": {
+  "type": "object",
+  "required": [
+   "bytes"
+  ],
+  "properties": {
+   "bytes": {
+    "oneOf": [
+     {
+      "type": "string",
+      "pattern": "^([0-9a-f]{2})*$",
+      "description": "lower-case hex"
+     },
+     {
+      "type": "object",
+      "required": [
+       "repeat"
+      ],
+      "additionalProperties": false,
+      "properties": {
+       "repeat": {
+        "type": "object",
+        "required": [
+         "prefix",
+         "unit",
+         "count",
+         "suffix"
+        ],
+        "properties": {
+         "prefix": {
+          "type": "string"
+         },
+         "unit": {
+          "type": "string"
+         },
+         "count": {
+          "type": "integer",
+          "minimum": 0
+         },
+         "suffix": {
+          "type": "string"
+         }
+        }
+       }
+      },
+      "description": "prefix + unit x count + suffix (UTF-8 text)"
+     }
+    ]
+   }
+  },
+  "description": "UTF-8 JSON text (or any bytes) to parse under JCS-P1; expected.value is the canonical text as hex (for a canonical output above 4096 bytes: expected.length and expected.sha256 of the canonical bytes instead), or expectedError.code the FIRST rule broken (V2-FREEZE 2.7)"
+ },
+ "keys": [],
+ "cases": [
+  {
+   "id": "V2-CANON-001",
+   "description": "1.0 is 1",
+   "input": {
+    "bytes": "7b226e223a312e307d"
+   },
+   "expected": {
+    "outcome": "ok",
+    "value": "7b226e223a317d",
+    "text": "{\"n\":1}"
+   }
+  },
+  {
+   "id": "V2-CANON-002",
+   "description": "1e2 is 100",
+   "input": {
+    "bytes": "7b226e223a3165327d"
+   },
+   "expected": {
+    "outcome": "ok",
+    "value": "7b226e223a3130307d",
+    "text": "{\"n\":100}"
+   }
+  },
+  {
+   "id": "V2-CANON-003",
+   "description": "-0 is 0",
+   "input": {
+    "bytes": "7b226e223a2d307d"
+   },
+   "expected": {
+    "outcome": "ok",
+    "value": "7b226e223a307d",
+    "text": "{\"n\":0}"
+   }
+  },
+  {
+   "id": "V2-CANON-004",
+   "description": "-0.0 is 0",
+   "input": {
+    "bytes": "7b226e223a2d302e307d"
+   },
+   "expected": {
+    "outcome": "ok",
+    "value": "7b226e223a307d",
+    "text": "{\"n\":0}"
+   }
+  },
+  {
+   "id": "V2-CANON-005",
+   "description": "0e0 is 0",
+   "input": {
+    "bytes": "7b226e223a3065307d"
+   },
+   "expected": {
+    "outcome": "ok",
+    "value": "7b226e223a307d",
+    "text": "{\"n\":0}"
+   }
+  },
+  {
+   "id": "V2-CANON-006",
+   "description": "1E+0 is 1",
+   "input": {
+    "bytes": "7b226e223a31452b307d"
+   },
+   "expected": {
+    "outcome": "ok",
+    "value": "7b226e223a317d",
+    "text": "{\"n\":1}"
+   }
+  },
+  {
+   "id": "V2-CANON-007",
+   "description": "1e999 is not finite",
+   "input": {
+    "bytes": "7b226e223a31653939397d"
+   },
+   "expectedError": {
+    "code": "NON_FINITE_NUMBER"
+   }
+  },
+  {
+   "id": "V2-CANON-008",
+   "description": "-1e999 is not finite",
+   "input": {
+    "bytes": "7b226e223a2d31653939397d"
+   },
+   "expectedError": {
+    "code": "NON_FINITE_NUMBER"
+   }
+  },
+  {
+   "id": "V2-CANON-009",
+   "description": "9007199254740993 integer literal is out of range",
+   "input": {
+    "bytes": "7b226e223a393030373139393235343734303939337d"
+   },
+   "expectedError": {
+    "code": "NUMBER_OUT_OF_RANGE"
+   }
+  },
+  {
+   "id": "V2-CANON-010",
+   "description": "9007199254740994 is out of range",
+   "input": {
+    "bytes": "7b226e223a393030373139393235343734303939347d"
+   },
+   "expectedError": {
+    "code": "NUMBER_OUT_OF_RANGE"
+   }
+  },
+  {
+   "id": "V2-CANON-011",
+   "description": "9007199254740991 (2^53-1) is accepted",
+   "input": {
+    "bytes": "5b393030373139393235343734303939315d"
+   },
+   "expected": {
+    "outcome": "ok",
+    "value": "5b393030373139393235343734303939315d",
+    "text": "[9007199254740991]"
+   }
+  },
+  {
+   "id": "V2-CANON-012",
+   "description": "9007199254740992 (2^53) is out of range",
+   "input": {
+    "bytes": "5b393030373139393235343734303939325d"
+   },
+   "expectedError": {
+    "code": "NUMBER_OUT_OF_RANGE"
+   }
+  },
+  {
+   "id": "V2-CANON-013",
+   "description": "9007199254740992.0 is out of range",
+   "input": {
+    "bytes": "5b393030373139393235343734303939322e305d"
+   },
+   "expectedError": {
+    "code": "NUMBER_OUT_OF_RANGE"
+   }
+  },
+  {
+   "id": "V2-CANON-014",
+   "description": "-9007199254740991 is accepted",
+   "input": {
+    "bytes": "5b2d393030373139393235343734303939315d"
+   },
+   "expected": {
+    "outcome": "ok",
+    "value": "5b2d393030373139393235343734303939315d",
+    "text": "[-9007199254740991]"
+   }
+  },
+  {
+   "id": "V2-CANON-015",
+   "description": "-9007199254740992 is out of range",
+   "input": {
+    "bytes": "5b2d393030373139393235343734303939325d"
+   },
+   "expectedError": {
+    "code": "NUMBER_OUT_OF_RANGE"
+   }
+  },
+  {
+   "id": "V2-CANON-016",
+   "description": "1e17 is out of range",
+   "input": {
+    "bytes": "5b316531375d"
+   },
+   "expectedError": {
+    "code": "NUMBER_OUT_OF_RANGE"
+   }
+  },
+  {
+   "id": "V2-CANON-017",
+   "description": "1e21 is out of range",
+   "input": {
+    "bytes": "5b316532315d"
+   },
+   "expectedError": {
+    "code": "NUMBER_OUT_OF_RANGE"
+   }
+  },
+  {
+   "id": "V2-CANON-018",
+   "description": "1e300 is out of range",
+   "input": {
+    "bytes": "5b31653330305d"
+   },
+   "expectedError": {
+    "code": "NUMBER_OUT_OF_RANGE"
+   }
+  },
+  {
+   "id": "V2-CANON-019",
+   "description": "123456789012345680000 is out of range",
+   "input": {
+    "bytes": "5b3132333435363738393031323334353638303030305d"
+   },
+   "expectedError": {
+    "code": "NUMBER_OUT_OF_RANGE"
+   }
+  },
+  {
+   "id": "V2-CANON-020",
+   "description": "12345678901234567890 is out of range",
+   "input": {
+    "bytes": "5b31323334353637383930313233343536373839305d"
+   },
+   "expectedError": {
+    "code": "NUMBER_OUT_OF_RANGE"
+   }
+  },
+  {
+   "id": "V2-CANON-021",
+   "description": "1.7976931348623157e308 is out of range",
+   "input": {
+    "bytes": "5b312e37393736393331333438363233313537653330385d"
+   },
+   "expectedError": {
+    "code": "NUMBER_OUT_OF_RANGE"
+   }
+  },
+  {
+   "id": "V2-CANON-022",
+   "description": "9.999999999999999e22 is out of range",
+   "input": {
+    "bytes": "5b392e3939393939393939393939393939396532325d"
+   },
+   "expectedError": {
+    "code": "NUMBER_OUT_OF_RANGE"
+   }
+  },
+  {
+   "id": "V2-CANON-023",
+   "description": "1e23 is out of range",
+   "input": {
+    "bytes": "5b316532335d"
+   },
+   "expectedError": {
+    "code": "NUMBER_OUT_OF_RANGE"
+   }
+  },
+  {
+   "id": "V2-CANON-024",
+   "description": "1.5e300 is out of range",
+   "input": {
+    "bytes": "5b312e35653330305d"
+   },
+   "expectedError": {
+    "code": "NUMBER_OUT_OF_RANGE"
+   }
+  },
+  {
+   "id": "V2-CANON-025",
+   "description": "0.000001",
+   "input": {
+    "bytes": "5b302e3030303030315d"
+   },
+   "expected": {
+    "outcome": "ok",
+    "value": "5b302e3030303030315d",
+    "text": "[0.000001]"
+   }
+  },
+  {
+   "id": "V2-CANON-026",
+   "description": "1e-7 keeps the exponent form",
+   "input": {
+    "bytes": "5b31652d375d"
+   },
+   "expected": {
+    "outcome": "ok",
+    "value": "5b31652d375d",
+    "text": "[1e-7]"
+   }
+  },
+  {
+   "id": "V2-CANON-027",
+   "description": "0.0000001234 is 1.234e-7",
+   "input": {
+    "bytes": "5b302e303030303030313233345d"
+   },
+   "expected": {
+    "outcome": "ok",
+    "value": "5b312e323334652d375d",
+    "text": "[1.234e-7]"
+   }
+  },
+  {
+   "id": "V2-CANON-028",
+   "description": "4.5",
+   "input": {
+    "bytes": "5b342e355d"
+   },
+   "expected": {
+    "outcome": "ok",
+    "value": "5b342e355d",
+    "text": "[4.5]"
+   }
+  },
+  {
+   "id": "V2-CANON-029",
+   "description": "4.50 is 4.5",
+   "input": {
+    "bytes": "5b342e35305d"
+   },
+   "expected": {
+    "outcome": "ok",
+    "value": "5b342e355d",
+    "text": "[4.5]"
+   }
+  },
+  {
+   "id": "V2-CANON-030",
+   "description": "333333333.33333329 loses its last digits",
+   "input": {
+    "bytes": "5b3333333333333333332e33333333333332395d"
+   },
+   "expected": {
+    "outcome": "ok",
+    "value": "5b3333333333333333332e333333333333335d",
+    "text": "[333333333.3333333]"
+   }
+  },
+  {
+   "id": "V2-CANON-031",
+   "description": "0.1+0.2 literal",
+   "input": {
+    "bytes": "5b302e33303030303030303030303030303030345d"
+   },
+   "expected": {
+    "outcome": "ok",
+    "value": "5b302e33303030303030303030303030303030345d",
+    "text": "[0.30000000000000004]"
+   }
+  },
+  {
+   "id": "V2-CANON-032",
+   "description": "5e-324 smallest denormal",
+   "input": {
+    "bytes": "5b35652d3332345d"
+   },
+   "expected": {
+    "outcome": "ok",
+    "value": "5b35652d3332345d",
+    "text": "[5e-324]"
+   }
+  },
+  {
+   "id": "V2-CANON-033",
+   "description": "2e-324 underflows to 0",
+   "input": {
+    "bytes": "5b32652d3332345d"
+   },
+   "expected": {
+    "outcome": "ok",
+    "value": "5b305d",
+    "text": "[0]"
+   }
+  },
+  {
+   "id": "V2-CANON-034",
+   "description": "-1e-7",
+   "input": {
+    "bytes": "5b2d31652d375d"
+   },
+   "expected": {
+    "outcome": "ok",
+    "value": "5b2d31652d375d",
+    "text": "[-1e-7]"
+   }
+  },
+  {
+   "id": "V2-CANON-035",
+   "description": "1e-300 is accepted",
+   "input": {
+    "bytes": "5b31652d3330305d"
+   },
+   "expected": {
+    "outcome": "ok",
+    "value": "5b31652d3330305d",
+    "text": "[1e-300]"
+   }
+  },
+  {
+   "id": "V2-CANON-036",
+   "description": "100",
+   "input": {
+    "bytes": "5b3130305d"
+   },
+   "expected": {
+    "outcome": "ok",
+    "value": "5b3130305d",
+    "text": "[100]"
+   }
+  },
+  {
+   "id": "V2-CANON-037",
+   "description": "0.7 stays 0.7",
+   "input": {
+    "bytes": "7b2274223a302e377d"
+   },
+   "expected": {
+    "outcome": "ok",
+    "value": "7b2274223a302e377d",
+    "text": "{\"t\":0.7}"
+   }
+  },
+  {
+   "id": "V2-CANON-038",
+   "description": "-5e-1 is -0.5",
+   "input": {
+    "bytes": "5b2d35652d315d"
+   },
+   "expected": {
+    "outcome": "ok",
+    "value": "5b2d302e355d",
+    "text": "[-0.5]"
+   }
+  },
+  {
+   "id": "V2-CANON-039",
+   "description": "4294967296.5",
+   "input": {
+    "bytes": "5b343239343936373239362e355d"
+   },
+   "expected": {
+    "outcome": "ok",
+    "value": "5b343239343936373239362e355d",
+    "text": "[4294967296.5]"
+   }
+  },
+  {
+   "id": "V2-CANON-040",
+   "description": "0.5e1 is 5",
+   "input": {
+    "bytes": "5b302e3565315d"
+   },
+   "expected": {
+    "outcome": "ok",
+    "value": "5b355d",
+    "text": "[5]"
+   }
+  },
+  {
+   "id": "V2-CANON-041",
+   "description": "2e-3 is 0.002",
+   "input": {
+    "bytes": "5b32652d335d"
+   },
+   "expected": {
+    "outcome": "ok",
+    "value": "5b302e3030325d",
+    "text": "[0.002]"
+   }
+  },
+  {
+   "id": "V2-CANON-042",
+   "description": "1e-27 keeps the exponent form",
+   "input": {
+    "bytes": "5b302e3030303030303030303030303030303030303030303030303030315d"
+   },
+   "expected": {
+    "outcome": "ok",
+    "value": "5b31652d32375d",
+    "text": "[1e-27]"
+   }
+  },
+  {
+   "id": "V2-CANON-043",
+   "description": "leading zero 01 is not JSON",
+   "input": {
+    "bytes": "5b30315d"
+   },
+   "expectedError": {
+    "code": "INVALID_JSON"
+   }
+  },
+  {
+   "id": "V2-CANON-044",
+   "description": "plus sign is not JSON",
+   "input": {
+    "bytes": "5b2b315d"
+   },
+   "expectedError": {
+    "code": "INVALID_JSON"
+   }
+  },
+  {
+   "id": "V2-CANON-045",
+   "description": ".5 is not JSON",
+   "input": {
+    "bytes": "5b2e355d"
+   },
+   "expectedError": {
+    "code": "INVALID_JSON"
+   }
+  },
+  {
+   "id": "V2-CANON-046",
+   "description": "1. is not JSON",
+   "input": {
+    "bytes": "5b312e5d"
+   },
+   "expectedError": {
+    "code": "INVALID_JSON"
+   }
+  },
+  {
+   "id": "V2-CANON-047",
+   "description": "NaN is not JSON",
+   "input": {
+    "bytes": "5b4e614e5d"
+   },
+   "expectedError": {
+    "code": "INVALID_JSON"
+   }
+  },
+  {
+   "id": "V2-CANON-048",
+   "description": "Infinity is not JSON",
+   "input": {
+    "bytes": "5b496e66696e6974795d"
+   },
+   "expectedError": {
+    "code": "INVALID_JSON"
+   }
+  },
+  {
+   "id": "V2-CANON-049",
+   "description": "hex number is not JSON",
+   "input": {
+    "bytes": "5b307831305d"
+   },
+   "expectedError": {
+    "code": "INVALID_JSON"
+   }
+  },
+  {
+   "id": "V2-CANON-050",
+   "description": "lone minus is not JSON",
+   "input": {
+    "bytes": "5b2d5d"
+   },
+   "expectedError": {
+    "code": "INVALID_JSON"
+   }
+  },
+  {
+   "id": "V2-CANON-051",
+   "description": "1e is not JSON",
+   "input": {
+    "bytes": "5b31655d"
+   },
+   "expectedError": {
+    "code": "INVALID_JSON"
+   }
+  },
+  {
+   "id": "V2-CANON-052",
+   "description": "key order is UTF-16: U+1F600 sorts before U+FFFF",
+   "input": {
+    "bytes": "7b22efbfbf223a312c22f09f9880223a322c2261223a337d"
+   },
+   "expected": {
+    "outcome": "ok",
+    "value": "7b2261223a332c22f09f9880223a322c22efbfbf223a317d",
+    "text": "{\"a\":3,\"😀\":2,\"￿\":1}"
+   }
+  },
+  {
+   "id": "V2-CANON-053",
+   "description": "key order is by string, not by number",
+   "input": {
+    "bytes": "7b223130223a312c2239223a322c2231223a337d"
+   },
+   "expected": {
+    "outcome": "ok",
+    "value": "7b2231223a332c223130223a312c2239223a327d",
+    "text": "{\"1\":3,\"10\":1,\"9\":2}"
+   }
+  },
+  {
+   "id": "V2-CANON-054",
+   "description": "duplicate key",
+   "input": {
+    "bytes": "7b2261223a312c2261223a327d"
+   },
+   "expectedError": {
+    "code": "DUPLICATE_KEY"
+   }
+  },
+  {
+   "id": "V2-CANON-055",
+   "description": "duplicate key via escape",
+   "input": {
+    "bytes": "7b2261223a312c225c7530303631223a327d"
+   },
+   "expectedError": {
+    "code": "DUPLICATE_KEY"
+   }
+  },
+  {
+   "id": "V2-CANON-056",
+   "description": "duplicate key in a nested object",
+   "input": {
+    "bytes": "7b226f223a7b226b223a312c226b223a327d7d"
+   },
+   "expectedError": {
+    "code": "DUPLICATE_KEY"
+   }
+  },
+  {
+   "id": "V2-CANON-057",
+   "description": "NFC composed value is accepted",
+   "input": {
+    "bytes": "7b226b223a22c3a9227d"
+   },
+   "expected": {
+    "outcome": "ok",
+    "value": "7b226b223a22c3a9227d",
+    "text": "{\"k\":\"é\"}"
+   }
+  },
+  {
+   "id": "V2-CANON-058",
+   "description": "decomposed value is not NFC",
+   "input": {
+    "bytes": "7b226b223a2265cc81227d"
+   },
+   "expectedError": {
+    "code": "STRING_NOT_NFC"
+   }
+  },
+  {
+   "id": "V2-CANON-059",
+   "description": "decomposed key is not NFC",
+   "input": {
+    "bytes": "7b2265cc81223a317d"
+   },
+   "expectedError": {
+    "code": "STRING_NOT_NFC"
+   }
+  },
+  {
+   "id": "V2-CANON-060",
+   "description": "not NFC written with an escape",
+   "input": {
+    "bytes": "7b226b223a22655c7530333031227d"
+   },
+   "expectedError": {
+    "code": "STRING_NOT_NFC"
+   }
+  },
+  {
+   "id": "V2-CANON-061",
+   "description": "lone high surrogate escape in a value",
+   "input": {
+    "bytes": "7b226b223a225c7564383030227d"
+   },
+   "expectedError": {
+    "code": "LONE_SURROGATE"
+   }
+  },
+  {
+   "id": "V2-CANON-062",
+   "description": "lone low surrogate escape in a key",
+   "input": {
+    "bytes": "7b225c7564633030223a317d"
+   },
+   "expectedError": {
+    "code": "LONE_SURROGATE"
+   }
+  },
+  {
+   "id": "V2-CANON-063",
+   "description": "a valid surrogate pair written as two escapes",
+   "input": {
+    "bytes": "7b226b223a225c75643833645c7564653030227d"
+   },
+   "expected": {
+    "outcome": "ok",
+    "value": "7b226b223a22f09f9880227d",
+    "text": "{\"k\":\"😀\"}"
+   }
+  },
+  {
+   "id": "V2-CANON-064",
+   "description": "a surrogate pair in the wrong order",
+   "input": {
+    "bytes": "7b226b223a225c75646530305c7564383364227d"
+   },
+   "expectedError": {
+    "code": "LONE_SURROGATE"
+   }
+  },
+  {
+   "id": "V2-CANON-065",
+   "description": "high surrogate followed by an ordinary character",
+   "input": {
+    "bytes": "7b226b223a225c756438336478227d"
+   },
+   "expectedError": {
+    "code": "LONE_SURROGATE"
+   }
+  },
+  {
+   "id": "V2-CANON-066",
+   "description": "invalid UTF-8 byte 0xFF",
+   "input": {
+    "bytes": "7b226b223a22ff227d"
+   },
+   "expectedError": {
+    "code": "INVALID_UTF8"
+   }
+  },
+  {
+   "id": "V2-CANON-067",
+   "description": "CESU-8 encoded surrogate ED A0 80",
+   "input": {
+    "bytes": "5b22eda080225d"
+   },
+   "expectedError": {
+    "code": "INVALID_UTF8"
+   }
+  },
+  {
+   "id": "V2-CANON-068",
+   "description": "overlong encoding C0 80",
+   "input": {
+    "bytes": "5b22c080225d"
+   },
+   "expectedError": {
+    "code": "INVALID_UTF8"
+   }
+  },
+  {
+   "id": "V2-CANON-069",
+   "description": "byte order mark",
+   "input": {
+    "bytes": "efbbbf7b7d"
+   },
+   "expectedError": {
+    "code": "INVALID_UTF8"
+   }
+  },
+  {
+   "id": "V2-CANON-070",
+   "description": "forbidden key __proto__",
+   "input": {
+    "bytes": "7b225f5f70726f746f5f5f223a317d"
+   },
+   "expectedError": {
+    "code": "FORBIDDEN_KEY"
+   }
+  },
+  {
+   "id": "V2-CANON-071",
+   "description": "forbidden key constructor, nested",
+   "input": {
+    "bytes": "7b2261223a7b22636f6e7374727563746f72223a317d7d"
+   },
+   "expectedError": {
+    "code": "FORBIDDEN_KEY"
+   }
+  },
+  {
+   "id": "V2-CANON-072",
+   "description": "forbidden key prototype, in an array element",
+   "input": {
+    "bytes": "5b7b2270726f746f74797065223a317d5d"
+   },
+   "expectedError": {
+    "code": "FORBIDDEN_KEY"
+   }
+  },
+  {
+   "id": "V2-CANON-073",
+   "description": "forbidden key written with an escape",
+   "input": {
+    "bytes": "7b225f5f70726f5c75303037346f5f5f223a317d"
+   },
+   "expectedError": {
+    "code": "FORBIDDEN_KEY"
+   }
+  },
+  {
+   "id": "V2-CANON-074",
+   "description": "the word prototype as a value is fine",
+   "input": {
+    "bytes": "7b2261223a2270726f746f74797065227d"
+   },
+   "expected": {
+    "outcome": "ok",
+    "value": "7b2261223a2270726f746f74797065227d",
+    "text": "{\"a\":\"prototype\"}"
+   }
+  },
+  {
+   "id": "V2-CANON-075",
+   "description": "control characters written as escapes",
+   "input": {
+    "bytes": "5b225c75303030305c75303031665c75303037665c75323032385c625c665c6e5c725c745c2f5c225c5c225d"
+   },
+   "expected": {
+    "outcome": "ok",
+    "value": "5b225c75303030305c75303031667fe280a85c625c665c6e5c725c742f5c225c5c225d",
+    "text": "[\"\\u0000\\u001f \\b\\f\\n\\r\\t/\\\"\\\\\"]"
+   }
+  },
+  {
+   "id": "V2-CANON-076",
+   "description": "a raw control character inside a string",
+   "input": {
+    "bytes": "5b2201225d"
+   },
+   "expectedError": {
+    "code": "INVALID_JSON"
+   }
+  },
+  {
+   "id": "V2-CANON-077",
+   "description": "a raw DEL character inside a string is fine",
+   "input": {
+    "bytes": "5b227f225d"
+   },
+   "expected": {
+    "outcome": "ok",
+    "value": "5b227f225d",
+    "text": "[\"\"]"
+   }
+  },
+  {
+   "id": "V2-CANON-078",
+   "description": "empty object and array",
+   "input": {
+    "bytes": "5b7b7d2c5b5d5d"
+   },
+   "expected": {
+    "outcome": "ok",
+    "value": "5b7b7d2c5b5d5d",
+    "text": "[{},[]]"
+   }
+  },
+  {
+   "id": "V2-CANON-079",
+   "description": "whitespace around tokens",
+   "input": {
+    "bytes": "20090a0d7b20226122203a205b2031202c2032205d207d200a"
+   },
+   "expected": {
+    "outcome": "ok",
+    "value": "7b2261223a5b312c325d7d",
+    "text": "{\"a\":[1,2]}"
+   }
+  },
+  {
+   "id": "V2-CANON-080",
+   "description": "vertical tab is not JSON whitespace",
+   "input": {
+    "bytes": "0b7b7d"
+   },
+   "expectedError": {
+    "code": "INVALID_JSON"
+   }
+  },
+  {
+   "id": "V2-CANON-081",
+   "description": "trailing comma in an array",
+   "input": {
+    "bytes": "5b312c322c5d"
+   },
+   "expectedError": {
+    "code": "INVALID_JSON"
+   }
+  },
+  {
+   "id": "V2-CANON-082",
+   "description": "trailing comma in an object",
+   "input": {
+    "bytes": "7b2261223a312c7d"
+   },
+   "expectedError": {
+    "code": "INVALID_JSON"
+   }
+  },
+  {
+   "id": "V2-CANON-083",
+   "description": "empty input",
+   "input": {
+    "bytes": ""
+   },
+   "expectedError": {
+    "code": "INVALID_JSON"
+   }
+  },
+  {
+   "id": "V2-CANON-084",
+   "description": "a bare string at the top level",
+   "input": {
+    "bytes": "227822"
+   },
+   "expected": {
+    "outcome": "ok",
+    "value": "227822",
+    "text": "\"x\""
+   }
+  },
+  {
+   "id": "V2-CANON-085",
+   "description": "a bare number at the top level",
+   "input": {
+    "bytes": "3432"
+   },
+   "expected": {
+    "outcome": "ok",
+    "value": "3432",
+    "text": "42"
+   }
+  },
+  {
+   "id": "V2-CANON-086",
+   "description": "true false null",
+   "input": {
+    "bytes": "5b747275652c66616c73652c6e756c6c5d"
+   },
+   "expected": {
+    "outcome": "ok",
+    "value": "5b747275652c66616c73652c6e756c6c5d",
+    "text": "[true,false,null]"
+   }
+  },
+  {
+   "id": "V2-CANON-087",
+   "description": "literal True is not JSON",
+   "input": {
+    "bytes": "5b547275655d"
+   },
+   "expectedError": {
+    "code": "INVALID_JSON"
+   }
+  },
+  {
+   "id": "V2-CANON-088",
+   "description": "single quotes are not JSON",
+   "input": {
+    "bytes": "7b2761273a317d"
+   },
+   "expectedError": {
+    "code": "INVALID_JSON"
+   }
+  },
+  {
+   "id": "V2-CANON-089",
+   "description": "unquoted key is not JSON",
+   "input": {
+    "bytes": "7b613a317d"
+   },
+   "expectedError": {
+    "code": "INVALID_JSON"
+   }
+  },
+  {
+   "id": "V2-CANON-090",
+   "description": "a comment is not JSON",
+   "input": {
+    "bytes": "7b2261223a317d2f2f78"
+   },
+   "expectedError": {
+    "code": "INVALID_JSON"
+   }
+  },
+  {
+   "id": "V2-CANON-091",
+   "description": "two documents",
+   "input": {
+    "bytes": "7b7d7b7d"
+   },
+   "expectedError": {
+    "code": "INVALID_JSON"
+   }
+  },
+  {
+   "id": "V2-CANON-092",
+   "description": "a nested mix, keys sorted at every level",
+   "input": {
+    "bytes": "7b2262223a5b312c7b2279223a322c2278223a5b747275652c6e756c6c2c2273225d7d5d2c2261223a7b226b223a2d31322e35307d7d"
+   },
+   "expected": {
+    "outcome": "ok",
+    "value": "7b2261223a7b226b223a2d31322e357d2c2262223a5b312c7b2278223a5b747275652c6e756c6c2c2273225d2c2279223a327d5d7d",
+    "text": "{\"a\":{\"k\":-12.5},\"b\":[1,{\"x\":[true,null,\"s\"],\"y\":2}]}"
+   }
+  },
+  {
+   "id": "V2-CANON-093",
+   "description": "an unpaired surrogate AND a duplicate key: the duplicate key is reported first",
+   "input": {
+    "bytes": "7b2261223a225c7564383030222c2261223a317d"
+   },
+   "expectedError": {
+    "code": "DUPLICATE_KEY"
+   }
+  },
+  {
+   "id": "V2-CANON-094",
+   "description": "an out-of-range number AND a forbidden key: the number is reported first",
+   "input": {
+    "bytes": "7b225f5f70726f746f5f5f223a312c226e223a316531377d"
+   },
+   "expectedError": {
+    "code": "NUMBER_OUT_OF_RANGE"
+   }
+  },
+  {
+   "id": "V2-CANON-095",
+   "description": "a non-NFC string AND a lone surrogate: not NFC is reported first",
+   "input": {
+    "bytes": "7b2261223a22655c7530333031222c2262223a225c7564383030227d"
+   },
+   "expectedError": {
+    "code": "STRING_NOT_NFC"
+   }
+  },
+  {
+   "id": "V2-CANON-096",
+   "description": "a syntax error AND a duplicate key: the syntax error is reported first",
+   "input": {
+    "bytes": "7b2261223a312c2261223a322c7d"
+   },
+   "expectedError": {
+    "code": "INVALID_JSON"
+   }
+  },
+  {
+   "id": "V2-CANON-097",
+   "description": "a forbidden key AND a non-NFC key: the forbidden key is reported first",
+   "input": {
+    "bytes": "7b22636f6e7374727563746f72223a312c2265cc81223a327d"
+   },
+   "expectedError": {
+    "code": "FORBIDDEN_KEY"
+   }
+  },
+  {
+   "id": "V2-CANON-098",
+   "description": "depth 64 arrays (accepted)",
+   "input": {
+    "bytes": {
+     "repeat": {
+      "prefix": "",
+      "unit": "[",
+      "count": 64,
+      "suffix": "]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]"
+     }
+    }
+   },
+   "expected": {
+    "outcome": "ok",
+    "value": "5b5b5b5b5b5b5b5b5b5b5b5b5b5b5b5b5b5b5b5b5b5b5b5b5b5b5b5b5b5b5b5b5b5b5b5b5b5b5b5b5b5b5b5b5b5b5b5b5b5b5b5b5b5b5b5b5b5b5b5b5b5b5b5b5d5d5d5d5d5d5d5d5d5d5d5d5d5d5d5d5d5d5d5d5d5d5d5d5d5d5d5d5d5d5d5d5d5d5d5d5d5d5d5d5d5d5d5d5d5d5d5d5d5d5d5d5d5d5d5d5d5d5d5d5d5d5d5d",
+    "text": "[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]"
+   }
+  },
+  {
+   "id": "V2-CANON-099",
+   "description": "depth 65 arrays",
+   "input": {
+    "bytes": {
+     "repeat": {
+      "prefix": "",
+      "unit": "[",
+      "count": 65,
+      "suffix": "]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]"
+     }
+    }
+   },
+   "expectedError": {
+    "code": "MAX_DEPTH_EXCEEDED"
+   }
+  },
+  {
+   "id": "V2-CANON-100",
+   "description": "depth 64: 63 objects around a scalar leaf object",
+   "input": {
+    "bytes": {
+     "repeat": {
+      "prefix": "",
+      "unit": "{\"a\":",
+      "count": 63,
+      "suffix": "{\"z\":1}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}"
+     }
+    }
+   },
+   "expected": {
+    "outcome": "ok",
+    "value": "7b2261223a7b2261223a7b2261223a7b2261223a7b2261223a7b2261223a7b2261223a7b2261223a7b2261223a7b2261223a7b2261223a7b2261223a7b2261223a7b2261223a7b2261223a7b2261223a7b2261223a7b2261223a7b2261223a7b2261223a7b2261223a7b2261223a7b2261223a7b2261223a7b2261223a7b2261223a7b2261223a7b2261223a7b2261223a7b2261223a7b2261223a7b2261223a7b2261223a7b2261223a7b2261223a7b2261223a7b2261223a7b2261223a7b2261223a7b2261223a7b2261223a7b2261223a7b2261223a7b2261223a7b2261223a7b2261223a7b2261223a7b2261223a7b2261223a7b2261223a7b2261223a7b2261223a7b2261223a7b2261223a7b2261223a7b2261223a7b2261223a7b2261223a7b2261223a7b2261223a7b2261223a7b2261223a7b2261223a7b227a223a317d7d7d7d7d7d7d7d7d7d7d7d7d7d7d7d7d7d7d7d7d7d7d7d7d7d7d7d7d7d7d7d7d7d7d7d7d7d7d7d7d7d7d7d7d7d7d7d7d7d7d7d7d7d7d7d7d7d7d7d7d7d7d7d"
+   }
+  },
+  {
+   "id": "V2-CANON-101",
+   "description": "depth 65: 64 objects around a scalar leaf object",
+   "input": {
+    "bytes": {
+     "repeat": {
+      "prefix": "",
+      "unit": "{\"a\":",
+      "count": 64,
+      "suffix": "{\"z\":1}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}"
+     }
+    }
+   },
+   "expectedError": {
+    "code": "MAX_DEPTH_EXCEEDED"
+   }
+  },
+  {
+   "id": "V2-CANON-102",
+   "description": "depth 64: 63 arrays around [1]",
+   "input": {
+    "bytes": {
+     "repeat": {
+      "prefix": "",
+      "unit": "[",
+      "count": 63,
+      "suffix": "[1]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]"
+     }
+    }
+   },
+   "expected": {
+    "outcome": "ok",
+    "value": "5b5b5b5b5b5b5b5b5b5b5b5b5b5b5b5b5b5b5b5b5b5b5b5b5b5b5b5b5b5b5b5b5b5b5b5b5b5b5b5b5b5b5b5b5b5b5b5b5b5b5b5b5b5b5b5b5b5b5b5b5b5b5b5b315d5d5d5d5d5d5d5d5d5d5d5d5d5d5d5d5d5d5d5d5d5d5d5d5d5d5d5d5d5d5d5d5d5d5d5d5d5d5d5d5d5d5d5d5d5d5d5d5d5d5d5d5d5d5d5d5d5d5d5d5d5d5d5d",
+    "text": "[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[1]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]"
+   }
+  },
+  {
+   "id": "V2-CANON-103",
+   "description": "depth 65: 64 arrays around [1]",
+   "input": {
+    "bytes": {
+     "repeat": {
+      "prefix": "",
+      "unit": "[",
+      "count": 64,
+      "suffix": "[1]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]"
+     }
+    }
+   },
+   "expectedError": {
+    "code": "MAX_DEPTH_EXCEEDED"
+   }
+  },
+  {
+   "id": "V2-CANON-104",
+   "description": "canonical size 1048575 bytes (accepted)",
+   "input": {
+    "bytes": {
+     "repeat": {
+      "prefix": "[\"",
+      "unit": "a",
+      "count": 1048571,
+      "suffix": "\"]"
+     }
+    }
+   },
+   "expected": {
+    "outcome": "ok",
+    "length": 1048575,
+    "sha256": "e8fbce749398faeb5a30b6836773f06915aa1655e860c2499bb5d1b6c1201541"
+   }
+  },
+  {
+   "id": "V2-CANON-105",
+   "description": "canonical size 1048576 bytes (accepted)",
+   "input": {
+    "bytes": {
+     "repeat": {
+      "prefix": "[\"",
+      "unit": "a",
+      "count": 1048572,
+      "suffix": "\"]"
+     }
+    }
+   },
+   "expected": {
+    "outcome": "ok",
+    "length": 1048576,
+    "sha256": "943b8c3feb5a604427e620e1533d53880f5c915f892021a0bd29b854f51b445a"
+   }
+  },
+  {
+   "id": "V2-CANON-106",
+   "description": "canonical size 1048577 bytes",
+   "input": {
+    "bytes": {
+     "repeat": {
+      "prefix": "[\"",
+      "unit": "a",
+      "count": 1048573,
+      "suffix": "\"]"
+     }
+    }
+   },
+   "expectedError": {
+    "code": "MAX_SIZE_EXCEEDED"
+   }
+  },
+  {
+   "id": "V2-CANON-107",
+   "description": "size counts the canonical form: spaces do not count",
+   "input": {
+    "bytes": {
+     "repeat": {
+      "prefix": "[",
+      "unit": " ",
+      "count": 1048576,
+      "suffix": "1]"
+     }
+    }
+   },
+   "expected": {
+    "outcome": "ok",
+    "value": "5b315d",
+    "text": "[1]"
+   }
+  },
+  {
+   "id": "V2-CANON-108",
+   "description": "a string that ends in a backslash",
+   "input": {
+    "bytes": "22615c"
+   },
+   "expectedError": {
+    "code": "INVALID_JSON"
+   }
+  },
+  {
+   "id": "V2-CANON-109",
+   "description": "an array whose string ends in a backslash",
+   "input": {
+    "bytes": "5b225c"
+   },
+   "expectedError": {
+    "code": "INVALID_JSON"
+   }
+  }
+ ]
+}

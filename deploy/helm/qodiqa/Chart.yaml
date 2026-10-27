@@ -1,0 +1,11 @@
+apiVersion: v2
+name: qodiqa
+description: "QODIQA gateway in the distributed topology (PostgreSQL orders the audit chain, Redis holds replay and rate-limit state), with a migration job, monitoring and ingress"
+type: application
+# Chart version and the application version it deploys. Provisional until the project's publishing step.
+version: 0.1.0
+appVersion: "1.0.0"
+kubeVersion: ">=1.27.0-0"
+keywords: [qodiqa, ai-governance, gateway]
+annotations:
+  qodiqa.dev/status: "tested and verified internally; not published"

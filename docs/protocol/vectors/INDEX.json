@@ -1,0 +1,62 @@
+{
+ "format": "qodiqa-vectors-index/1",
+ "generatedBy": "scripts/protocol/gen-v2-vectors.js",
+ "specVersion": "v2-freeze-1",
+ "files": {
+  "qodiqa-protocol-vectors.json": {
+   "family": "v1",
+   "cases": {
+    "canonicalization.valid": 8,
+    "canonicalization.errors": 8,
+    "domainTags.tags": 33,
+    "artifacts": 3,
+    "verification.cases": 21,
+    "requestBinding.hashes": 5,
+    "requestBinding.binding": 5,
+    "policyHash.cases": 3
+   }
+  },
+  "v2-canon.json": {
+   "family": "v2-canon",
+   "cases": 109,
+   "accepted": 45,
+   "refused": 64,
+   "sha256": "45deba3678f066a12a189e293e70f16cf711945bf3c77b9814de490a166d31a4"
+  },
+  "v2-request.json": {
+   "family": "v2-request",
+   "cases": 119,
+   "accepted": 65,
+   "refused": 54,
+   "sha256": "f0f8220f4122383f7c79b33b46e01838f4599fb34bec33907b1088ad63b0a45d"
+  },
+  "receipt.json": {
+   "family": "v2-receipt",
+   "cases": 53,
+   "accepted": 11,
+   "refused": 42,
+   "sha256": "fffe31b013ec37134a486984344f6af75ca95461a54df04ce4bf57f8459c2b6f"
+  },
+  "audit-v8.json": {
+   "family": "audit-v8",
+   "cases": 50,
+   "accepted": 16,
+   "refused": 34,
+   "sha256": "0ff72942612294f1136d6592606a7bcc4f44e25156de2343444d063881e3bca6"
+  },
+  "audit-proof.json": {
+   "family": "audit-proof",
+   "cases": 44,
+   "accepted": 9,
+   "refused": 35,
+   "sha256": "709f74acffd21232675d5b720ac2cb2894e01e4b25acdecd5d97ee05f9df18a0"
+  },
+  "audit-anchor.json": {
+   "family": "audit-anchor",
+   "cases": 25,
+   "accepted": 5,
+   "refused": 20,
+   "sha256": "9823b09b573fe954b11496574e3c2e9ebbe362f82dcec1001179adc09143c61d"
+  }
+ }
+}

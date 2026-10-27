@@ -1,0 +1,354 @@
+# Alerts on the gateway's own fail-closed, integrity and dependency signals. Every expression uses a metric name that
+# src/observability/metrics.js registers AND serves from collect() (scripts/__tests__/shippedDeploymentPosture.test.js
+# SD-06 and src/observability/__tests__/metricsRegistryCompleteness.test.js MR-03 enforce this); every rule carries
+# severity, summary and a runbook_url that resolves to a repository document and heading
+# (src/observability/__tests__/prometheusRuleStructure.test.js).
+#
+# 2026-10-06 — two registry mechanics shape the
+# expressions below:
+#   * a labelled counter only appears on its first increment, already at 1, and Prometheus increase() never sees a
+#     series' first sample. Closed label sets an alert matches on are therefore SEEDED at 0 in metrics.js; open-ended
+#     label sets (and events that can happen at boot, before the first scrape) use
+#         (increase(X[w]) > 0) or (X > 0 unless X offset w)
+#     which also fires on a series that appeared within the window already non-zero;
+#   * an unset gauge is served as an unlabelled 0, which for some gauges means "unsafe/unavailable". Those rules are
+#     guarded (a labelled-series matcher, a last-check timestamp > 0, or process uptime).
+apiVersion: monitoring.coreos.com/v1
+kind: PrometheusRule
+metadata:
+  name: qodiqa
+  namespace: qodiqa
+  labels:
+    app.kubernetes.io/name: qodiqa
+spec:
+  groups:
+    - name: qodiqa.evidence
+      rules:
+        - alert: QodiqaKillSwitchActive
+          expr: max(qodiqa_kill_switch_active) == 1
+          labels: { severity: critical }
+          annotations: { summary: "The global kill switch is ACTIVE: /sign and /ai/chat refuse every request", runbook_url: "docs/operations/alert-runbooks.md#kill-switch" }
+        - alert: QodiqaKillSwitchTampered
+          expr: increase(qodiqa_kill_switch_blocks_total{cause="tampered"}[5m]) > 0
+          labels: { severity: critical }
+          annotations: { summary: "The kill-switch record does not carry a valid MAC and is being treated as active: someone changed it outside the API", runbook_url: "docs/operations/alert-runbooks.md#kill-switch" }
+        - alert: QodiqaKillSwitchStateUnavailable
+          expr: increase(qodiqa_kill_switch_blocks_total{cause="state_unavailable"}[5m]) > 0
+          labels: { severity: critical }
+          annotations: { summary: "A replica cannot confirm the kill-switch state (control-plane snapshot older than 5 s) and is refusing /sign and /ai/chat", runbook_url: "docs/operations/alert-runbooks.md#kill-switch" }
+        - alert: QodiqaTransparencyJournalUnavailable
+          expr: qodiqa_transparency_journal_unavailable == 1
+          for: 30s
+          labels: { severity: critical }
+          annotations: { summary: "Neither the recovery queue nor the file journal can take a transparency leaf: leaves are buffered in memory and new executions are refused once this passes the bound", runbook_url: "docs/operations/alert-runbooks.md#transparency-evidence-store-unavailable" }
+        - alert: QodiqaTransparencyExecuteRefused
+          expr: increase(qodiqa_transparency_journal_refused_total[5m]) > 0
+          labels: { severity: critical }
+          annotations: { summary: "EXECUTE decisions are being refused (503 TRANSPARENCY_JOURNAL_UNAVAILABLE) because the transparency evidence store has been unavailable past its bound", runbook_url: "docs/operations/alert-runbooks.md#transparency-evidence-store-unavailable" }
+        - alert: QodiqaExternalAnchorFailing
+          expr: increase(qodiqa_external_anchor_total{outcome=~"retry|failed"}[1h]) > 0
+          labels: { severity: warning }
+          annotations: { summary: "External checkpoint anchoring (git / OpenTimestamps / RFC 3161) is failing; anchors stay pending and are retried", runbook_url: "docs/operations/alert-runbooks.md#external-anchor-failing" }
+        - alert: QodiqaExternalAnchorStale
+          expr: qodiqa_external_anchor_oldest_pending_seconds > 7200
+          labels: { severity: warning }
+          annotations: { summary: "An external checkpoint anchor has been pending for more than two hours", runbook_url: "docs/operations/alert-runbooks.md#external-anchor-failing" }
+        - alert: QodiqaAuditFailClosedRejections
+          expr: increase(qodiqa_audit_fail_closed_rejections_total[5m]) > 0
+          labels: { severity: critical }
+          annotations: { summary: "Requests refused because their audit record could not be written (fail closed)", runbook_url: "docs/operations/alert-runbooks.md#audit-append-failure" }
+        - alert: QodiqaAuditAppendFailed
+          expr: (increase(qodiqa_audit_append_failed_total[5m]) > 0) or (qodiqa_audit_append_failed_total > 0 unless qodiqa_audit_append_failed_total offset 5m)
+          labels: { severity: critical }
+          annotations: { summary: "Audit appends are failing", runbook_url: "docs/operations/alert-runbooks.md#audit-append-failure" }
+        - alert: QodiqaCheckpointTransparencyAnchorFailed
+          expr: (increase(qodiqa_audit_anchor_events_total{outcome="transparency_anchor_failed"}[30m]) > 0)
+          labels: { severity: warning }
+          annotations: { summary: "A signed audit checkpoint could not be registered in the transparency log", runbook_url: "docs/operations/alert-runbooks.md#audit-append-failure" }
+        - alert: QodiqaHigh5xxRate
+          expr: (sum by (route_family) (rate(qodiqa_http_responses_total{status_class="5xx"}[5m])) / sum by (route_family) (rate(qodiqa_http_responses_total[5m]))) > 0.05
+          for: 10m
+          labels: { severity: warning }
+          annotations: { summary: "More than 5% of responses on a route family are 5xx (includes 503 admission shedding)", runbook_url: "docs/operations/alert-runbooks.md#admission-saturation" }
+        - alert: QodiqaAuditDiskFull
+          expr: (increase(qodiqa_audit_disk_full_total[5m]) > 0) or (qodiqa_audit_disk_full_total > 0 unless qodiqa_audit_disk_full_total offset 5m)
+          labels: { severity: critical }
+          annotations: { summary: "The audit volume is full (ENOSPC): mandatory audit appends fail and requests fail closed", runbook_url: "docs/operations/alert-runbooks.md#audit-append-failure" }
+        - alert: QodiqaAuditWalFsyncSlow
+          expr: histogram_quantile(0.99, sum by (le, instance) (rate(qodiqa_audit_wal_fsync_duration_seconds_bucket[5m]))) > 0.5
+          for: 10m
+          labels: { severity: warning }
+          annotations: { summary: "Audit WAL fsync p99 above 500 ms: the audit volume is slow (every mandatory append waits on it)", runbook_url: "docs/operations/alert-runbooks.md#audit-append-failure" }
+        - alert: QodiqaTransparencyFailClosed
+          expr: increase(qodiqa_transparency_fail_closed_rejections_total[5m]) > 0
+          labels: { severity: critical }
+          annotations: { summary: "Requests refused because the transparency log could not record them", runbook_url: "docs/operations/transparency-recovery.md#6-rebuild-procedures" }
+        - alert: QodiqaTransparencyEnforcementFailures
+          expr: sum by (stage) (increase(qodiqa_transparency_enforcement_failures_total[5m])) > 0
+          labels: { severity: critical }
+          annotations: { summary: "A decision's transparency leaf could not be appended (TRANSPARENCY_APPEND_FAILED; stage BLOCK, ALLOW or STREAM)", runbook_url: "docs/operations/transparency-recovery.md#6-rebuild-procedures" }
+        # phase 11: unlabelled counter served at 0 from boot, so increase() sees the first failure.
+        - alert: QodiqaTransparencyPersistFailures
+          expr: increase(qodiqa_transparency_persist_failures_total[15m]) > 0
+          labels: { severity: warning }
+          annotations: { summary: "Transparency log entries or roots are failing to persist to PostgreSQL (logStore); the gap scanner must reconcile them", runbook_url: "docs/operations/transparency-recovery.md#4-missing-entry-detection" }
+        - alert: QodiqaTransparencyGapUnrecoverable
+          expr: increase(qodiqa_gap_scanner_gaps_unrecoverable_total[30m]) > 0
+          labels: { severity: critical }
+          annotations: { summary: "The transparency gap scanner found a gap it cannot recover", runbook_url: "docs/operations/transparency-recovery.md#31-gap-scanner" }
+        - alert: QodiqaGapScannerStale
+          expr: (time() - qodiqa_gap_scanner_last_success_timestamp_seconds > 1800) and qodiqa_gap_scanner_last_success_timestamp_seconds > 0
+          labels: { severity: warning }
+          annotations: { summary: "The transparency gap scanner has not completed a run for 30 minutes", runbook_url: "docs/operations/transparency-recovery.md#31-gap-scanner" }
+        - alert: QodiqaTransparencyRootErrors
+          expr: (increase(qodiqa_transparency_root_scheduler_errors_total[30m]) > 0) or (qodiqa_transparency_root_scheduler_errors_total > 0 unless qodiqa_transparency_root_scheduler_errors_total offset 30m)
+          labels: { severity: warning }
+          annotations: { summary: "Transparency Merkle root generation is failing", runbook_url: "docs/operations/transparency-recovery.md#72-root-chain-validation" }
+        - alert: QodiqaTransparencyUnrootedSpan
+          expr: qodiqa_transparency_unrooted_id_span > 10000
+          for: 30m
+          labels: { severity: warning }
+          annotations: { summary: "More than 10,000 transparency entries are not covered by a signed root", runbook_url: "docs/operations/transparency-recovery.md#72-root-chain-validation" }
+        - alert: QodiqaAuditChainVerifierFailure
+          expr: (increase(qodiqa_audit_chain_verifier_failure_total[15m]) > 0) or (qodiqa_audit_chain_verifier_failure_total > 0 unless qodiqa_audit_chain_verifier_failure_total offset 15m)
+          labels: { severity: critical }
+          annotations: { summary: "The live audit-chain verifier found a violation or could not run", runbook_url: "docs/operations/audit-chain-integrity-verification.md#4-reading-get-auditchainverifierstatus" }
+        - alert: QodiqaAuditChainVerifierLag
+          expr: qodiqa_audit_chain_verifier_lag_entries > 10000
+          for: 15m
+          labels: { severity: warning }
+          annotations: { summary: "The audit-chain verifier is more than 10k entries behind", runbook_url: "docs/operations/audit-chain-integrity-verification.md#4-reading-get-auditchainverifierstatus" }
+        - alert: QodiqaChecksumAnchorMismatch
+          expr: increase(qodiqa_audit_checksum_anchor_mismatch_total[15m]) > 0
+          labels: { severity: critical }
+          annotations: { summary: "The audit checksum anchor disagrees with the chain (possible tampering or truncation)", runbook_url: "docs/operations/audit-chain-integrity-verification.md#61-checksum-anchor-isolation" }
+        - alert: QodiqaChecksumAnchorPgWriteFailing
+          expr: qodiqa_audit_checksum_anchor_backend == 0 and on(instance) qodiqa_audit_checksum_anchor_last_write_timestamp_seconds > 0
+          for: 5m
+          labels: { severity: warning }
+          annotations: { summary: "The checksum anchor is no longer being written to PostgreSQL (backend gauge 0 after at least one write)", runbook_url: "docs/operations/audit-chain-integrity-verification.md#61-checksum-anchor-isolation" }
+        # ER 2026-10-06: external anchoring outcomes (qodiqa_audit_anchor_events_total, src/core/audit/checkpoint/checkpointWriter.js)
+        - alert: QodiqaAnchorWitnessRefused
+          expr: increase(qodiqa_audit_anchor_events_total{outcome="witness_refused"}[15m]) > 0
+          labels: { severity: critical }
+          annotations: { summary: "A witness REFUSED to co-sign a checkpoint: it saw a rollback or equivocation (AUDIT_ANCHOR_WITNESS_REFUSED) — treat as a possible history rewrite", runbook_url: "docs/operations/alert-runbooks.md#witness-refusal" }
+        - alert: QodiqaAnchorWitnessFailed
+          expr: increase(qodiqa_audit_anchor_events_total{outcome="witness_failed"}[30m]) > 0
+          labels: { severity: warning }
+          annotations: { summary: "A witness could not co-sign (down, timeout or error); anchors without cosignatures fail the next production boot check", runbook_url: "docs/operations/alert-runbooks.md#witness-unavailable-or-anchor-export-failed" }
+        - alert: QodiqaAnchorExportFailed
+          expr: increase(qodiqa_audit_anchor_events_total{outcome="export_failed"}[15m]) > 0
+          labels: { severity: critical }
+          annotations: { summary: "The customer-held anchor export could not be written (AUDIT_ANCHOR_EXPORT_FAILED)", runbook_url: "docs/operations/alert-runbooks.md#witness-unavailable-or-anchor-export-failed" }
+        - alert: QodiqaCheckpointTickFailed
+          expr: (increase(qodiqa_background_tasks_failed_total{task="audit-checkpoint"}[30m]) > 0) or (qodiqa_background_tasks_failed_total{task="audit-checkpoint"} > 0 unless qodiqa_background_tasks_failed_total{task="audit-checkpoint"} offset 30m)
+          labels: { severity: warning }
+          annotations: { summary: "The audit checkpoint/anchoring tick failed (no checkpoint was signed or anchored on that tick)", runbook_url: "docs/operations/alert-runbooks.md#witness-unavailable-or-anchor-export-failed" }
+        - alert: QodiqaEvidenceChainPersistFailures
+          expr: increase(qodiqa_evidence_chain_persist_failures_total[15m]) > 0
+          labels: { severity: warning }
+          annotations: { summary: "Evidence-chain records are failing to persist", runbook_url: "docs/operations/postgresql-failure.md#34-persistence-recovery-queue-monitoring" }
+    - name: qodiqa.mirror
+      rules:
+        - alert: QodiqaMirrorCrosscheckDivergence
+          expr: (increase(qodiqa_audit_crosscheck_failure_total{reason="DIVERGENCE"}[30m]) > 0) or (qodiqa_audit_crosscheck_failure_total{reason="DIVERGENCE"} > 0 unless qodiqa_audit_crosscheck_failure_total{reason="DIVERGENCE"} offset 30m)
+          labels: { severity: critical }
+          annotations: { summary: "The PostgreSQL audit mirror DIVERGES from the authoritative file chain", runbook_url: "docs/operations/alert-runbooks.md#mirror-drift" }
+        - alert: QodiqaMirrorCrosscheckFailed
+          expr: (increase(qodiqa_audit_crosscheck_failure_total{reason!="DIVERGENCE"}[30m]) > 0) or (qodiqa_audit_crosscheck_failure_total{reason!="DIVERGENCE"} > 0 unless qodiqa_audit_crosscheck_failure_total{reason!="DIVERGENCE"} offset 30m)
+          labels: { severity: warning }
+          annotations: { summary: "The audit mirror cross-check could not complete (PG unreachable, or a chain failed validation)", runbook_url: "docs/operations/alert-runbooks.md#mirror-drift" }
+        - alert: QodiqaMirrorCountDrift
+          expr: (increase(qodiqa_audit_mirror_count_drift_total[7h]) > 0) or (qodiqa_audit_mirror_count_drift_total > 0 unless qodiqa_audit_mirror_count_drift_total offset 7h)
+          labels: { severity: critical }
+          annotations: { summary: "audit_chain_mirror_count does not equal count(*) of audit_chain (AUDIT_MIRROR_COUNT_DRIFT) — not repaired automatically", runbook_url: "docs/operations/alert-runbooks.md#mirror-drift" }
+        - alert: QodiqaAuditPgHydrationFailed
+          expr: (increase(qodiqa_audit_pg_hydration_failed_total[15m]) > 0) or (qodiqa_audit_pg_hydration_failed_total > 0 unless qodiqa_audit_pg_hydration_failed_total offset 15m)
+          labels: { severity: warning }
+          annotations: { summary: "The audit tail could not be hydrated from PostgreSQL", runbook_url: "docs/operations/alert-runbooks.md#mirror-drift" }
+        - alert: QodiqaAuditPgSyncLag
+          expr: qodiqa_audit_pg_lag_entries > 1000
+          for: 15m
+          labels: { severity: warning }
+          annotations: { summary: "The PostgreSQL audit mirror is more than 1,000 entries behind the file chain (AUDIT_PG_SYNC_LAG)", runbook_url: "docs/operations/alert-runbooks.md#audit-backlog" }
+        - alert: QodiqaAuditMirrorBacklogHigh
+          expr: qodiqa_audit_mirror_writer_depth > 5000
+          for: 5m
+          labels: { severity: warning }
+          annotations: { summary: "The PostgreSQL audit mirror is falling behind (back-pressure engages at QODIQA_AUDIT_MIRROR_MAX_DEPTH, default 20,000)", runbook_url: "docs/operations/alert-runbooks.md#audit-backlog" }
+        - alert: QodiqaAuditBacklogShedding
+          expr: increase(qodiqa_admission_rejected_total{cause="audit_backlog"}[5m]) > 0
+          labels: { severity: critical }
+          annotations: { summary: "Audit mirror back-pressure is refusing new requests (503, cause audit_backlog) — PostgreSQL is too slow for the audit write rate", runbook_url: "docs/operations/alert-runbooks.md#audit-backlog" }
+    - name: qodiqa.dependencies
+      rules:
+        - alert: QodiqaReadinessDependencyFailures
+          expr: ((increase(qodiqa_readiness_dependency_failures_total{component!="consentCache"}[5m]) > 0) or (qodiqa_readiness_dependency_failures_total{component!="consentCache"} > 0 unless qodiqa_readiness_dependency_failures_total{component!="consentCache"} offset 5m)) and on(instance) qodiqa_process_uptime_seconds > 600
+          labels: { severity: warning }
+          annotations: { summary: "A readiness dependency (PostgreSQL, Redis, …) failed after the startup window", runbook_url: "docs/operations/redis-failure.md#3-detection-and-health-verification" }
+        - alert: QodiqaReadinessComponentDown
+          expr: qodiqa_readiness_component_up{component!="", component!="consentCache"} == 0
+          for: 5m
+          labels: { severity: warning }
+          annotations: { summary: "A required readiness component has been down for 5 minutes (GET /ready answers 503)", runbook_url: "docs/operations/redis-failure.md#32-readiness-probe-failure" }
+        - alert: QodiqaRedisStoreDown
+          expr: qodiqa_redis_store_up == 0 and on(instance) qodiqa_process_uptime_seconds > 120
+          for: 1m
+          labels: { severity: critical }
+          annotations: { summary: "A Redis-backed store is down (replay, anomaly or rate-limit protection fails closed)", runbook_url: "docs/operations/redis-failure.md#3-detection-and-health-verification" }
+        - alert: QodiqaExecutionIntegrityDegraded
+          expr: qodiqa_execution_integrity_full == 0 and on(instance) qodiqa_process_uptime_seconds > 120
+          for: 1m
+          labels: { severity: critical }
+          annotations: { summary: "Execution integrity lost: one or more critical stores are unavailable", runbook_url: "docs/operations/redis-failure.md#3-detection-and-health-verification" }
+        - alert: QodiqaRedisPersistenceUnsafe
+          expr: qodiqa_redis_persistence_safe == 0 and on(instance) qodiqa_redis_persistence_last_check_timestamp_seconds > 0
+          for: 5m
+          labels: { severity: critical }
+          annotations: { summary: "Redis persistence is not safe for replay state (AOF off or misconfigured)", runbook_url: "docs/operations/redis-failure.md#35-aof-status-verification" }
+        - alert: QodiqaRedisCommandFailures
+          expr: rate(qodiqa_redis_command_failures_total[5m]) > 0.5
+          for: 5m
+          labels: { severity: warning }
+          annotations: { summary: "Redis commands are failing (replay protection and limits fail closed)", runbook_url: "docs/operations/redis-failure.md#3-detection-and-health-verification" }
+        # phase 11: the managed client now writes this gauge on EVERY state transition (0 DISCONNECTED,
+        # 1 DEGRADED, 2 RECOVERING, 3 HEALTHY) in single, sentinel and cluster mode. {purpose!=""} excludes the unlabelled
+        # 0 served before any managed client exists (it would otherwise read DISCONNECTED on a fresh process).
+        - alert: QodiqaRedisConnectionDegraded
+          expr: qodiqa_redis_connection_state_code{purpose!=""} < 3
+          for: 5m
+          labels: { severity: warning }
+          annotations: { summary: "A managed Redis connection (label purpose) has not been HEALTHY for 5 minutes: DEGRADED (errors or command-deadline misses — includes silent partitions), RECOVERING (reconnect loop) or DISCONNECTED (never connected); the controls that depend on it fail closed", runbook_url: "docs/operations/redis-failure.md#31-metrics-based-detection" }
+        - alert: QodiqaPgCircuitOpen
+          expr: increase(qodiqa_pg_circuit_opens_total[5m]) > 0
+          labels: { severity: critical }
+          annotations: { summary: "The PostgreSQL circuit breaker opened (PG-dependent operations fast-fail)", runbook_url: "docs/operations/postgresql-failure.md#3-database-unavailable" }
+        - alert: QodiqaPgPoolSaturated
+          expr: qodiqa_pg_pool_waiting > 0
+          for: 5m
+          labels: { severity: warning }
+          annotations: { summary: "Requests have been waiting for a PostgreSQL pool connection for 5 minutes", runbook_url: "docs/operations/postgresql-failure.md#7-slow-queries" }
+        - alert: QodiqaPgAcquireFailures
+          expr: increase(qodiqa_pg_pool_acquire_failures_total[5m]) > 0
+          labels: { severity: warning }
+          annotations: { summary: "PostgreSQL connection acquisition is failing", runbook_url: "docs/operations/postgresql-failure.md#3-database-unavailable" }
+        - alert: QodiqaQueueBacklog
+          expr: increase(qodiqa_queue_backlog_alerts_total[15m]) > 0
+          labels: { severity: warning }
+          annotations: { summary: "A recovery/transparency/mirror queue crossed its backlog threshold (QUEUE_BACKLOG_THRESHOLD_CROSSED)", runbook_url: "docs/operations/postgresql-failure.md#34-persistence-recovery-queue-monitoring" }
+        - alert: QodiqaPrqOldestPending
+          expr: max by (operation_type) (qodiqa_prq_oldest_pending_age_seconds) > 900
+          for: 5m
+          labels: { severity: warning }
+          annotations: { summary: "The oldest pending persistence-recovery item is older than 15 minutes", runbook_url: "docs/operations/postgresql-failure.md#34-persistence-recovery-queue-monitoring" }
+        - alert: QodiqaPrqDlqNonEmpty
+          expr: qodiqa_prq_dlq_depth > 0
+          for: 30m
+          labels: { severity: info }
+          annotations: { summary: "Persistence-recovery items are parked in the dead-letter queue", runbook_url: "docs/operations/postgresql-failure.md#34-persistence-recovery-queue-monitoring" }
+        - alert: QodiqaPrqPersistFailed
+          expr: (increase(qodiqa_prq_persist_failed_total[15m]) > 0) or (qodiqa_prq_persist_failed_total > 0 unless qodiqa_prq_persist_failed_total offset 15m)
+          labels: { severity: critical }
+          annotations: { summary: "Recovery-queue items could not be persisted to PostgreSQL (the local journal backstop is engaged)", runbook_url: "docs/operations/postgresql-failure.md#34-persistence-recovery-queue-monitoring" }
+        # phase 11: the recovery queue's LAST backstop. Both the PostgreSQL queue and the filesystem journal
+        # refused the operation, so it is lost (label operationType is open-ended → the "first sample" or-form).
+        - alert: QodiqaPrqJournalWriteFailed
+          expr: (increase(qodiqa_prq_journal_write_failed_total[15m]) > 0) or (qodiqa_prq_journal_write_failed_total > 0 unless qodiqa_prq_journal_write_failed_total offset 15m)
+          labels: { severity: critical }
+          annotations: { summary: "A recovery-queue operation was LOST: PostgreSQL and the local recovery journal both refused it (check the journal volume and PostgreSQL now)", runbook_url: "docs/operations/postgresql-failure.md#34-persistence-recovery-queue-monitoring" }
+        - alert: QodiqaAdmissionRejecting
+          expr: rate(qodiqa_admission_rejected_total[5m]) > 1
+          for: 10m
+          labels: { severity: warning }
+          annotations: { summary: "Admission control is shedding load (503 SERVER_OVERLOADED) — the instance is saturated", runbook_url: "docs/operations/alert-runbooks.md#admission-saturation" }
+        - alert: QodiqaProviderFailures
+          expr: sum by (provider) (rate(qodiqa_provider_failures_total[5m])) > 0.1
+          for: 5m
+          labels: { severity: warning }
+          annotations: { summary: "AI provider calls are failing, streaming and non-streaming (cancellations, client disconnects and stream timeouts excluded)", runbook_url: "docs/operations/alert-runbooks.md#provider-failures" }
+        - alert: QodiqaRetentionPrivilegeCheckFailed
+          expr: (increase(qodiqa_audit_retention_privilege_check_failure_total[1h]) > 0) or (qodiqa_audit_retention_privilege_check_failure_total > 0 unless qodiqa_audit_retention_privilege_check_failure_total offset 1h)
+          labels: { severity: warning }
+          annotations: { summary: "The audit retention role's privilege check failed", runbook_url: "docs/operations/audit-chain-integrity-verification.md#10-retention-role-separation" }
+    - name: qodiqa.security
+      rules:
+        - alert: QodiqaReplaySpike
+          expr: sum(rate(qodiqa_security_events_total{event="replay_detected"}[5m])) > 0.2
+          for: 10m
+          labels: { severity: warning }
+          annotations: { summary: "Sustained replay attempts are being blocked", runbook_url: "docs/operations/alert-runbooks.md#replay-and-nonce" }
+        - alert: QodiqaNonceViolation
+          expr: increase(qodiqa_security_events_total{event="nonce_violation"}[5m]) > 0
+          labels: { severity: critical }
+          annotations: { summary: "Requests refused because the nonce/replay state could not be read or proven (NONCE_STORE_ERROR / REPLAY_STATE_UNPROVABLE)", runbook_url: "docs/operations/alert-runbooks.md#replay-and-nonce" }
+        # phase 11: a consent-revocation / org-status pub/sub message or record failed its MAC — either a key
+        # mismatch between instances or something other than QODIQA writing to Redis. Labels channel/reason are open-ended.
+        - alert: QodiqaPubsubSignatureRejects
+          expr: (increase(qodiqa_pubsub_signature_rejects_total[15m]) > 0) or (qodiqa_pubsub_signature_rejects_total > 0 unless qodiqa_pubsub_signature_rejects_total offset 15m)
+          labels: { severity: critical }
+          annotations: { summary: "Consent-revocation or org-status messages/records were rejected for a missing or invalid MAC (key mismatch between instances, or an unauthorised writer on Redis)", runbook_url: "docs/operations/incident-response.md#17-consent-revocation-propagation-failures" }
+        - alert: QodiqaMfaLockouts
+          expr: increase(qodiqa_mfa_events_total{outcome="locked"}[15m]) > 0
+          labels: { severity: warning }
+          annotations: { summary: "An operator account was MFA-locked (5 wrong codes in 15 minutes)", runbook_url: "docs/operations/alert-runbooks.md#operator-auth-failures" }
+        - alert: QodiqaOpsAuthFailureBurst
+          expr: sum(rate(qodiqa_ops_auth_failures_total[5m])) > 1
+          for: 5m
+          labels: { severity: warning }
+          annotations: { summary: "Sustained operator-surface authentication failures (missing or invalid credentials)", runbook_url: "docs/operations/alert-runbooks.md#operator-auth-failures" }
+        - alert: QodiqaRbacDenialBurst
+          expr: sum(rate(qodiqa_rbac_denials_total[5m])) > 0.5
+          for: 10m
+          labels: { severity: warning }
+          annotations: { summary: "Sustained RBAC denials on the operator surface", runbook_url: "docs/operations/alert-runbooks.md#operator-auth-failures" }
+        - alert: QodiqaAuthLockoutStorageFailures
+          expr: increase(qodiqa_auth_lockout_storage_failures_total[5m]) > 0
+          labels: { severity: warning }
+          annotations: { summary: "The auth-lockout store is failing (operator brute-force protection degraded)", runbook_url: "docs/operations/alert-runbooks.md#operator-auth-failures" }
+    - name: qodiqa.runtime
+      rules:
+        - alert: QodiqaEventLoopUnhealthy
+          expr: qodiqa_event_loop_delay_state_code == 2
+          for: 2m
+          labels: { severity: critical }
+          annotations: { summary: "Event-loop delay is in the UNHEALTHY band (EVENT_LOOP_DELAY_CRITICAL)", runbook_url: "docs/operations/alert-runbooks.md#event-loop" }
+        - alert: QodiqaEventLoopDegraded
+          expr: qodiqa_event_loop_delay_state_code >= 1
+          for: 10m
+          labels: { severity: warning }
+          annotations: { summary: "Event-loop delay has been DEGRADED or worse for 10 minutes", runbook_url: "docs/operations/alert-runbooks.md#event-loop" }
+        - alert: QodiqaBackgroundTaskFailing
+          expr: sum by (task) (increase(qodiqa_background_tasks_failed_total[30m])) > 3
+          labels: { severity: warning }
+          annotations: { summary: "A background task failed more than 3 times in 30 minutes", runbook_url: "docs/operations/alert-runbooks.md#background-tasks" }
+        - alert: QodiqaKeyRotationOverdue
+          expr: qodiqa_key_rotation_overdue_count > 0
+          labels: { severity: warning }
+          annotations: { summary: "A signing key is past its rotation deadline", runbook_url: "docs/operations/alert-runbooks.md#signing-keys" }
+        - alert: QodiqaKeyExpiringSoon
+          expr: qodiqa_key_expiry_approaching_count > 0
+          for: 1h
+          labels: { severity: info }
+          annotations: { summary: "A signing key expires within the warning window", runbook_url: "docs/operations/alert-runbooks.md#signing-keys" }
+        - alert: QodiqaKeyRotationSchedulerFailed
+          expr: (increase(qodiqa_key_rotation_scheduler_failures_total[1h]) > 0) or (qodiqa_key_rotation_scheduler_failures_total > 0 unless qodiqa_key_rotation_scheduler_failures_total offset 1h)
+          labels: { severity: warning }
+          annotations: { summary: "Scheduled key rotation failed", runbook_url: "docs/operations/alert-runbooks.md#signing-keys" }
+        - alert: QodiqaSigningProviderUnavailable
+          expr: qodiqa_signing_health_state{provider!=""} == 0
+          for: 2m
+          labels: { severity: critical }
+          annotations: { summary: "The signing provider (KMS/Vault/HSM) is UNAVAILABLE", runbook_url: "docs/operations/alert-runbooks.md#signing-keys" }
+    - name: qodiqa.scrape
+      rules:
+        # Prometheus Operator adds namespace/service/job to every scraped series; adjust if the gateway Service is renamed.
+        - alert: QodiqaScrapeDown
+          expr: up{namespace="qodiqa", service="qodiqa"} == 0
+          for: 5m
+          labels: { severity: critical }
+          annotations: { summary: "Prometheus cannot scrape the gateway's /metrics — every other QODIQA alert is blind", runbook_url: "docs/operations/alert-runbooks.md#scrape-health" }
+        - alert: QodiqaMetricsAbsent
+          expr: absent(qodiqa_build_info{namespace="qodiqa"})
+          for: 10m
+          labels: { severity: critical }
+          annotations: { summary: "No QODIQA gateway metrics at all for 10 minutes (no target, or every scrape failing)", runbook_url: "docs/operations/alert-runbooks.md#scrape-health" }

@@ -1,0 +1,36 @@
+# QODIQA Kubernetes Service — single-node overlay
+#
+# ClusterIP service — QODIQA is not exposed directly to the internet.
+# Place an Ingress, Gateway API route, or load balancer in front of this service.
+#
+# The service uses the readiness gate: pods are only added to the endpoints
+# list when /ready returns 200, ensuring no traffic reaches a degraded pod.
+#
+# the selector below includes `topology: single-node`, which only
+# overlays/single-node/statefulset.yaml's pods carry. This Service can never
+# select overlays/distributed/deployment.yaml's pods, even if both overlays
+# were mistakenly applied into the same namespace.
+#
+apiVersion: v1
+kind: Service
+metadata:
+  name: qodiqa
+  namespace: qodiqa
+  labels:
+    app.kubernetes.io/name:      qodiqa
+    app.kubernetes.io/component: gateway
+    topology:                    single-node
+    # scrape target marker — selects on it so the pod is scraped
+    # through this Service only, not a second time through qodiqa-headless. Not part of the selector below.
+    qodiqa.com/scrape:            "true"
+spec:
+  type: ClusterIP
+  selector:
+    app.kubernetes.io/name:      qodiqa
+    app.kubernetes.io/component: gateway
+    topology:                    single-node
+  ports:
+    - name:       http
+      port:       80
+      targetPort: http      # Named port 'http' on the pod (containerPort 3000)
+      protocol:   TCP

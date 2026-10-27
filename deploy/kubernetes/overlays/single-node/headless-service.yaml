@@ -1,0 +1,28 @@
+# QODIQA Headless Service — StatefulSet governing service (single-node overlay only)
+#
+# Required by statefulset.yaml's spec.serviceName. This does not route or
+# load-balance traffic (clusterIP: None) — it exists solely to give the
+# StatefulSet a network identity domain for its pods (qodiqa-0, qodiqa-1, ...).
+# Normal request traffic continues to go through the regular ClusterIP
+# Service in service.yaml, which is unaffected by this file.
+#
+apiVersion: v1
+kind: Service
+metadata:
+  name: qodiqa-headless
+  namespace: qodiqa
+  labels:
+    app.kubernetes.io/name:      qodiqa
+    app.kubernetes.io/component: gateway
+    topology:                    single-node
+spec:
+  clusterIP: None
+  selector:
+    app.kubernetes.io/name:      qodiqa
+    app.kubernetes.io/component: gateway
+    topology:                    single-node
+  ports:
+    - name:       http
+      port:       80
+      targetPort: http
+      protocol:   TCP

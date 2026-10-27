@@ -1,0 +1,42 @@
+name: Quickstart smoke
+
+# Clean checkout -> `docker compose up` (sandbox profile, built-in sandbox model, no AI provider) -> a signed request that executes -> a request that is blocked
+# -> offline verification of the executed request with the standalone verifier. Every step is timed; the timings are in the log and in the job summary.
+on:
+  workflow_dispatch: {}
+  push:
+    branches: [main, 'release/**']
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  quickstart-smoke:
+    name: quickstart-smoke
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4
+        with: { node-version: '22' }
+      - name: Build the image and start the sandbox (timed)
+        run: |
+          t=$(date +%s)
+          docker compose -f docker-compose.quickstart.yml up -d --build
+          echo "UP_SECONDS=$(( $(date +%s) - t ))" >> "$GITHUB_ENV"
+      - name: Walk the quick start (timed, offline verification)
+        run: node scripts/ci/quickstart-smoke.js --record quickstart-session.json --up-seconds "$UP_SECONDS"
+      - name: Keep the recorded session
+        if: always()
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
+        with: { name: quickstart-session, path: quickstart-session.json, if-no-files-found: ignore }
+      - name: Gateway log on failure
+        if: failure()
+        run: docker compose -f docker-compose.quickstart.yml logs --tail 200
+      - name: Stop the sandbox
+        if: always()
+        run: docker compose -f docker-compose.quickstart.yml down -v

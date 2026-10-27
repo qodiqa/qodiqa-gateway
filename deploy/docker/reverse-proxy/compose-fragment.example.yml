@@ -1,0 +1,83 @@
+# Example Compose fragment showing how to add an nginx TLS-terminating
+# reverse proxy to docker-compose.prod.yml's own topology. NOT applied
+# automatically anywhere — copy the relevant pieces into your own local
+# override (deploy/docker/docker-compose.*-local-override.yml, git-ignored)
+# or a dedicated overlay file, never into docker-compose.prod.yml itself,
+# which stays reverse-proxy-agnostic per its own long-standing design.
+#
+# This is the exact shape Part D validated locally, with the local-test
+# certificate paths shown as an example — replace with your own real mount
+# before using this against real traffic.
+#
+# added the explicit `seccomp:` line below. Before this, the proxy
+# container ran under Docker's own unrestricted default seccomp profile —
+# disclosed but not fixed ("proxy container uses Docker's default
+# seccomp profile, not QODIQA's bespoke one") because qodiqa's own profile
+# (deploy/docker/seccomp.json) is Node-oriented and does not allow the
+# syscalls nginx's master->worker privilege-drop needs (setuid/setgid/
+# chown/capset families) — confirmed by inspecting that profile directly.
+# deploy/docker/seccomp-nginx.json is a dedicated, minimal, deny-by-default
+# profile derived from the same base list plus exactly the syscalls a real
+# boot-and-serve test proved nginx needs (see that file's own header for
+# the full derivation and the report for the complete before/after).
+
+services:
+  reverse-proxy:
+    image: nginx:1.27.5-alpine@sha256:65645c7bb6a0661892a8b03b89d0743208a18dd2f3f17a54ef4b76fb8e2f2a10   # digest-pinned (RepoDigest of the cached nginx:1.27-alpine)
+    # every other service in docker-compose.prod.yml (postgres, redis,
+    # qodiqa) sets restart: unless-stopped; this fragment did not, so this
+    # was the one component in the whole topology that would not recover on
+    # its own after a crash/OOM/host-reboot-without-explicit-restart -- and
+    # it is the customer-facing TLS-termination front door. Reproduced
+    # directly: `docker kill` on the proxy container left it gone entirely
+    # (`docker compose ps` showed no container at all) until manually
+    # restarted, while an identical kill of the qodiqa service recovers on
+    # its own (see the report for both).
+    restart: unless-stopped
+    read_only: true
+    security_opt:
+      - no-new-privileges:true
+      # Same directory-resolution rule as the volumes block below (relative
+      # to docker-compose.prod.yml's own directory, deploy/docker/) --
+      # deploy/docker/seccomp-nginx.json is a sibling of that file.
+      - seccomp:./seccomp-nginx.json
+    cap_drop:
+      - ALL
+    # Minimal capabilities the stock nginx image's entrypoint genuinely
+    # needs to start under cap_drop: ALL + read_only: true (measured in
+    # Part D, not guessed): CHOWN to set ownership on the tmpfs temp
+    # dirs below, SETUID/SETGID to drop privilege from root to the `nginx`
+    # user for the worker processes it forks (unlike qodiqa's own
+    # Dockerfile, which runs as a declared non-root USER throughout and
+    # needs none of this). Still far narrower than the image's unrestricted
+    # default capability set.
+    cap_add:
+      - CHOWN
+      - SETUID
+      - SETGID
+    tmpfs:
+      - /tmp
+      - /var/cache/nginx
+      - /var/run
+    volumes:
+      # Docker Compose resolves every -f file's relative host paths against
+      # the FIRST -f file's own directory (docker-compose.prod.yml, i.e.
+      # deploy/docker/) — not this fragment's own directory, and not the
+      # invoking shell's cwd. Paths below are written relative to that.
+      # OPERATOR-SUPPLIED — no nginx config is shipped; write your own at deploy/docker/reverse-proxy/nginx.conf. See README.md alongside.
+      - ./reverse-proxy/nginx.conf:/etc/nginx/nginx.conf:ro
+      # Replace with your real certificate mount before real traffic:
+      - ../../tls-proxy-local-test/server.crt:/etc/nginx/tls/REPLACE_WITH_REAL_CERT_BEFORE_DEPLOY.crt:ro
+      - ../../tls-proxy-local-test/server.key:/etc/nginx/tls/REPLACE_WITH_REAL_KEY_BEFORE_DEPLOY.key:ro
+    ports:
+      - "127.0.0.1:8080:8080"
+      - "127.0.0.1:8443:8443"
+    networks:
+      # frontend only — same network qodiqa itself uses to reach the host
+      #. Never backend: this proxy has no business reaching
+      # Postgres/Redis directly, and cannot resolve or route to them even if
+      # it tried.
+      - frontend
+    depends_on:
+      qodiqa:
+        condition: service_healthy

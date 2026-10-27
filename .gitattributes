@@ -1,0 +1,42 @@
+# Line-ending policy (P4-2) — this repo previously shipped with no
+# .gitattributes at all, so every text file's on-disk line ending was left
+# entirely to each contributor's local `core.autocrlf`. On a Windows checkout
+# with `core.autocrlf=true` (the default here), git's checkout-time smudge
+# filter rewrites every text blob's LF to CRLF, independent of what's stored
+# in the git object. Several tests read source/fixture files from disk and
+# compare their content against '\n'-joined literals or '\n'-anchored
+# regexes; under CRLF those comparisons fail deterministically (see
+#). Rather than pin only the files that
+# happen to fail today, this repo now declares a single explicit policy so
+# the outcome is deterministic on every platform and every contributor's
+# config, not a race against whoever's `core.autocrlf` happens to run next:
+# normalize every text file to LF in the repository, and let git re-expand
+# to the platform's native ending on checkout only where that's still
+# useful (it generally isn't for source/config/docs, so eol=lf is pinned
+# outright rather than left to per-platform expansion).
+* text=auto eol=lf
+
+# ── Explicit binary exceptions ────────────────────────────────────────────────
+# None of these currently exist as repo-tracked source files (checked via a
+# repo-wide binary-extension scan on 2026-07-30 — only node_modules/ carries
+# any, and that's gitignored) but are declared now so that if/when any of
+# these asset types are added, git never attempts text normalization or diff
+# on them, which would corrupt binary content.
+*.png   binary
+*.jpg   binary
+*.jpeg  binary
+*.gif   binary
+*.ico   binary
+*.pdf   binary
+*.woff  binary
+*.woff2 binary
+*.ttf   binary
+*.eot   binary
+*.zip   binary
+*.tar   binary
+*.tar.gz binary
+*.gz    binary
+
+# vendored third-party assets are served with Subresource Integrity — their bytes must never be
+# normalised (the bundle and stylesheet contain CR characters; text=auto eol=lf could rewrite them in a fresh clone).
+src/openapi/vendor/** -text

@@ -1,0 +1,29 @@
+{
+  "_comment": "Public developer API — launch allowlist. The ONLY operations an internet-facing edge may route to the gateway; everything else (admin, ops, probes, docs, unversioned duplicates) stays internal. Each entry must exist in docs/api/openapi.json with security that is empty, optional, or SigningApiKey only (scripts/__tests__/publicApiAllowlist.test.js). docs/api/openapi.public.json is generated from this file by `node scripts/openapi/public-subset.js` — never hand-edit it.",
+  "version": 1,
+  "operations": [
+    { "method": "POST", "path": "/sign", "group": "sign" },
+    { "method": "POST", "path": "/v1/ai/chat", "group": "execution" },
+    { "method": "POST", "path": "/v1/ai/chat/stream", "group": "execution" },
+    { "method": "POST", "path": "/v1/verify", "group": "verification" },
+    { "method": "POST", "path": "/v1/verify/v2", "group": "verification" },
+    { "method": "POST", "path": "/v1/portal/verify", "group": "third-party-verification" },
+    { "method": "GET", "path": "/v1/portal/result/{verificationId}", "group": "third-party-verification" },
+    { "method": "GET", "path": "/v1/portal/report/{verificationId}", "group": "third-party-verification" },
+    { "method": "GET", "path": "/v1/transparency/entry/{transparencyId}", "group": "transparency" },
+    { "method": "GET", "path": "/v1/transparency/entries", "group": "transparency" },
+    { "method": "GET", "path": "/v1/transparency/root", "group": "transparency" },
+    { "method": "GET", "path": "/v1/transparency/roots", "group": "transparency" },
+    { "method": "GET", "path": "/v1/transparency/verify/{transparencyId}", "group": "transparency" },
+    { "method": "GET", "path": "/v1/transparency/proof/{transparencyId}", "group": "transparency" },
+    { "method": "GET", "path": "/v1/transparency/receipt/{requestId}", "group": "transparency" },
+    { "method": "GET", "path": "/v1/transparency/consistency/{fromRootId}/{toRootId}", "group": "transparency" },
+    { "method": "GET", "path": "/.well-known/qodiqa/keys", "group": "key-discovery" },
+    { "method": "GET", "path": "/.well-known/qodiqa/keys/{keyId}", "group": "key-discovery" },
+    { "method": "GET", "path": "/.well-known/qodiqa/keys/archived", "group": "key-discovery" },
+    { "method": "GET", "path": "/.well-known/qodiqa/transparency-keys", "group": "key-discovery" },
+    { "method": "GET", "path": "/.well-known/qodiqa/transparency-keys/{keyId}", "group": "key-discovery" },
+    { "method": "GET", "path": "/.well-known/qodiqa/checkpoint-keys", "group": "key-discovery" },
+    { "method": "GET", "path": "/.well-known/qodiqa/checkpoint-keys/{keyId}", "group": "key-discovery" }
+  ]
+}

@@ -1,0 +1,25 @@
+# base/networkpolicy.yaml's qodiqa-ingress admits only the ingress-nginx namespace
+# on 3000 (and default-deny-all denies everything else), so on any CNI that enforces NetworkPolicy every scrape from
+# servicemonitor.yaml timed out. This adds the Prometheus namespace as a second, scrape-only source.
+# ADJUST the namespace label to wherever your Prometheus (Operator) runs. /metrics stays authenticated (ops stack +
+# bearer credential, see kustomization.yaml) — this only opens the network path.
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: qodiqa-ingress-prometheus
+  namespace: qodiqa
+spec:
+  podSelector:
+    matchLabels:
+      app.kubernetes.io/name:      qodiqa
+      app.kubernetes.io/component: gateway
+  policyTypes:
+    - Ingress
+  ingress:
+    - from:
+        - namespaceSelector:
+            matchLabels:
+              kubernetes.io/metadata.name: monitoring   # adjust to your Prometheus namespace
+      ports:
+        - protocol: TCP
+          port:     3000

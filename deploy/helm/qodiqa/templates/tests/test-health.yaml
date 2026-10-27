@@ -1,0 +1,30 @@
+apiVersion: v1
+kind: Pod
+metadata:
+  name: {{ include "qodiqa.fullname" . }}-test-health
+  labels:
+    {{- include "qodiqa.labels" . | nindent 4 }}
+  annotations:
+    helm.sh/hook: test
+    helm.sh/hook-delete-policy: before-hook-creation
+spec:
+  restartPolicy: Never
+  automountServiceAccountToken: false
+  securityContext:
+    runAsNonRoot: true
+    runAsUser: 1000
+    seccompProfile: { type: RuntimeDefault }
+  containers:
+    - name: health
+      image: {{ include "qodiqa.image" . }}
+      imagePullPolicy: {{ .Values.image.pullPolicy }}
+      securityContext:
+        readOnlyRootFilesystem: true
+        allowPrivilegeEscalation: false
+        capabilities: { drop: [ALL] }
+      command:
+        - node
+        - -e
+        - |
+          const get = (p) => new Promise((ok, no) => require('http').get('http://{{ include "qodiqa.fullname" . }}:{{ .Values.service.port }}' + p, (r) => { r.resume(); r.on('end', () => ok(r.statusCode)); }).on('error', no));
+          (async () => { const h = await get('/health'); const r = await get('/ready'); console.log('health', h, 'ready', r); process.exit(h === 200 && r === 200 ? 0 : 1); })().catch((e) => { console.error(e.message); process.exit(1); });

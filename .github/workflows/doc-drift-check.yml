@@ -1,0 +1,138 @@
+# Documentation Drift Check — extended, extended by item 14 (Track D), extended
+#
+# Permanent, lightweight CI guard against documentation silently going
+# stale. Runs five independent, mandatory checks on every push and pull
+# request — a failure in any one fails this required job:
+#
+#   1. Drift check (scripts/doc-drift-check.js): compares the changed-file
+#      set against an explicit source-path -> documentation mapping
+#      (scripts/doc-drift-map.js) and fails if a mapped source path changed
+#      without its documentation changing alongside it. Also verifies every
+#      mapped document still carries a "Last verified: YYYY-MM-DD" marker.
+#   2. Ownership coverage check: verifies
+#      every file under docs/** has a row, that
+#      every mapped code path actually exists, and prints a coverage
+#      summary. This covers the entire docs/ tree, not just the mappings in
+#      scripts/doc-drift-map.js.
+#   3. Onboarding contract check (scripts/onboarding-contract-check.js):
+#      unconditionally (not diff-gated, unlike #1) validates that
+#      docs/guides/quickstart.md's documented POST /sign and POST /ai/chat request/
+#      response JSON bodies still match the live Zod validation schemas and
+#      route handler response shapes — the "onboarding request/response
+#      contract" that drifted twice before anything caught it.
+#   4. KMS configuration doc check (scripts/kms-config-doc-check.js):
+#      unconditionally validates that docs/configuration/reference.md's
+#      per-provider KMS variable table still matches the live var set
+#      src/infra/keys/kmsConfig.js (item 21) validates — the same table a
+#      real doc-to-doc drift was found in during item 21 (Finding C).
+#   5. Console signing-copy drift check:
+#      unconditionally validates that public/js/console.js's /sign
+#      acceptance-list copy still describes the current TRUST-1
+#      per-identity signing model, not the removed single-shared-token
+#      model.
+#
+# To extend drift coverage for a new area (new compliance module, new
+# benchmark script, new architecture/tooling/config doc), add one entry to
+# scripts/doc-drift-map.js. To add a new documentation file, add one row to
+# in the same change — this workflow needs no changes
+# for either.
+#
+# A lightweight quarterly human spot-check supplements both automated
+# checks.
+
+name: Documentation Drift Check
+
+on:
+  # callable by .github/workflows/release.yml, which requires every gate to pass before a release.
+  workflow_call: {}
+  push:
+    branches: [main, master, release/**, hotfix/**]
+  pull_request:
+    branches: [main, master, release/**]
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.event_name }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  doc-drift:
+    name: Documentation drift check
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+        with:
+          fetch-depth: 0
+
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4
+        with: { node-version: '22' }
+
+      - name: Run documentation drift check
+        env:
+          GITHUB_EVENT_NAME: ${{ github.event_name }}
+          GITHUB_BASE_SHA: ${{ github.event.pull_request.base.sha }}
+          GITHUB_BEFORE: ${{ github.event.before }}
+          GITHUB_SHA: ${{ github.sha }}
+        run: npm run docs:check
+
+
+      - name: Install dependencies
+        run: npm ci --ignore-scripts --no-audit --no-fund
+
+      - name: Run onboarding contract drift check
+        run: npm run docs:onboarding-check
+
+      - name: Run KMS configuration documentation drift check
+        run: npm run docs:kms-check
+
+
+
+  # every public product claim maps to evidence (claims/claims.json); forbidden phrases, stale evidence and a stale generated
+  # claims page fail the job. --run-cmds also executes the registry's runInCI commands (contract and protocol checks).
+  claims-check:
+    name: Claims registry check
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+        with:
+          fetch-depth: 0
+
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4
+        with: { node-version: '22' }
+
+      - run: npm ci --ignore-scripts
+
+      - name: Check the claims registry
+        run: node scripts/claims/check-claims.js --run-cmds
+
+      - name: Check the inventory figures (claims and documents quote only counted figures)
+        run: npm run inventory:check
+
+  # (specs = code): fails when the protocol specification, the OpenAPI contract or the SDK contracts drift from the
+  # implementation. Every check regenerates from the code and diffs (no hand-maintained snapshot is trusted):
+  #   openapi:check   docs/api/openapi.json == the generated spec (the operation set itself is pinned to the LIVE app by
+  #                   src/openapi/liveRouteParity.test.js in the unit gate)
+  #   protocol:check  docs/protocol/vectors == production output; the independent verifier re-derives every vector;
+  #                   the generated sections of docs/protocol/QODIQA-PROTOCOL.md == the code's constants
+  #   contract:sdk    every SDK call is a documented operation with matching auth; JS/Python parity
+  # plus the cross-language independent verifier (Python, no server code). Negative controls for each check run in the
+  # unit gate (scripts/protocol/__tests__/contractDrift.test.js).
+  specs-equal-code:
+    name: Specs = code (protocol, OpenAPI, SDK contract drift)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4
+        with: { node-version: '22', cache: 'npm' }
+      - run: npm ci --ignore-scripts
+      - name: OpenAPI diff, protocol vectors + independent verifier + spec sections, SDK ↔ OpenAPI
+        run: npm run contract:check
+      - uses: actions/setup-python@a26af69be951a213d495a4c3e4e4022e16d87065 # v5
+        with: { python-version: '3.12' }
+      - run: pip install ./sdk/python
+      - name: Cross-language independent verification of the protocol vectors
+        run: python scripts/protocol/verify_vectors.py
+      - name: Cross-language independent verification of the protocol-V2 vectors (JCS-P1, V2 request binding)
+        run: python scripts/protocol/verify_v2_vectors.py

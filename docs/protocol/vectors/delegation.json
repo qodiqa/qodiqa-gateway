@@ -1,0 +1,3631 @@
+{
+  "format": "qodiqa-vectors/1",
+  "family": "delegation",
+  "spec": "docs/protocol/DELEGATION.md",
+  "specVersion": "v2-freeze-1",
+  "generatedBy": "scripts/protocol/gen-delegation-vectors.js",
+  "domain": "QODIQA::DELEGATION::V1",
+  "keys": [
+    {
+      "publicKeyId": "tenant-a:key_v1",
+      "clientId": "tenant-a",
+      "publicKeySpkiB64": "MCowBQYDK2VwAyEAofq1bd+eYiPMrmfwgWKeGe0MigEEWypfzAoHTtE1HGk=",
+      "seedNote": "published test seed: SHA-256(\"QODIQA published delegation test seed: <clientId>\")"
+    },
+    {
+      "publicKeyId": "tenant-b:key_v1",
+      "clientId": "tenant-b",
+      "publicKeySpkiB64": "MCowBQYDK2VwAyEAZsjDRTsGl5v1YJloUG8brD3Mfn2EVQGpNB0tSoh/KY4=",
+      "seedNote": "published test seed: SHA-256(\"QODIQA published delegation test seed: <clientId>\")"
+    }
+  ],
+  "stranger": "a key outside the registry signs the \"not the tenant key\" case",
+  "cases": [
+    {
+      "id": "DELEG-001",
+      "description": "a root grant alone",
+      "input": {
+        "chain": [
+          {
+            "expiry": 1800010800000,
+            "payload": {
+              "v": 1,
+              "kind": "delegation",
+              "delegationId": "64000000-0000-4000-8000-000000000001",
+              "tenantId": "tenant-a",
+              "parentId": null,
+              "parentDigest": null,
+              "rootAgentId": "61000000-0000-4000-8000-000000000000",
+              "issuerAgentId": "61000000-0000-4000-8000-000000000000",
+              "subjectAgentId": "61000000-0000-4000-8000-000000000001",
+              "depth": 1,
+              "maxDepth": 4,
+              "classes": [
+                "delegate",
+                "read",
+                "write"
+              ],
+              "tools": null,
+              "maxActions": null
+            },
+            "publicKeyId": "tenant-a:key_v1",
+            "signature": "BGPS1W/NOLs5f7606u1bk5Z14SglhSEa0OK0WgLrErwB6pJ7mc02TEiNl7fdqgGmHztabMYxB2FCvntJNbXjBg==",
+            "timestamp": 1799996400000
+          }
+        ],
+        "now": 1800000000000
+      },
+      "expected": {
+        "ok": true,
+        "depth": 1,
+        "maxDepth": 4,
+        "chainHash": "5ac3e3524646d84b369f16766175e49af5a4cec865130f5e36d5332dc74e9a7d",
+        "rootAgentId": "61000000-0000-4000-8000-000000000000",
+        "issuerAgentId": "61000000-0000-4000-8000-000000000000",
+        "subjectAgentId": "61000000-0000-4000-8000-000000000001",
+        "tenantId": "tenant-a",
+        "delegationId": "64000000-0000-4000-8000-000000000001",
+        "classes": [
+          "delegate",
+          "read",
+          "write"
+        ],
+        "tools": null,
+        "maxActions": null,
+        "expiry": 1800010800000
+      }
+    },
+    {
+      "id": "DELEG-002",
+      "description": "two links",
+      "input": {
+        "chain": [
+          {
+            "expiry": 1800010800000,
+            "payload": {
+              "v": 1,
+              "kind": "delegation",
+              "delegationId": "64000000-0000-4000-8000-000000000001",
+              "tenantId": "tenant-a",
+              "parentId": null,
+              "parentDigest": null,
+              "rootAgentId": "61000000-0000-4000-8000-000000000000",
+              "issuerAgentId": "61000000-0000-4000-8000-000000000000",
+              "subjectAgentId": "61000000-0000-4000-8000-000000000001",
+              "depth": 1,
+              "maxDepth": 4,
+              "classes": [
+                "delegate",
+                "read",
+                "write"
+              ],
+              "tools": null,
+              "maxActions": null
+            },
+            "publicKeyId": "tenant-a:key_v1",
+            "signature": "BGPS1W/NOLs5f7606u1bk5Z14SglhSEa0OK0WgLrErwB6pJ7mc02TEiNl7fdqgGmHztabMYxB2FCvntJNbXjBg==",
+            "timestamp": 1799996400000
+          },
+          {
+            "expiry": 1800010800000,
+            "payload": {
+              "v": 1,
+              "kind": "delegation",
+              "delegationId": "64000000-0000-4000-8000-000000000002",
+              "tenantId": "tenant-a",
+              "parentId": "64000000-0000-4000-8000-000000000001",
+              "parentDigest": "5ac3e3524646d84b369f16766175e49af5a4cec865130f5e36d5332dc74e9a7d",
+              "rootAgentId": "61000000-0000-4000-8000-000000000000",
+              "issuerAgentId": "61000000-0000-4000-8000-000000000001",
+              "subjectAgentId": "61000000-0000-4000-8000-000000000002",
+              "depth": 2,
+              "maxDepth": 4,
+              "classes": [
+                "read",
+                "write"
+              ],
+              "tools": null,
+              "maxActions": null
+            },
+            "publicKeyId": "tenant-a:key_v1",
+            "signature": "ak+B5QEVQNcuILcxIkedJXvkGSqSnQPuSQueKB8DU8rq5owiCUJpfH6tmi7iBccTLVsPReBCAHsKVY6E1c8qAw==",
+            "timestamp": 1799996400000
+          }
+        ],
+        "now": 1800000000000
+      },
+      "expected": {
+        "ok": true,
+        "depth": 2,
+        "maxDepth": 4,
+        "chainHash": "94cc2a2235f7d9ea583a5a3bcb0ab096c30c5c40bf7049efd16626cd25f3fd6d",
+        "rootAgentId": "61000000-0000-4000-8000-000000000000",
+        "issuerAgentId": "61000000-0000-4000-8000-000000000001",
+        "subjectAgentId": "61000000-0000-4000-8000-000000000002",
+        "tenantId": "tenant-a",
+        "delegationId": "64000000-0000-4000-8000-000000000002",
+        "classes": [
+          "read",
+          "write"
+        ],
+        "tools": null,
+        "maxActions": null,
+        "expiry": 1800010800000
+      }
+    },
+    {
+      "id": "DELEG-003",
+      "description": "three links, rights narrowing at every link",
+      "input": {
+        "chain": [
+          {
+            "expiry": 1800010800000,
+            "payload": {
+              "v": 1,
+              "kind": "delegation",
+              "delegationId": "64000000-0000-4000-8000-000000000001",
+              "tenantId": "tenant-a",
+              "parentId": null,
+              "parentDigest": null,
+              "rootAgentId": "61000000-0000-4000-8000-000000000000",
+              "issuerAgentId": "61000000-0000-4000-8000-000000000000",
+              "subjectAgentId": "61000000-0000-4000-8000-000000000001",
+              "depth": 1,
+              "maxDepth": 4,
+              "classes": [
+                "delegate",
+                "read",
+                "write"
+              ],
+              "tools": null,
+              "maxActions": null
+            },
+            "publicKeyId": "tenant-a:key_v1",
+            "signature": "BGPS1W/NOLs5f7606u1bk5Z14SglhSEa0OK0WgLrErwB6pJ7mc02TEiNl7fdqgGmHztabMYxB2FCvntJNbXjBg==",
+            "timestamp": 1799996400000
+          },
+          {
+            "expiry": 1800010800000,
+            "payload": {
+              "v": 1,
+              "kind": "delegation",
+              "delegationId": "64000000-0000-4000-8000-000000000002",
+              "tenantId": "tenant-a",
+              "parentId": "64000000-0000-4000-8000-000000000001",
+              "parentDigest": "5ac3e3524646d84b369f16766175e49af5a4cec865130f5e36d5332dc74e9a7d",
+              "rootAgentId": "61000000-0000-4000-8000-000000000000",
+              "issuerAgentId": "61000000-0000-4000-8000-000000000001",
+              "subjectAgentId": "61000000-0000-4000-8000-000000000002",
+              "depth": 2,
+              "maxDepth": 4,
+              "classes": [
+                "read",
+                "write"
+              ],
+              "tools": null,
+              "maxActions": null
+            },
+            "publicKeyId": "tenant-a:key_v1",
+            "signature": "ak+B5QEVQNcuILcxIkedJXvkGSqSnQPuSQueKB8DU8rq5owiCUJpfH6tmi7iBccTLVsPReBCAHsKVY6E1c8qAw==",
+            "timestamp": 1799996400000
+          },
+          {
+            "expiry": 1800010800000,
+            "payload": {
+              "v": 1,
+              "kind": "delegation",
+              "delegationId": "64000000-0000-4000-8000-000000000003",
+              "tenantId": "tenant-a",
+              "parentId": "64000000-0000-4000-8000-000000000002",
+              "parentDigest": "94cc2a2235f7d9ea583a5a3bcb0ab096c30c5c40bf7049efd16626cd25f3fd6d",
+              "rootAgentId": "61000000-0000-4000-8000-000000000000",
+              "issuerAgentId": "61000000-0000-4000-8000-000000000002",
+              "subjectAgentId": "61000000-0000-4000-8000-000000000003",
+              "depth": 3,
+              "maxDepth": 4,
+              "classes": [
+                "read"
+              ],
+              "tools": null,
+              "maxActions": null
+            },
+            "publicKeyId": "tenant-a:key_v1",
+            "signature": "L6eAHHVR1Ii5tR+WS0A9DriH/v0gVLRE9I9JVpFU4NtXO1ithwkNsOe35Y5hmLzmKRSF9kb/Lobg/fOuYmeyAg==",
+            "timestamp": 1799996400000
+          }
+        ],
+        "now": 1800000000000
+      },
+      "expected": {
+        "ok": true,
+        "depth": 3,
+        "maxDepth": 4,
+        "chainHash": "19b9e9d24fb9c30c0d8609361e8fa867dd186231f3d2f2c4e7cc5060573860a6",
+        "rootAgentId": "61000000-0000-4000-8000-000000000000",
+        "issuerAgentId": "61000000-0000-4000-8000-000000000002",
+        "subjectAgentId": "61000000-0000-4000-8000-000000000003",
+        "tenantId": "tenant-a",
+        "delegationId": "64000000-0000-4000-8000-000000000003",
+        "classes": [
+          "read"
+        ],
+        "tools": null,
+        "maxActions": null,
+        "expiry": 1800010800000
+      }
+    },
+    {
+      "id": "DELEG-004",
+      "description": "tools and an action limit narrowed by the child",
+      "input": {
+        "chain": [
+          {
+            "expiry": 1800010800000,
+            "payload": {
+              "v": 1,
+              "kind": "delegation",
+              "delegationId": "64000000-0000-4000-8000-000000000004",
+              "tenantId": "tenant-a",
+              "parentId": null,
+              "parentDigest": null,
+              "rootAgentId": "61000000-0000-4000-8000-000000000000",
+              "issuerAgentId": "61000000-0000-4000-8000-000000000000",
+              "subjectAgentId": "61000000-0000-4000-8000-000000000001",
+              "depth": 1,
+              "maxDepth": 3,
+              "classes": [
+                "read",
+                "write"
+              ],
+              "tools": [
+                {
+                  "server": "s",
+                  "name": "a"
+                },
+                {
+                  "server": "s",
+                  "name": "b"
+                }
+              ],
+              "maxActions": 10
+            },
+            "publicKeyId": "tenant-a:key_v1",
+            "signature": "PaNGRJuQGh0RUt53sNVfvLD2HYKhsqVgNnXv2VrUcic+bWoWQs3qfcub6F05lIg1JHMEeWavN54LVLqMtM+xBA==",
+            "timestamp": 1799996400000
+          },
+          {
+            "expiry": 1800003600000,
+            "payload": {
+              "v": 1,
+              "kind": "delegation",
+              "delegationId": "64000000-0000-4000-8000-000000000005",
+              "tenantId": "tenant-a",
+              "parentId": "64000000-0000-4000-8000-000000000004",
+              "parentDigest": "0d664b994759708ba614c0ef4e5d925e38eab6985c7d8deceb336ecce55adb8f",
+              "rootAgentId": "61000000-0000-4000-8000-000000000000",
+              "issuerAgentId": "61000000-0000-4000-8000-000000000001",
+              "subjectAgentId": "61000000-0000-4000-8000-000000000002",
+              "depth": 2,
+              "maxDepth": 3,
+              "classes": [
+                "read"
+              ],
+              "tools": [
+                {
+                  "server": "s",
+                  "name": "a"
+                }
+              ],
+              "maxActions": 5
+            },
+            "publicKeyId": "tenant-a:key_v1",
+            "signature": "ij4KCN47iR7qw37Rixe+PRb1KLYMfdj35mudakFR9a//VHOVulBHz9QL3Vz8AAW2T+yp2Hl881PIaJtVz2VJDg==",
+            "timestamp": 1799996400000
+          }
+        ],
+        "now": 1800000000000
+      },
+      "expected": {
+        "ok": true,
+        "depth": 2,
+        "maxDepth": 3,
+        "chainHash": "aa971d4d5e88fdf27aa997598b6cbd19322fbd6af8625ada398321df185e350f",
+        "rootAgentId": "61000000-0000-4000-8000-000000000000",
+        "issuerAgentId": "61000000-0000-4000-8000-000000000001",
+        "subjectAgentId": "61000000-0000-4000-8000-000000000002",
+        "tenantId": "tenant-a",
+        "delegationId": "64000000-0000-4000-8000-000000000005",
+        "classes": [
+          "read"
+        ],
+        "tools": [
+          {
+            "server": "s",
+            "name": "a"
+          }
+        ],
+        "maxActions": 5,
+        "expiry": 1800003600000
+      }
+    },
+    {
+      "id": "DELEG-005",
+      "description": "a child holding exactly the rights of its parent (a subset, not a proper subset)",
+      "input": {
+        "chain": [
+          {
+            "expiry": 1800010800000,
+            "payload": {
+              "v": 1,
+              "kind": "delegation",
+              "delegationId": "64000000-0000-4000-8000-000000000004",
+              "tenantId": "tenant-a",
+              "parentId": null,
+              "parentDigest": null,
+              "rootAgentId": "61000000-0000-4000-8000-000000000000",
+              "issuerAgentId": "61000000-0000-4000-8000-000000000000",
+              "subjectAgentId": "61000000-0000-4000-8000-000000000001",
+              "depth": 1,
+              "maxDepth": 3,
+              "classes": [
+                "read",
+                "write"
+              ],
+              "tools": [
+                {
+                  "server": "s",
+                  "name": "a"
+                },
+                {
+                  "server": "s",
+                  "name": "b"
+                }
+              ],
+              "maxActions": 10
+            },
+            "publicKeyId": "tenant-a:key_v1",
+            "signature": "PaNGRJuQGh0RUt53sNVfvLD2HYKhsqVgNnXv2VrUcic+bWoWQs3qfcub6F05lIg1JHMEeWavN54LVLqMtM+xBA==",
+            "timestamp": 1799996400000
+          },
+          {
+            "expiry": 1800010800000,
+            "payload": {
+              "v": 1,
+              "kind": "delegation",
+              "delegationId": "64000000-0000-4000-8000-000000000006",
+              "tenantId": "tenant-a",
+              "parentId": "64000000-0000-4000-8000-000000000004",
+              "parentDigest": "0d664b994759708ba614c0ef4e5d925e38eab6985c7d8deceb336ecce55adb8f",
+              "rootAgentId": "61000000-0000-4000-8000-000000000000",
+              "issuerAgentId": "61000000-0000-4000-8000-000000000001",
+              "subjectAgentId": "61000000-0000-4000-8000-000000000002",
+              "depth": 2,
+              "maxDepth": 3,
+              "classes": [
+                "read",
+                "write"
+              ],
+              "tools": [
+                {
+                  "server": "s",
+                  "name": "a"
+                },
+                {
+                  "server": "s",
+                  "name": "b"
+                }
+              ],
+              "maxActions": 10
+            },
+            "publicKeyId": "tenant-a:key_v1",
+            "signature": "N3OWuptQNBmFOL/d/RxyuvPERN5ox+x27n6ehh7f5Juvt3CwmvwgYVUaYW1pJqJqF+x2Jtyd8eF0J/CNAIDMCg==",
+            "timestamp": 1799996400000
+          }
+        ],
+        "now": 1800000000000
+      },
+      "expected": {
+        "ok": true,
+        "depth": 2,
+        "maxDepth": 3,
+        "chainHash": "8541db3f97f4f04636510f71dfa11f5ba58f7ddf08cff50a13e26035e8ff4a70",
+        "rootAgentId": "61000000-0000-4000-8000-000000000000",
+        "issuerAgentId": "61000000-0000-4000-8000-000000000001",
+        "subjectAgentId": "61000000-0000-4000-8000-000000000002",
+        "tenantId": "tenant-a",
+        "delegationId": "64000000-0000-4000-8000-000000000006",
+        "classes": [
+          "read",
+          "write"
+        ],
+        "tools": [
+          {
+            "server": "s",
+            "name": "a"
+          },
+          {
+            "server": "s",
+            "name": "b"
+          }
+        ],
+        "maxActions": 10,
+        "expiry": 1800010800000
+      }
+    },
+    {
+      "id": "DELEG-006",
+      "description": "a child of an unrestricted parent may add tool and action limits",
+      "input": {
+        "chain": [
+          {
+            "expiry": 1800010800000,
+            "payload": {
+              "v": 1,
+              "kind": "delegation",
+              "delegationId": "64000000-0000-4000-8000-000000000001",
+              "tenantId": "tenant-a",
+              "parentId": null,
+              "parentDigest": null,
+              "rootAgentId": "61000000-0000-4000-8000-000000000000",
+              "issuerAgentId": "61000000-0000-4000-8000-000000000000",
+              "subjectAgentId": "61000000-0000-4000-8000-000000000001",
+              "depth": 1,
+              "maxDepth": 4,
+              "classes": [
+                "delegate",
+                "read",
+                "write"
+              ],
+              "tools": null,
+              "maxActions": null
+            },
+            "publicKeyId": "tenant-a:key_v1",
+            "signature": "BGPS1W/NOLs5f7606u1bk5Z14SglhSEa0OK0WgLrErwB6pJ7mc02TEiNl7fdqgGmHztabMYxB2FCvntJNbXjBg==",
+            "timestamp": 1799996400000
+          },
+          {
+            "expiry": 1800010800000,
+            "payload": {
+              "v": 1,
+              "kind": "delegation",
+              "delegationId": "64000000-0000-4000-8000-000000000007",
+              "tenantId": "tenant-a",
+              "parentId": "64000000-0000-4000-8000-000000000001",
+              "parentDigest": "5ac3e3524646d84b369f16766175e49af5a4cec865130f5e36d5332dc74e9a7d",
+              "rootAgentId": "61000000-0000-4000-8000-000000000000",
+              "issuerAgentId": "61000000-0000-4000-8000-000000000001",
+              "subjectAgentId": "61000000-0000-4000-8000-000000000002",
+              "depth": 2,
+              "maxDepth": 4,
+              "classes": [
+                "read"
+              ],
+              "tools": [
+                {
+                  "server": "x",
+                  "name": "y"
+                }
+              ],
+              "maxActions": 7
+            },
+            "publicKeyId": "tenant-a:key_v1",
+            "signature": "w5JOE1bdGyd3JnlozifpzTx0AFGZdQMQn3flYZcJ2KnH9Tn6/7+OUv6sUESC5llyRz6uQiR4yqrEvjpAYt6qBw==",
+            "timestamp": 1799996400000
+          }
+        ],
+        "now": 1800000000000
+      },
+      "expected": {
+        "ok": true,
+        "depth": 2,
+        "maxDepth": 4,
+        "chainHash": "0a6fcc915a757de0ae2ba755a1cd7f4625f80013ccd95db72428cf9854bf75e1",
+        "rootAgentId": "61000000-0000-4000-8000-000000000000",
+        "issuerAgentId": "61000000-0000-4000-8000-000000000001",
+        "subjectAgentId": "61000000-0000-4000-8000-000000000002",
+        "tenantId": "tenant-a",
+        "delegationId": "64000000-0000-4000-8000-000000000007",
+        "classes": [
+          "read"
+        ],
+        "tools": [
+          {
+            "server": "x",
+            "name": "y"
+          }
+        ],
+        "maxActions": 7,
+        "expiry": 1800010800000
+      }
+    },
+    {
+      "id": "DELEG-007",
+      "description": "a chain of the maximum depth (8)",
+      "input": {
+        "chain": [
+          {
+            "expiry": 1800010800000,
+            "payload": {
+              "v": 1,
+              "kind": "delegation",
+              "delegationId": "64000000-0000-4000-8000-000000000008",
+              "tenantId": "tenant-a",
+              "parentId": null,
+              "parentDigest": null,
+              "rootAgentId": "61000000-0000-4000-8000-000000000000",
+              "issuerAgentId": "61000000-0000-4000-8000-000000000000",
+              "subjectAgentId": "61000000-0000-4000-8000-000000000001",
+              "depth": 1,
+              "maxDepth": 8,
+              "classes": [
+                "read"
+              ],
+              "tools": null,
+              "maxActions": null
+            },
+            "publicKeyId": "tenant-a:key_v1",
+            "signature": "qDV4q1gDyFaSQSQH2t6luIgIu0t5wYTfJG+jAA27nk0CcmAoIWAAWKCg8+b9O4E8cRYXqPnpOn252Nq1dffTAA==",
+            "timestamp": 1799996400000
+          },
+          {
+            "expiry": 1800010800000,
+            "payload": {
+              "v": 1,
+              "kind": "delegation",
+              "delegationId": "64000000-0000-4000-8000-000000000009",
+              "tenantId": "tenant-a",
+              "parentId": "64000000-0000-4000-8000-000000000008",
+              "parentDigest": "a512689b75588ccdeb8df76afbfcc014fe31fac37eb9a000e207b2315ba8a912",
+              "rootAgentId": "61000000-0000-4000-8000-000000000000",
+              "issuerAgentId": "61000000-0000-4000-8000-000000000001",
+              "subjectAgentId": "61000000-0000-4000-8000-000000000002",
+              "depth": 2,
+              "maxDepth": 8,
+              "classes": [
+                "read"
+              ],
+              "tools": null,
+              "maxActions": null
+            },
+            "publicKeyId": "tenant-a:key_v1",
+            "signature": "aSE0/tzWckAz1xfF/iFO+fizNuGTwyM9H3WIH+t6zVf2WyRwD4K643ze1cwKVLSCDcmaze+j7PJKpgpseIrKAw==",
+            "timestamp": 1799996400000
+          },
+          {
+            "expiry": 1800010800000,
+            "payload": {
+              "v": 1,
+              "kind": "delegation",
+              "delegationId": "64000000-0000-4000-8000-000000000010",
+              "tenantId": "tenant-a",
+              "parentId": "64000000-0000-4000-8000-000000000009",
+              "parentDigest": "f338264b0c18f79bdfe58eeb1dca53ee7ed1b4fcbfaebb54351c6ad291398616",
+              "rootAgentId": "61000000-0000-4000-8000-000000000000",
+              "issuerAgentId": "61000000-0000-4000-8000-000000000002",
+              "subjectAgentId": "61000000-0000-4000-8000-000000000003",
+              "depth": 3,
+              "maxDepth": 8,
+              "classes": [
+                "read"
+              ],
+              "tools": null,
+              "maxActions": null
+            },
+            "publicKeyId": "tenant-a:key_v1",
+            "signature": "UCSzhL3olfHzkdX6+spbFf+7AeRgPmvR7xdnlIfJQIPpysb/gqFoXxSPE+f/eEVhN0OfMjZaltInZuixnbm0CQ==",
+            "timestamp": 1799996400000
+          },
+          {
+            "expiry": 1800010800000,
+            "payload": {
+              "v": 1,
+              "kind": "delegation",
+              "delegationId": "64000000-0000-4000-8000-000000000011",
+              "tenantId": "tenant-a",
+              "parentId": "64000000-0000-4000-8000-000000000010",
+              "parentDigest": "8aba22b33064e23b2ff8c35e24837ca4bf5800b9110813a16d11d54989946841",
+              "rootAgentId": "61000000-0000-4000-8000-000000000000",
+              "issuerAgentId": "61000000-0000-4000-8000-000000000003",
+              "subjectAgentId": "61000000-0000-4000-8000-000000000004",
+              "depth": 4,
+              "maxDepth": 8,
+              "classes": [
+                "read"
+              ],
+              "tools": null,
+              "maxActions": null
+            },
+            "publicKeyId": "tenant-a:key_v1",
+            "signature": "dKpwqg8g2GrGWNkLerdFHwV4VgpZfhbhGme2WTodXCaVyzZXCtdUdi8C9e1AGOc/ni1OUosaNubug2iQaehEAw==",
+            "timestamp": 1799996400000
+          },
+          {
+            "expiry": 1800010800000,
+            "payload": {
+              "v": 1,
+              "kind": "delegation",
+              "delegationId": "64000000-0000-4000-8000-000000000012",
+              "tenantId": "tenant-a",
+              "parentId": "64000000-0000-4000-8000-000000000011",
+              "parentDigest": "7edc46d8c12326cf70a47ad226965c7e6c52947bbc8333b1d9299129ed2299c7",
+              "rootAgentId": "61000000-0000-4000-8000-000000000000",
+              "issuerAgentId": "61000000-0000-4000-8000-000000000004",
+              "subjectAgentId": "61000000-0000-4000-8000-000000000005",
+              "depth": 5,
+              "maxDepth": 8,
+              "classes": [
+                "read"
+              ],
+              "tools": null,
+              "maxActions": null
+            },
+            "publicKeyId": "tenant-a:key_v1",
+            "signature": "2TkNmoz9jeIoiIuKqnrLhXt77/MS/UQKq9IyMcQQC7b1t0nfPlXT8Nr0QYBbsgsIlY8Xlp/liL0yADjnQFS7CA==",
+            "timestamp": 1799996400000
+          },
+          {
+            "expiry": 1800010800000,
+            "payload": {
+              "v": 1,
+              "kind": "delegation",
+              "delegationId": "64000000-0000-4000-8000-000000000013",
+              "tenantId": "tenant-a",
+              "parentId": "64000000-0000-4000-8000-000000000012",
+              "parentDigest": "c5e3620f3c733903a91d8895cb524de09c13a290452c6dbcf35774e80cd731b1",
+              "rootAgentId": "61000000-0000-4000-8000-000000000000",
+              "issuerAgentId": "61000000-0000-4000-8000-000000000005",
+              "subjectAgentId": "61000000-0000-4000-8000-000000000006",
+              "depth": 6,
+              "maxDepth": 8,
+              "classes": [
+                "read"
+              ],
+              "tools": null,
+              "maxActions": null
+            },
+            "publicKeyId": "tenant-a:key_v1",
+            "signature": "URbOS4xmyvZ9ZIH9mS2ru8W1UHZMGyHzKf8T42cadH68Rx13NJqQTEa+i2LGxGMbTgYoMcFFk3YeEhXsOQRmAg==",
+            "timestamp": 1799996400000
+          },
+          {
+            "expiry": 1800010800000,
+            "payload": {
+              "v": 1,
+              "kind": "delegation",
+              "delegationId": "64000000-0000-4000-8000-000000000014",
+              "tenantId": "tenant-a",
+              "parentId": "64000000-0000-4000-8000-000000000013",
+              "parentDigest": "e5a191dff96a375c6ea774c3260a2fb12cc502f64ecbd08a99898fc76a37513f",
+              "rootAgentId": "61000000-0000-4000-8000-000000000000",
+              "issuerAgentId": "61000000-0000-4000-8000-000000000006",
+              "subjectAgentId": "61000000-0000-4000-8000-000000000007",
+              "depth": 7,
+              "maxDepth": 8,
+              "classes": [
+                "read"
+              ],
+              "tools": null,
+              "maxActions": null
+            },
+            "publicKeyId": "tenant-a:key_v1",
+            "signature": "bANcFlqbU3ewRAw75WagKBc7TEWEiYCuqhBrLJZ1vyNlblhzQqanbO+6aeLI4Sln5XZNu54iZXqpSGL7SRAkCw==",
+            "timestamp": 1799996400000
+          },
+          {
+            "expiry": 1800010800000,
+            "payload": {
+              "v": 1,
+              "kind": "delegation",
+              "delegationId": "64000000-0000-4000-8000-000000000015",
+              "tenantId": "tenant-a",
+              "parentId": "64000000-0000-4000-8000-000000000014",
+              "parentDigest": "4596fa6d4d804a92354827c6a8104eb9f3af798e92b42e68ef6c8886e1b549a7",
+              "rootAgentId": "61000000-0000-4000-8000-000000000000",
+              "issuerAgentId": "61000000-0000-4000-8000-000000000007",
+              "subjectAgentId": "61000000-0000-4000-8000-000000000008",
+              "depth": 8,
+              "maxDepth": 8,
+              "classes": [
+                "read"
+              ],
+              "tools": null,
+              "maxActions": null
+            },
+            "publicKeyId": "tenant-a:key_v1",
+            "signature": "eTN0ZlrI67xFpR3iuir9iLmuZ+eq1vjvEZJpv8VFewkZ93ShFTTG7q5tJfG1YYhTaH5I3bdoivZj53MWHWfJCA==",
+            "timestamp": 1799996400000
+          }
+        ],
+        "now": 1800000000000
+      },
+      "expected": {
+        "ok": true,
+        "depth": 8,
+        "maxDepth": 8,
+        "chainHash": "566e3529ed822484689885917828aa6d1433ab68074601faf20a4ff048c02a09",
+        "rootAgentId": "61000000-0000-4000-8000-000000000000",
+        "issuerAgentId": "61000000-0000-4000-8000-000000000007",
+        "subjectAgentId": "61000000-0000-4000-8000-000000000008",
+        "tenantId": "tenant-a",
+        "delegationId": "64000000-0000-4000-8000-000000000015",
+        "classes": [
+          "read"
+        ],
+        "tools": null,
+        "maxActions": null,
+        "expiry": 1800010800000
+      }
+    },
+    {
+      "id": "DELEG-008",
+      "description": "the same chain is valid just before its expiry",
+      "input": {
+        "chain": [
+          {
+            "expiry": 1800010800000,
+            "payload": {
+              "v": 1,
+              "kind": "delegation",
+              "delegationId": "64000000-0000-4000-8000-000000000001",
+              "tenantId": "tenant-a",
+              "parentId": null,
+              "parentDigest": null,
+              "rootAgentId": "61000000-0000-4000-8000-000000000000",
+              "issuerAgentId": "61000000-0000-4000-8000-000000000000",
+              "subjectAgentId": "61000000-0000-4000-8000-000000000001",
+              "depth": 1,
+              "maxDepth": 4,
+              "classes": [
+                "delegate",
+                "read",
+                "write"
+              ],
+              "tools": null,
+              "maxActions": null
+            },
+            "publicKeyId": "tenant-a:key_v1",
+            "signature": "BGPS1W/NOLs5f7606u1bk5Z14SglhSEa0OK0WgLrErwB6pJ7mc02TEiNl7fdqgGmHztabMYxB2FCvntJNbXjBg==",
+            "timestamp": 1799996400000
+          }
+        ],
+        "now": 1800010799999
+      },
+      "expected": {
+        "ok": true,
+        "depth": 1,
+        "maxDepth": 4,
+        "chainHash": "5ac3e3524646d84b369f16766175e49af5a4cec865130f5e36d5332dc74e9a7d",
+        "rootAgentId": "61000000-0000-4000-8000-000000000000",
+        "issuerAgentId": "61000000-0000-4000-8000-000000000000",
+        "subjectAgentId": "61000000-0000-4000-8000-000000000001",
+        "tenantId": "tenant-a",
+        "delegationId": "64000000-0000-4000-8000-000000000001",
+        "classes": [
+          "delegate",
+          "read",
+          "write"
+        ],
+        "tools": null,
+        "maxActions": null,
+        "expiry": 1800010800000
+      }
+    },
+    {
+      "id": "DELEG-009",
+      "description": "payload tampered after signing: classes widened",
+      "input": {
+        "chain": [
+          {
+            "expiry": 1800010800000,
+            "payload": {
+              "v": 1,
+              "kind": "delegation",
+              "delegationId": "64000000-0000-4000-8000-000000000001",
+              "tenantId": "tenant-a",
+              "parentId": null,
+              "parentDigest": null,
+              "rootAgentId": "61000000-0000-4000-8000-000000000000",
+              "issuerAgentId": "61000000-0000-4000-8000-000000000000",
+              "subjectAgentId": "61000000-0000-4000-8000-000000000001",
+              "depth": 1,
+              "maxDepth": 4,
+              "classes": [
+                "delegate",
+                "read",
+                "write"
+              ],
+              "tools": null,
+              "maxActions": null
+            },
+            "publicKeyId": "tenant-a:key_v1",
+            "signature": "BGPS1W/NOLs5f7606u1bk5Z14SglhSEa0OK0WgLrErwB6pJ7mc02TEiNl7fdqgGmHztabMYxB2FCvntJNbXjBg==",
+            "timestamp": 1799996400000
+          },
+          {
+            "expiry": 1800010800000,
+            "payload": {
+              "v": 1,
+              "kind": "delegation",
+              "delegationId": "64000000-0000-4000-8000-000000000002",
+              "tenantId": "tenant-a",
+              "parentId": "64000000-0000-4000-8000-000000000001",
+              "parentDigest": "5ac3e3524646d84b369f16766175e49af5a4cec865130f5e36d5332dc74e9a7d",
+              "rootAgentId": "61000000-0000-4000-8000-000000000000",
+              "issuerAgentId": "61000000-0000-4000-8000-000000000001",
+              "subjectAgentId": "61000000-0000-4000-8000-000000000002",
+              "depth": 2,
+              "maxDepth": 4,
+              "classes": [
+                "read",
+                "write",
+                "financial"
+              ],
+              "tools": null,
+              "maxActions": null
+            },
+            "publicKeyId": "tenant-a:key_v1",
+            "signature": "ak+B5QEVQNcuILcxIkedJXvkGSqSnQPuSQueKB8DU8rq5owiCUJpfH6tmi7iBccTLVsPReBCAHsKVY6E1c8qAw==",
+            "timestamp": 1799996400000
+          }
+        ],
+        "now": 1800000000000
+      },
+      "expected": {
+        "ok": false,
+        "reason": "DELEGATION_INVALID",
+        "index": 1
+      }
+    },
+    {
+      "id": "DELEG-010",
+      "description": "payload tampered after signing: another delegate",
+      "input": {
+        "chain": [
+          {
+            "expiry": 1800010800000,
+            "payload": {
+              "v": 1,
+              "kind": "delegation",
+              "delegationId": "64000000-0000-4000-8000-000000000001",
+              "tenantId": "tenant-a",
+              "parentId": null,
+              "parentDigest": null,
+              "rootAgentId": "61000000-0000-4000-8000-000000000000",
+              "issuerAgentId": "61000000-0000-4000-8000-000000000000",
+              "subjectAgentId": "61000000-0000-4000-8000-000000000001",
+              "depth": 1,
+              "maxDepth": 4,
+              "classes": [
+                "delegate",
+                "read",
+                "write"
+              ],
+              "tools": null,
+              "maxActions": null
+            },
+            "publicKeyId": "tenant-a:key_v1",
+            "signature": "BGPS1W/NOLs5f7606u1bk5Z14SglhSEa0OK0WgLrErwB6pJ7mc02TEiNl7fdqgGmHztabMYxB2FCvntJNbXjBg==",
+            "timestamp": 1799996400000
+          },
+          {
+            "expiry": 1800010800000,
+            "payload": {
+              "v": 1,
+              "kind": "delegation",
+              "delegationId": "64000000-0000-4000-8000-000000000002",
+              "tenantId": "tenant-a",
+              "parentId": "64000000-0000-4000-8000-000000000001",
+              "parentDigest": "5ac3e3524646d84b369f16766175e49af5a4cec865130f5e36d5332dc74e9a7d",
+              "rootAgentId": "61000000-0000-4000-8000-000000000000",
+              "issuerAgentId": "61000000-0000-4000-8000-000000000001",
+              "subjectAgentId": "61000000-0000-4000-8000-000000000009",
+              "depth": 2,
+              "maxDepth": 4,
+              "classes": [
+                "read",
+                "write"
+              ],
+              "tools": null,
+              "maxActions": null
+            },
+            "publicKeyId": "tenant-a:key_v1",
+            "signature": "ak+B5QEVQNcuILcxIkedJXvkGSqSnQPuSQueKB8DU8rq5owiCUJpfH6tmi7iBccTLVsPReBCAHsKVY6E1c8qAw==",
+            "timestamp": 1799996400000
+          }
+        ],
+        "now": 1800000000000
+      },
+      "expected": {
+        "ok": false,
+        "reason": "DELEGATION_INVALID",
+        "index": 1
+      }
+    },
+    {
+      "id": "DELEG-011",
+      "description": "expiry extended after signing",
+      "input": {
+        "chain": [
+          {
+            "expiry": 1800010800000,
+            "payload": {
+              "v": 1,
+              "kind": "delegation",
+              "delegationId": "64000000-0000-4000-8000-000000000001",
+              "tenantId": "tenant-a",
+              "parentId": null,
+              "parentDigest": null,
+              "rootAgentId": "61000000-0000-4000-8000-000000000000",
+              "issuerAgentId": "61000000-0000-4000-8000-000000000000",
+              "subjectAgentId": "61000000-0000-4000-8000-000000000001",
+              "depth": 1,
+              "maxDepth": 4,
+              "classes": [
+                "delegate",
+                "read",
+                "write"
+              ],
+              "tools": null,
+              "maxActions": null
+            },
+            "publicKeyId": "tenant-a:key_v1",
+            "signature": "BGPS1W/NOLs5f7606u1bk5Z14SglhSEa0OK0WgLrErwB6pJ7mc02TEiNl7fdqgGmHztabMYxB2FCvntJNbXjBg==",
+            "timestamp": 1799996400000
+          },
+          {
+            "expiry": 1800010801000,
+            "payload": {
+              "v": 1,
+              "kind": "delegation",
+              "delegationId": "64000000-0000-4000-8000-000000000002",
+              "tenantId": "tenant-a",
+              "parentId": "64000000-0000-4000-8000-000000000001",
+              "parentDigest": "5ac3e3524646d84b369f16766175e49af5a4cec865130f5e36d5332dc74e9a7d",
+              "rootAgentId": "61000000-0000-4000-8000-000000000000",
+              "issuerAgentId": "61000000-0000-4000-8000-000000000001",
+              "subjectAgentId": "61000000-0000-4000-8000-000000000002",
+              "depth": 2,
+              "maxDepth": 4,
+              "classes": [
+                "read",
+                "write"
+              ],
+              "tools": null,
+              "maxActions": null
+            },
+            "publicKeyId": "tenant-a:key_v1",
+            "signature": "ak+B5QEVQNcuILcxIkedJXvkGSqSnQPuSQueKB8DU8rq5owiCUJpfH6tmi7iBccTLVsPReBCAHsKVY6E1c8qAw==",
+            "timestamp": 1799996400000
+          }
+        ],
+        "now": 1800000000000
+      },
+      "expected": {
+        "ok": false,
+        "reason": "DELEGATION_INVALID",
+        "index": 1
+      }
+    },
+    {
+      "id": "DELEG-012",
+      "description": "timestamp changed after signing",
+      "input": {
+        "chain": [
+          {
+            "expiry": 1800010800000,
+            "payload": {
+              "v": 1,
+              "kind": "delegation",
+              "delegationId": "64000000-0000-4000-8000-000000000001",
+              "tenantId": "tenant-a",
+              "parentId": null,
+              "parentDigest": null,
+              "rootAgentId": "61000000-0000-4000-8000-000000000000",
+              "issuerAgentId": "61000000-0000-4000-8000-000000000000",
+              "subjectAgentId": "61000000-0000-4000-8000-000000000001",
+              "depth": 1,
+              "maxDepth": 4,
+              "classes": [
+                "delegate",
+                "read",
+                "write"
+              ],
+              "tools": null,
+              "maxActions": null
+            },
+            "publicKeyId": "tenant-a:key_v1",
+            "signature": "BGPS1W/NOLs5f7606u1bk5Z14SglhSEa0OK0WgLrErwB6pJ7mc02TEiNl7fdqgGmHztabMYxB2FCvntJNbXjBg==",
+            "timestamp": 1799996400000
+          },
+          {
+            "expiry": 1800010800000,
+            "payload": {
+              "v": 1,
+              "kind": "delegation",
+              "delegationId": "64000000-0000-4000-8000-000000000002",
+              "tenantId": "tenant-a",
+              "parentId": "64000000-0000-4000-8000-000000000001",
+              "parentDigest": "5ac3e3524646d84b369f16766175e49af5a4cec865130f5e36d5332dc74e9a7d",
+              "rootAgentId": "61000000-0000-4000-8000-000000000000",
+              "issuerAgentId": "61000000-0000-4000-8000-000000000001",
+              "subjectAgentId": "61000000-0000-4000-8000-000000000002",
+              "depth": 2,
+              "maxDepth": 4,
+              "classes": [
+                "read",
+                "write"
+              ],
+              "tools": null,
+              "maxActions": null
+            },
+            "publicKeyId": "tenant-a:key_v1",
+            "signature": "ak+B5QEVQNcuILcxIkedJXvkGSqSnQPuSQueKB8DU8rq5owiCUJpfH6tmi7iBccTLVsPReBCAHsKVY6E1c8qAw==",
+            "timestamp": 1799996399999
+          }
+        ],
+        "now": 1800000000000
+      },
+      "expected": {
+        "ok": false,
+        "reason": "DELEGATION_INVALID",
+        "index": 1
+      }
+    },
+    {
+      "id": "DELEG-013",
+      "description": "signature altered",
+      "input": {
+        "chain": [
+          {
+            "expiry": 1800010800000,
+            "payload": {
+              "v": 1,
+              "kind": "delegation",
+              "delegationId": "64000000-0000-4000-8000-000000000001",
+              "tenantId": "tenant-a",
+              "parentId": null,
+              "parentDigest": null,
+              "rootAgentId": "61000000-0000-4000-8000-000000000000",
+              "issuerAgentId": "61000000-0000-4000-8000-000000000000",
+              "subjectAgentId": "61000000-0000-4000-8000-000000000001",
+              "depth": 1,
+              "maxDepth": 4,
+              "classes": [
+                "delegate",
+                "read",
+                "write"
+              ],
+              "tools": null,
+              "maxActions": null
+            },
+            "publicKeyId": "tenant-a:key_v1",
+            "signature": "BGPS1W/NOLs5f7606u1bk5Z14SglhSEa0OK0WgLrErwB6pJ7mc02TEiNl7fdqgGmHztabMYxB2FCvntJNbXjBg==",
+            "timestamp": 1799996400000
+          },
+          {
+            "expiry": 1800010800000,
+            "payload": {
+              "v": 1,
+              "kind": "delegation",
+              "delegationId": "64000000-0000-4000-8000-000000000002",
+              "tenantId": "tenant-a",
+              "parentId": "64000000-0000-4000-8000-000000000001",
+              "parentDigest": "5ac3e3524646d84b369f16766175e49af5a4cec865130f5e36d5332dc74e9a7d",
+              "rootAgentId": "61000000-0000-4000-8000-000000000000",
+              "issuerAgentId": "61000000-0000-4000-8000-000000000001",
+              "subjectAgentId": "61000000-0000-4000-8000-000000000002",
+              "depth": 2,
+              "maxDepth": 4,
+              "classes": [
+                "read",
+                "write"
+              ],
+              "tools": null,
+              "maxActions": null
+            },
+            "publicKeyId": "tenant-a:key_v1",
+            "signature": "ak+B5QEVQNAuILcxIkedJXvkGSqSnQPuSQueKB8DU8rq5owiCUJpfH6tmi7iBccTLVsPReBCAHsKVY6E1c8qAw==",
+            "timestamp": 1799996400000
+          }
+        ],
+        "now": 1800000000000
+      },
+      "expected": {
+        "ok": false,
+        "reason": "DELEGATION_INVALID",
+        "index": 1
+      }
+    },
+    {
+      "id": "DELEG-014",
+      "description": "signature with non-canonical encoding (no padding)",
+      "input": {
+        "chain": [
+          {
+            "expiry": 1800010800000,
+            "payload": {
+              "v": 1,
+              "kind": "delegation",
+              "delegationId": "64000000-0000-4000-8000-000000000001",
+              "tenantId": "tenant-a",
+              "parentId": null,
+              "parentDigest": null,
+              "rootAgentId": "61000000-0000-4000-8000-000000000000",
+              "issuerAgentId": "61000000-0000-4000-8000-000000000000",
+              "subjectAgentId": "61000000-0000-4000-8000-000000000001",
+              "depth": 1,
+              "maxDepth": 4,
+              "classes": [
+                "delegate",
+                "read",
+                "write"
+              ],
+              "tools": null,
+              "maxActions": null
+            },
+            "publicKeyId": "tenant-a:key_v1",
+            "signature": "BGPS1W/NOLs5f7606u1bk5Z14SglhSEa0OK0WgLrErwB6pJ7mc02TEiNl7fdqgGmHztabMYxB2FCvntJNbXjBg==",
+            "timestamp": 1799996400000
+          },
+          {
+            "expiry": 1800010800000,
+            "payload": {
+              "v": 1,
+              "kind": "delegation",
+              "delegationId": "64000000-0000-4000-8000-000000000002",
+              "tenantId": "tenant-a",
+              "parentId": "64000000-0000-4000-8000-000000000001",
+              "parentDigest": "5ac3e3524646d84b369f16766175e49af5a4cec865130f5e36d5332dc74e9a7d",
+              "rootAgentId": "61000000-0000-4000-8000-000000000000",
+              "issuerAgentId": "61000000-0000-4000-8000-000000000001",
+              "subjectAgentId": "61000000-0000-4000-8000-000000000002",
+              "depth": 2,
+              "maxDepth": 4,
+              "classes": [
+                "read",
+                "write"
+              ],
+              "tools": null,
+              "maxActions": null
+            },
+            "publicKeyId": "tenant-a:key_v1",
+            "signature": "ak+B5QEVQNcuILcxIkedJXvkGSqSnQPuSQueKB8DU8rq5owiCUJpfH6tmi7iBccTLVsPReBCAHsKVY6E1c8qAw",
+            "timestamp": 1799996400000
+          }
+        ],
+        "now": 1800000000000
+      },
+      "expected": {
+        "ok": false,
+        "reason": "DELEGATION_INVALID",
+        "index": 1
+      }
+    },
+    {
+      "id": "DELEG-015",
+      "description": "signed by a key that is not the tenant key",
+      "input": {
+        "chain": [
+          {
+            "expiry": 1800010800000,
+            "payload": {
+              "v": 1,
+              "kind": "delegation",
+              "delegationId": "64000000-0000-4000-8000-000000000001",
+              "tenantId": "tenant-a",
+              "parentId": null,
+              "parentDigest": null,
+              "rootAgentId": "61000000-0000-4000-8000-000000000000",
+              "issuerAgentId": "61000000-0000-4000-8000-000000000000",
+              "subjectAgentId": "61000000-0000-4000-8000-000000000001",
+              "depth": 1,
+              "maxDepth": 4,
+              "classes": [
+                "delegate",
+                "read",
+                "write"
+              ],
+              "tools": null,
+              "maxActions": null
+            },
+            "publicKeyId": "tenant-a:key_v1",
+            "signature": "BGPS1W/NOLs5f7606u1bk5Z14SglhSEa0OK0WgLrErwB6pJ7mc02TEiNl7fdqgGmHztabMYxB2FCvntJNbXjBg==",
+            "timestamp": 1799996400000
+          },
+          {
+            "expiry": 1800010800000,
+            "payload": {
+              "v": 1,
+              "kind": "delegation",
+              "delegationId": "64000000-0000-4000-8000-000000000016",
+              "tenantId": "tenant-a",
+              "parentId": "64000000-0000-4000-8000-000000000001",
+              "parentDigest": "5ac3e3524646d84b369f16766175e49af5a4cec865130f5e36d5332dc74e9a7d",
+              "rootAgentId": "61000000-0000-4000-8000-000000000000",
+              "issuerAgentId": "61000000-0000-4000-8000-000000000001",
+              "subjectAgentId": "61000000-0000-4000-8000-000000000002",
+              "depth": 2,
+              "maxDepth": 4,
+              "classes": [
+                "read",
+                "write"
+              ],
+              "tools": null,
+              "maxActions": null
+            },
+            "publicKeyId": "tenant-a:key_v1",
+            "signature": "PF5h241YEZxRwWBKRHJJbR0qd85gMIANDxU7o0lg0hciexHLahPK23YaCQ8WCjjAHXIgzbhR7gUE5V/gh0TDBQ==",
+            "timestamp": 1799996400000
+          }
+        ],
+        "now": 1800000000000
+      },
+      "expected": {
+        "ok": false,
+        "reason": "DELEGATION_INVALID",
+        "index": 1
+      }
+    },
+    {
+      "id": "DELEG-016",
+      "description": "envelope with an extra member",
+      "input": {
+        "chain": [
+          {
+            "expiry": 1800010800000,
+            "payload": {
+              "v": 1,
+              "kind": "delegation",
+              "delegationId": "64000000-0000-4000-8000-000000000001",
+              "tenantId": "tenant-a",
+              "parentId": null,
+              "parentDigest": null,
+              "rootAgentId": "61000000-0000-4000-8000-000000000000",
+              "issuerAgentId": "61000000-0000-4000-8000-000000000000",
+              "subjectAgentId": "61000000-0000-4000-8000-000000000001",
+              "depth": 1,
+              "maxDepth": 4,
+              "classes": [
+                "delegate",
+                "read",
+                "write"
+              ],
+              "tools": null,
+              "maxActions": null
+            },
+            "publicKeyId": "tenant-a:key_v1",
+            "signature": "BGPS1W/NOLs5f7606u1bk5Z14SglhSEa0OK0WgLrErwB6pJ7mc02TEiNl7fdqgGmHztabMYxB2FCvntJNbXjBg==",
+            "timestamp": 1799996400000
+          },
+          {
+            "expiry": 1800010800000,
+            "payload": {
+              "v": 1,
+              "kind": "delegation",
+              "delegationId": "64000000-0000-4000-8000-000000000002",
+              "tenantId": "tenant-a",
+              "parentId": "64000000-0000-4000-8000-000000000001",
+              "parentDigest": "5ac3e3524646d84b369f16766175e49af5a4cec865130f5e36d5332dc74e9a7d",
+              "rootAgentId": "61000000-0000-4000-8000-000000000000",
+              "issuerAgentId": "61000000-0000-4000-8000-000000000001",
+              "subjectAgentId": "61000000-0000-4000-8000-000000000002",
+              "depth": 2,
+              "maxDepth": 4,
+              "classes": [
+                "read",
+                "write"
+              ],
+              "tools": null,
+              "maxActions": null
+            },
+            "publicKeyId": "tenant-a:key_v1",
+            "signature": "ak+B5QEVQNcuILcxIkedJXvkGSqSnQPuSQueKB8DU8rq5owiCUJpfH6tmi7iBccTLVsPReBCAHsKVY6E1c8qAw==",
+            "timestamp": 1799996400000,
+            "note": "x"
+          }
+        ],
+        "now": 1800000000000
+      },
+      "expected": {
+        "ok": false,
+        "reason": "DELEGATION_INVALID",
+        "index": 1
+      }
+    },
+    {
+      "id": "DELEG-017",
+      "description": "payload with an extra member",
+      "input": {
+        "chain": [
+          {
+            "expiry": 1800010800000,
+            "payload": {
+              "v": 1,
+              "kind": "delegation",
+              "delegationId": "64000000-0000-4000-8000-000000000001",
+              "tenantId": "tenant-a",
+              "parentId": null,
+              "parentDigest": null,
+              "rootAgentId": "61000000-0000-4000-8000-000000000000",
+              "issuerAgentId": "61000000-0000-4000-8000-000000000000",
+              "subjectAgentId": "61000000-0000-4000-8000-000000000001",
+              "depth": 1,
+              "maxDepth": 4,
+              "classes": [
+                "delegate",
+                "read",
+                "write"
+              ],
+              "tools": null,
+              "maxActions": null
+            },
+            "publicKeyId": "tenant-a:key_v1",
+            "signature": "BGPS1W/NOLs5f7606u1bk5Z14SglhSEa0OK0WgLrErwB6pJ7mc02TEiNl7fdqgGmHztabMYxB2FCvntJNbXjBg==",
+            "timestamp": 1799996400000
+          },
+          {
+            "expiry": 1800010800000,
+            "payload": {
+              "v": 1,
+              "kind": "delegation",
+              "delegationId": "64000000-0000-4000-8000-000000000002",
+              "tenantId": "tenant-a",
+              "parentId": "64000000-0000-4000-8000-000000000001",
+              "parentDigest": "5ac3e3524646d84b369f16766175e49af5a4cec865130f5e36d5332dc74e9a7d",
+              "rootAgentId": "61000000-0000-4000-8000-000000000000",
+              "issuerAgentId": "61000000-0000-4000-8000-000000000001",
+              "subjectAgentId": "61000000-0000-4000-8000-000000000002",
+              "depth": 2,
+              "maxDepth": 4,
+              "classes": [
+                "read",
+                "write"
+              ],
+              "tools": null,
+              "maxActions": null,
+              "note": "x"
+            },
+            "publicKeyId": "tenant-a:key_v1",
+            "signature": "ak+B5QEVQNcuILcxIkedJXvkGSqSnQPuSQueKB8DU8rq5owiCUJpfH6tmi7iBccTLVsPReBCAHsKVY6E1c8qAw==",
+            "timestamp": 1799996400000
+          }
+        ],
+        "now": 1800000000000
+      },
+      "expected": {
+        "ok": false,
+        "reason": "DELEGATION_INVALID",
+        "index": 1
+      }
+    },
+    {
+      "id": "DELEG-018",
+      "description": "the root tampered: maxDepth raised",
+      "input": {
+        "chain": [
+          {
+            "expiry": 1800010800000,
+            "payload": {
+              "v": 1,
+              "kind": "delegation",
+              "delegationId": "64000000-0000-4000-8000-000000000001",
+              "tenantId": "tenant-a",
+              "parentId": null,
+              "parentDigest": null,
+              "rootAgentId": "61000000-0000-4000-8000-000000000000",
+              "issuerAgentId": "61000000-0000-4000-8000-000000000000",
+              "subjectAgentId": "61000000-0000-4000-8000-000000000001",
+              "depth": 1,
+              "maxDepth": 8,
+              "classes": [
+                "delegate",
+                "read",
+                "write"
+              ],
+              "tools": null,
+              "maxActions": null
+            },
+            "publicKeyId": "tenant-a:key_v1",
+            "signature": "BGPS1W/NOLs5f7606u1bk5Z14SglhSEa0OK0WgLrErwB6pJ7mc02TEiNl7fdqgGmHztabMYxB2FCvntJNbXjBg==",
+            "timestamp": 1799996400000
+          },
+          {
+            "expiry": 1800010800000,
+            "payload": {
+              "v": 1,
+              "kind": "delegation",
+              "delegationId": "64000000-0000-4000-8000-000000000002",
+              "tenantId": "tenant-a",
+              "parentId": "64000000-0000-4000-8000-000000000001",
+              "parentDigest": "5ac3e3524646d84b369f16766175e49af5a4cec865130f5e36d5332dc74e9a7d",
+              "rootAgentId": "61000000-0000-4000-8000-000000000000",
+              "issuerAgentId": "61000000-0000-4000-8000-000000000001",
+              "subjectAgentId": "61000000-0000-4000-8000-000000000002",
+              "depth": 2,
+              "maxDepth": 4,
+              "classes": [
+                "read",
+                "write"
+              ],
+              "tools": null,
+              "maxActions": null
+            },
+            "publicKeyId": "tenant-a:key_v1",
+            "signature": "ak+B5QEVQNcuILcxIkedJXvkGSqSnQPuSQueKB8DU8rq5owiCUJpfH6tmi7iBccTLVsPReBCAHsKVY6E1c8qAw==",
+            "timestamp": 1799996400000
+          }
+        ],
+        "now": 1800000000000
+      },
+      "expected": {
+        "ok": false,
+        "reason": "DELEGATION_INVALID",
+        "index": 0
+      }
+    },
+    {
+      "id": "DELEG-019",
+      "description": "a key id nobody knows",
+      "input": {
+        "chain": [
+          {
+            "expiry": 1800010800000,
+            "payload": {
+              "v": 1,
+              "kind": "delegation",
+              "delegationId": "64000000-0000-4000-8000-000000000001",
+              "tenantId": "tenant-a",
+              "parentId": null,
+              "parentDigest": null,
+              "rootAgentId": "61000000-0000-4000-8000-000000000000",
+              "issuerAgentId": "61000000-0000-4000-8000-000000000000",
+              "subjectAgentId": "61000000-0000-4000-8000-000000000001",
+              "depth": 1,
+              "maxDepth": 4,
+              "classes": [
+                "delegate",
+                "read",
+                "write"
+              ],
+              "tools": null,
+              "maxActions": null
+            },
+            "publicKeyId": "tenant-z:key_v1",
+            "signature": "BGPS1W/NOLs5f7606u1bk5Z14SglhSEa0OK0WgLrErwB6pJ7mc02TEiNl7fdqgGmHztabMYxB2FCvntJNbXjBg==",
+            "timestamp": 1799996400000
+          }
+        ],
+        "now": 1800000000000
+      },
+      "expected": {
+        "ok": false,
+        "reason": "DELEGATION_INVALID",
+        "index": 0
+      }
+    },
+    {
+      "id": "DELEG-020",
+      "description": "a link signed by another tenant's key (tenant mismatch with the root)",
+      "input": {
+        "chain": [
+          {
+            "expiry": 1800010800000,
+            "payload": {
+              "v": 1,
+              "kind": "delegation",
+              "delegationId": "64000000-0000-4000-8000-000000000001",
+              "tenantId": "tenant-a",
+              "parentId": null,
+              "parentDigest": null,
+              "rootAgentId": "61000000-0000-4000-8000-000000000000",
+              "issuerAgentId": "61000000-0000-4000-8000-000000000000",
+              "subjectAgentId": "61000000-0000-4000-8000-000000000001",
+              "depth": 1,
+              "maxDepth": 4,
+              "classes": [
+                "delegate",
+                "read",
+                "write"
+              ],
+              "tools": null,
+              "maxActions": null
+            },
+            "publicKeyId": "tenant-a:key_v1",
+            "signature": "BGPS1W/NOLs5f7606u1bk5Z14SglhSEa0OK0WgLrErwB6pJ7mc02TEiNl7fdqgGmHztabMYxB2FCvntJNbXjBg==",
+            "timestamp": 1799996400000
+          },
+          {
+            "expiry": 1800010800000,
+            "payload": {
+              "v": 1,
+              "kind": "delegation",
+              "delegationId": "64000000-0000-4000-8000-000000000017",
+              "tenantId": "tenant-b",
+              "parentId": "64000000-0000-4000-8000-000000000001",
+              "parentDigest": "5ac3e3524646d84b369f16766175e49af5a4cec865130f5e36d5332dc74e9a7d",
+              "rootAgentId": "61000000-0000-4000-8000-000000000000",
+              "issuerAgentId": "61000000-0000-4000-8000-000000000001",
+              "subjectAgentId": "61000000-0000-4000-8000-000000000002",
+              "depth": 2,
+              "maxDepth": 4,
+              "classes": [
+                "read",
+                "write"
+              ],
+              "tools": null,
+              "maxActions": null
+            },
+            "publicKeyId": "tenant-b:key_v1",
+            "signature": "yPfaC6VHejXRkI/RX2/3SJQLkOOUo0ICdw/+V4YrGQPwffUBlRwchYj9GH2ciQeC6KWknFJGCW/AUwHKkp5xDw==",
+            "timestamp": 1799996400000
+          }
+        ],
+        "now": 1800000000000
+      },
+      "expected": {
+        "ok": false,
+        "reason": "DELEGATION_INVALID",
+        "index": 1
+      }
+    },
+    {
+      "id": "DELEG-021",
+      "description": "a root of another tenant, children of the first tenant",
+      "input": {
+        "chain": [
+          {
+            "expiry": 1800010800000,
+            "payload": {
+              "v": 1,
+              "kind": "delegation",
+              "delegationId": "64000000-0000-4000-8000-000000000018",
+              "tenantId": "tenant-b",
+              "parentId": null,
+              "parentDigest": null,
+              "rootAgentId": "61000000-0000-4000-8000-000000000000",
+              "issuerAgentId": "61000000-0000-4000-8000-000000000000",
+              "subjectAgentId": "61000000-0000-4000-8000-000000000001",
+              "depth": 1,
+              "maxDepth": 3,
+              "classes": [
+                "read",
+                "write"
+              ],
+              "tools": null,
+              "maxActions": null
+            },
+            "publicKeyId": "tenant-b:key_v1",
+            "signature": "y/kp8XkkM6aMgsWwHVGEY4r59NJ/dW06ZQIxpVbbFMC4VsZm5QS2dGmeqY2A2Ay5zYfUWMuVoGVkP4yF5+yeBQ==",
+            "timestamp": 1799996400000
+          },
+          {
+            "expiry": 1800010800000,
+            "payload": {
+              "v": 1,
+              "kind": "delegation",
+              "delegationId": "64000000-0000-4000-8000-000000000002",
+              "tenantId": "tenant-a",
+              "parentId": "64000000-0000-4000-8000-000000000001",
+              "parentDigest": "5ac3e3524646d84b369f16766175e49af5a4cec865130f5e36d5332dc74e9a7d",
+              "rootAgentId": "61000000-0000-4000-8000-000000000000",
+              "issuerAgentId": "61000000-0000-4000-8000-000000000001",
+              "subjectAgentId": "61000000-0000-4000-8000-000000000002",
+              "depth": 2,
+              "maxDepth": 4,
+              "classes": [
+                "read",
+                "write"
+              ],
+              "tools": null,
+              "maxActions": null
+            },
+            "publicKeyId": "tenant-a:key_v1",
+            "signature": "ak+B5QEVQNcuILcxIkedJXvkGSqSnQPuSQueKB8DU8rq5owiCUJpfH6tmi7iBccTLVsPReBCAHsKVY6E1c8qAw==",
+            "timestamp": 1799996400000
+          }
+        ],
+        "now": 1800000000000
+      },
+      "expected": {
+        "ok": false,
+        "reason": "DELEGATION_INVALID",
+        "index": 1
+      }
+    },
+    {
+      "id": "DELEG-022",
+      "description": "a link spliced in from another chain",
+      "input": {
+        "chain": [
+          {
+            "expiry": 1800010800000,
+            "payload": {
+              "v": 1,
+              "kind": "delegation",
+              "delegationId": "64000000-0000-4000-8000-000000000001",
+              "tenantId": "tenant-a",
+              "parentId": null,
+              "parentDigest": null,
+              "rootAgentId": "61000000-0000-4000-8000-000000000000",
+              "issuerAgentId": "61000000-0000-4000-8000-000000000000",
+              "subjectAgentId": "61000000-0000-4000-8000-000000000001",
+              "depth": 1,
+              "maxDepth": 4,
+              "classes": [
+                "delegate",
+                "read",
+                "write"
+              ],
+              "tools": null,
+              "maxActions": null
+            },
+            "publicKeyId": "tenant-a:key_v1",
+            "signature": "BGPS1W/NOLs5f7606u1bk5Z14SglhSEa0OK0WgLrErwB6pJ7mc02TEiNl7fdqgGmHztabMYxB2FCvntJNbXjBg==",
+            "timestamp": 1799996400000
+          },
+          {
+            "expiry": 1800010800000,
+            "payload": {
+              "v": 1,
+              "kind": "delegation",
+              "delegationId": "64000000-0000-4000-8000-000000000020",
+              "tenantId": "tenant-a",
+              "parentId": "64000000-0000-4000-8000-000000000019",
+              "parentDigest": "bc3a0837ec7470cd68feb921f04b75a82a6291a49a0d5d5fdea3bc64425b2418",
+              "rootAgentId": "61000000-0000-4000-8000-000000000000",
+              "issuerAgentId": "61000000-0000-4000-8000-000000000001",
+              "subjectAgentId": "61000000-0000-4000-8000-000000000002",
+              "depth": 2,
+              "maxDepth": 4,
+              "classes": [
+                "read",
+                "write"
+              ],
+              "tools": null,
+              "maxActions": null
+            },
+            "publicKeyId": "tenant-a:key_v1",
+            "signature": "QXz/cGg8rD5vJvSYsUotH23BSP+C84+/GGg/fCn/I/Eucw+OdIIyt0s90eYS14BZ9qdSBLOsi/Ko80QiQCXoBg==",
+            "timestamp": 1799996400000
+          }
+        ],
+        "now": 1800000000000
+      },
+      "expected": {
+        "ok": false,
+        "reason": "DELEGATION_INVALID",
+        "index": 1
+      }
+    },
+    {
+      "id": "DELEG-023",
+      "description": "same delegation id, different content: the parent digest no longer matches",
+      "input": {
+        "chain": [
+          {
+            "expiry": 1800010800000,
+            "payload": {
+              "v": 1,
+              "kind": "delegation",
+              "delegationId": "64000000-0000-4000-8000-000000000001",
+              "tenantId": "tenant-a",
+              "parentId": null,
+              "parentDigest": null,
+              "rootAgentId": "61000000-0000-4000-8000-000000000000",
+              "issuerAgentId": "61000000-0000-4000-8000-000000000000",
+              "subjectAgentId": "61000000-0000-4000-8000-000000000001",
+              "depth": 1,
+              "maxDepth": 4,
+              "classes": [
+                "read"
+              ],
+              "tools": null,
+              "maxActions": null
+            },
+            "publicKeyId": "tenant-a:key_v1",
+            "signature": "USD6d/xG8Hs11tLpQjWZBXjjrhQYX9zhay9c2y/wDI3B77R5fWqQp7qgIutD3PV6pWsy/R39VMx+fBQcUJouDQ==",
+            "timestamp": 1799996400000
+          },
+          {
+            "expiry": 1800010800000,
+            "payload": {
+              "v": 1,
+              "kind": "delegation",
+              "delegationId": "64000000-0000-4000-8000-000000000002",
+              "tenantId": "tenant-a",
+              "parentId": "64000000-0000-4000-8000-000000000001",
+              "parentDigest": "5ac3e3524646d84b369f16766175e49af5a4cec865130f5e36d5332dc74e9a7d",
+              "rootAgentId": "61000000-0000-4000-8000-000000000000",
+              "issuerAgentId": "61000000-0000-4000-8000-000000000001",
+              "subjectAgentId": "61000000-0000-4000-8000-000000000002",
+              "depth": 2,
+              "maxDepth": 4,
+              "classes": [
+                "read",
+                "write"
+              ],
+              "tools": null,
+              "maxActions": null
+            },
+            "publicKeyId": "tenant-a:key_v1",
+            "signature": "ak+B5QEVQNcuILcxIkedJXvkGSqSnQPuSQueKB8DU8rq5owiCUJpfH6tmi7iBccTLVsPReBCAHsKVY6E1c8qAw==",
+            "timestamp": 1799996400000
+          }
+        ],
+        "now": 1800000000000
+      },
+      "expected": {
+        "ok": false,
+        "reason": "DELEGATION_INVALID",
+        "index": 1
+      }
+    },
+    {
+      "id": "DELEG-024",
+      "description": "a link missing from the middle",
+      "input": {
+        "chain": [
+          {
+            "expiry": 1800010800000,
+            "payload": {
+              "v": 1,
+              "kind": "delegation",
+              "delegationId": "64000000-0000-4000-8000-000000000001",
+              "tenantId": "tenant-a",
+              "parentId": null,
+              "parentDigest": null,
+              "rootAgentId": "61000000-0000-4000-8000-000000000000",
+              "issuerAgentId": "61000000-0000-4000-8000-000000000000",
+              "subjectAgentId": "61000000-0000-4000-8000-000000000001",
+              "depth": 1,
+              "maxDepth": 4,
+              "classes": [
+                "delegate",
+                "read",
+                "write"
+              ],
+              "tools": null,
+              "maxActions": null
+            },
+            "publicKeyId": "tenant-a:key_v1",
+            "signature": "BGPS1W/NOLs5f7606u1bk5Z14SglhSEa0OK0WgLrErwB6pJ7mc02TEiNl7fdqgGmHztabMYxB2FCvntJNbXjBg==",
+            "timestamp": 1799996400000
+          },
+          {
+            "expiry": 1800010800000,
+            "payload": {
+              "v": 1,
+              "kind": "delegation",
+              "delegationId": "64000000-0000-4000-8000-000000000003",
+              "tenantId": "tenant-a",
+              "parentId": "64000000-0000-4000-8000-000000000002",
+              "parentDigest": "94cc2a2235f7d9ea583a5a3bcb0ab096c30c5c40bf7049efd16626cd25f3fd6d",
+              "rootAgentId": "61000000-0000-4000-8000-000000000000",
+              "issuerAgentId": "61000000-0000-4000-8000-000000000002",
+              "subjectAgentId": "61000000-0000-4000-8000-000000000003",
+              "depth": 3,
+              "maxDepth": 4,
+              "classes": [
+                "read"
+              ],
+              "tools": null,
+              "maxActions": null
+            },
+            "publicKeyId": "tenant-a:key_v1",
+            "signature": "L6eAHHVR1Ii5tR+WS0A9DriH/v0gVLRE9I9JVpFU4NtXO1ithwkNsOe35Y5hmLzmKRSF9kb/Lobg/fOuYmeyAg==",
+            "timestamp": 1799996400000
+          }
+        ],
+        "now": 1800000000000
+      },
+      "expected": {
+        "ok": false,
+        "reason": "DELEGATION_INVALID",
+        "index": 1
+      }
+    },
+    {
+      "id": "DELEG-025",
+      "description": "links in the wrong order",
+      "input": {
+        "chain": [
+          {
+            "expiry": 1800010800000,
+            "payload": {
+              "v": 1,
+              "kind": "delegation",
+              "delegationId": "64000000-0000-4000-8000-000000000002",
+              "tenantId": "tenant-a",
+              "parentId": "64000000-0000-4000-8000-000000000001",
+              "parentDigest": "5ac3e3524646d84b369f16766175e49af5a4cec865130f5e36d5332dc74e9a7d",
+              "rootAgentId": "61000000-0000-4000-8000-000000000000",
+              "issuerAgentId": "61000000-0000-4000-8000-000000000001",
+              "subjectAgentId": "61000000-0000-4000-8000-000000000002",
+              "depth": 2,
+              "maxDepth": 4,
+              "classes": [
+                "read",
+                "write"
+              ],
+              "tools": null,
+              "maxActions": null
+            },
+            "publicKeyId": "tenant-a:key_v1",
+            "signature": "ak+B5QEVQNcuILcxIkedJXvkGSqSnQPuSQueKB8DU8rq5owiCUJpfH6tmi7iBccTLVsPReBCAHsKVY6E1c8qAw==",
+            "timestamp": 1799996400000
+          },
+          {
+            "expiry": 1800010800000,
+            "payload": {
+              "v": 1,
+              "kind": "delegation",
+              "delegationId": "64000000-0000-4000-8000-000000000001",
+              "tenantId": "tenant-a",
+              "parentId": null,
+              "parentDigest": null,
+              "rootAgentId": "61000000-0000-4000-8000-000000000000",
+              "issuerAgentId": "61000000-0000-4000-8000-000000000000",
+              "subjectAgentId": "61000000-0000-4000-8000-000000000001",
+              "depth": 1,
+              "maxDepth": 4,
+              "classes": [
+                "delegate",
+                "read",
+                "write"
+              ],
+              "tools": null,
+              "maxActions": null
+            },
+            "publicKeyId": "tenant-a:key_v1",
+            "signature": "BGPS1W/NOLs5f7606u1bk5Z14SglhSEa0OK0WgLrErwB6pJ7mc02TEiNl7fdqgGmHztabMYxB2FCvntJNbXjBg==",
+            "timestamp": 1799996400000
+          }
+        ],
+        "now": 1800000000000
+      },
+      "expected": {
+        "ok": false,
+        "reason": "DELEGATION_INVALID",
+        "index": 0
+      }
+    },
+    {
+      "id": "DELEG-026",
+      "description": "a link repeated",
+      "input": {
+        "chain": [
+          {
+            "expiry": 1800010800000,
+            "payload": {
+              "v": 1,
+              "kind": "delegation",
+              "delegationId": "64000000-0000-4000-8000-000000000001",
+              "tenantId": "tenant-a",
+              "parentId": null,
+              "parentDigest": null,
+              "rootAgentId": "61000000-0000-4000-8000-000000000000",
+              "issuerAgentId": "61000000-0000-4000-8000-000000000000",
+              "subjectAgentId": "61000000-0000-4000-8000-000000000001",
+              "depth": 1,
+              "maxDepth": 4,
+              "classes": [
+                "delegate",
+                "read",
+                "write"
+              ],
+              "tools": null,
+              "maxActions": null
+            },
+            "publicKeyId": "tenant-a:key_v1",
+            "signature": "BGPS1W/NOLs5f7606u1bk5Z14SglhSEa0OK0WgLrErwB6pJ7mc02TEiNl7fdqgGmHztabMYxB2FCvntJNbXjBg==",
+            "timestamp": 1799996400000
+          },
+          {
+            "expiry": 1800010800000,
+            "payload": {
+              "v": 1,
+              "kind": "delegation",
+              "delegationId": "64000000-0000-4000-8000-000000000002",
+              "tenantId": "tenant-a",
+              "parentId": "64000000-0000-4000-8000-000000000001",
+              "parentDigest": "5ac3e3524646d84b369f16766175e49af5a4cec865130f5e36d5332dc74e9a7d",
+              "rootAgentId": "61000000-0000-4000-8000-000000000000",
+              "issuerAgentId": "61000000-0000-4000-8000-000000000001",
+              "subjectAgentId": "61000000-0000-4000-8000-000000000002",
+              "depth": 2,
+              "maxDepth": 4,
+              "classes": [
+                "read",
+                "write"
+              ],
+              "tools": null,
+              "maxActions": null
+            },
+            "publicKeyId": "tenant-a:key_v1",
+            "signature": "ak+B5QEVQNcuILcxIkedJXvkGSqSnQPuSQueKB8DU8rq5owiCUJpfH6tmi7iBccTLVsPReBCAHsKVY6E1c8qAw==",
+            "timestamp": 1799996400000
+          },
+          {
+            "expiry": 1800010800000,
+            "payload": {
+              "v": 1,
+              "kind": "delegation",
+              "delegationId": "64000000-0000-4000-8000-000000000002",
+              "tenantId": "tenant-a",
+              "parentId": "64000000-0000-4000-8000-000000000001",
+              "parentDigest": "5ac3e3524646d84b369f16766175e49af5a4cec865130f5e36d5332dc74e9a7d",
+              "rootAgentId": "61000000-0000-4000-8000-000000000000",
+              "issuerAgentId": "61000000-0000-4000-8000-000000000001",
+              "subjectAgentId": "61000000-0000-4000-8000-000000000002",
+              "depth": 2,
+              "maxDepth": 4,
+              "classes": [
+                "read",
+                "write"
+              ],
+              "tools": null,
+              "maxActions": null
+            },
+            "publicKeyId": "tenant-a:key_v1",
+            "signature": "ak+B5QEVQNcuILcxIkedJXvkGSqSnQPuSQueKB8DU8rq5owiCUJpfH6tmi7iBccTLVsPReBCAHsKVY6E1c8qAw==",
+            "timestamp": 1799996400000
+          }
+        ],
+        "now": 1800000000000
+      },
+      "expected": {
+        "ok": false,
+        "reason": "DELEGATION_INVALID",
+        "index": 2
+      }
+    },
+    {
+      "id": "DELEG-027",
+      "description": "a chain that does not start at a root grant",
+      "input": {
+        "chain": [
+          {
+            "expiry": 1800010800000,
+            "payload": {
+              "v": 1,
+              "kind": "delegation",
+              "delegationId": "64000000-0000-4000-8000-000000000002",
+              "tenantId": "tenant-a",
+              "parentId": "64000000-0000-4000-8000-000000000001",
+              "parentDigest": "5ac3e3524646d84b369f16766175e49af5a4cec865130f5e36d5332dc74e9a7d",
+              "rootAgentId": "61000000-0000-4000-8000-000000000000",
+              "issuerAgentId": "61000000-0000-4000-8000-000000000001",
+              "subjectAgentId": "61000000-0000-4000-8000-000000000002",
+              "depth": 2,
+              "maxDepth": 4,
+              "classes": [
+                "read",
+                "write"
+              ],
+              "tools": null,
+              "maxActions": null
+            },
+            "publicKeyId": "tenant-a:key_v1",
+            "signature": "ak+B5QEVQNcuILcxIkedJXvkGSqSnQPuSQueKB8DU8rq5owiCUJpfH6tmi7iBccTLVsPReBCAHsKVY6E1c8qAw==",
+            "timestamp": 1799996400000
+          },
+          {
+            "expiry": 1800010800000,
+            "payload": {
+              "v": 1,
+              "kind": "delegation",
+              "delegationId": "64000000-0000-4000-8000-000000000003",
+              "tenantId": "tenant-a",
+              "parentId": "64000000-0000-4000-8000-000000000002",
+              "parentDigest": "94cc2a2235f7d9ea583a5a3bcb0ab096c30c5c40bf7049efd16626cd25f3fd6d",
+              "rootAgentId": "61000000-0000-4000-8000-000000000000",
+              "issuerAgentId": "61000000-0000-4000-8000-000000000002",
+              "subjectAgentId": "61000000-0000-4000-8000-000000000003",
+              "depth": 3,
+              "maxDepth": 4,
+              "classes": [
+                "read"
+              ],
+              "tools": null,
+              "maxActions": null
+            },
+            "publicKeyId": "tenant-a:key_v1",
+            "signature": "L6eAHHVR1Ii5tR+WS0A9DriH/v0gVLRE9I9JVpFU4NtXO1ithwkNsOe35Y5hmLzmKRSF9kb/Lobg/fOuYmeyAg==",
+            "timestamp": 1799996400000
+          }
+        ],
+        "now": 1800000000000
+      },
+      "expected": {
+        "ok": false,
+        "reason": "DELEGATION_INVALID",
+        "index": 0
+      }
+    },
+    {
+      "id": "DELEG-028",
+      "description": "an empty chain",
+      "input": {
+        "chain": [],
+        "now": 1800000000000
+      },
+      "expected": {
+        "ok": false,
+        "reason": "DELEGATION_INVALID"
+      }
+    },
+    {
+      "id": "DELEG-029",
+      "description": "a chain longer than the platform cap",
+      "input": {
+        "chain": [
+          {
+            "expiry": 1800010800000,
+            "payload": {
+              "v": 1,
+              "kind": "delegation",
+              "delegationId": "64000000-0000-4000-8000-000000000001",
+              "tenantId": "tenant-a",
+              "parentId": null,
+              "parentDigest": null,
+              "rootAgentId": "61000000-0000-4000-8000-000000000000",
+              "issuerAgentId": "61000000-0000-4000-8000-000000000000",
+              "subjectAgentId": "61000000-0000-4000-8000-000000000001",
+              "depth": 1,
+              "maxDepth": 4,
+              "classes": [
+                "delegate",
+                "read",
+                "write"
+              ],
+              "tools": null,
+              "maxActions": null
+            },
+            "publicKeyId": "tenant-a:key_v1",
+            "signature": "BGPS1W/NOLs5f7606u1bk5Z14SglhSEa0OK0WgLrErwB6pJ7mc02TEiNl7fdqgGmHztabMYxB2FCvntJNbXjBg==",
+            "timestamp": 1799996400000
+          },
+          {
+            "expiry": 1800010800000,
+            "payload": {
+              "v": 1,
+              "kind": "delegation",
+              "delegationId": "64000000-0000-4000-8000-000000000001",
+              "tenantId": "tenant-a",
+              "parentId": null,
+              "parentDigest": null,
+              "rootAgentId": "61000000-0000-4000-8000-000000000000",
+              "issuerAgentId": "61000000-0000-4000-8000-000000000000",
+              "subjectAgentId": "61000000-0000-4000-8000-000000000001",
+              "depth": 1,
+              "maxDepth": 4,
+              "classes": [
+                "delegate",
+                "read",
+                "write"
+              ],
+              "tools": null,
+              "maxActions": null
+            },
+            "publicKeyId": "tenant-a:key_v1",
+            "signature": "BGPS1W/NOLs5f7606u1bk5Z14SglhSEa0OK0WgLrErwB6pJ7mc02TEiNl7fdqgGmHztabMYxB2FCvntJNbXjBg==",
+            "timestamp": 1799996400000
+          },
+          {
+            "expiry": 1800010800000,
+            "payload": {
+              "v": 1,
+              "kind": "delegation",
+              "delegationId": "64000000-0000-4000-8000-000000000001",
+              "tenantId": "tenant-a",
+              "parentId": null,
+              "parentDigest": null,
+              "rootAgentId": "61000000-0000-4000-8000-000000000000",
+              "issuerAgentId": "61000000-0000-4000-8000-000000000000",
+              "subjectAgentId": "61000000-0000-4000-8000-000000000001",
+              "depth": 1,
+              "maxDepth": 4,
+              "classes": [
+                "delegate",
+                "read",
+                "write"
+              ],
+              "tools": null,
+              "maxActions": null
+            },
+            "publicKeyId": "tenant-a:key_v1",
+            "signature": "BGPS1W/NOLs5f7606u1bk5Z14SglhSEa0OK0WgLrErwB6pJ7mc02TEiNl7fdqgGmHztabMYxB2FCvntJNbXjBg==",
+            "timestamp": 1799996400000
+          },
+          {
+            "expiry": 1800010800000,
+            "payload": {
+              "v": 1,
+              "kind": "delegation",
+              "delegationId": "64000000-0000-4000-8000-000000000001",
+              "tenantId": "tenant-a",
+              "parentId": null,
+              "parentDigest": null,
+              "rootAgentId": "61000000-0000-4000-8000-000000000000",
+              "issuerAgentId": "61000000-0000-4000-8000-000000000000",
+              "subjectAgentId": "61000000-0000-4000-8000-000000000001",
+              "depth": 1,
+              "maxDepth": 4,
+              "classes": [
+                "delegate",
+                "read",
+                "write"
+              ],
+              "tools": null,
+              "maxActions": null
+            },
+            "publicKeyId": "tenant-a:key_v1",
+            "signature": "BGPS1W/NOLs5f7606u1bk5Z14SglhSEa0OK0WgLrErwB6pJ7mc02TEiNl7fdqgGmHztabMYxB2FCvntJNbXjBg==",
+            "timestamp": 1799996400000
+          },
+          {
+            "expiry": 1800010800000,
+            "payload": {
+              "v": 1,
+              "kind": "delegation",
+              "delegationId": "64000000-0000-4000-8000-000000000001",
+              "tenantId": "tenant-a",
+              "parentId": null,
+              "parentDigest": null,
+              "rootAgentId": "61000000-0000-4000-8000-000000000000",
+              "issuerAgentId": "61000000-0000-4000-8000-000000000000",
+              "subjectAgentId": "61000000-0000-4000-8000-000000000001",
+              "depth": 1,
+              "maxDepth": 4,
+              "classes": [
+                "delegate",
+                "read",
+                "write"
+              ],
+              "tools": null,
+              "maxActions": null
+            },
+            "publicKeyId": "tenant-a:key_v1",
+            "signature": "BGPS1W/NOLs5f7606u1bk5Z14SglhSEa0OK0WgLrErwB6pJ7mc02TEiNl7fdqgGmHztabMYxB2FCvntJNbXjBg==",
+            "timestamp": 1799996400000
+          },
+          {
+            "expiry": 1800010800000,
+            "payload": {
+              "v": 1,
+              "kind": "delegation",
+              "delegationId": "64000000-0000-4000-8000-000000000001",
+              "tenantId": "tenant-a",
+              "parentId": null,
+              "parentDigest": null,
+              "rootAgentId": "61000000-0000-4000-8000-000000000000",
+              "issuerAgentId": "61000000-0000-4000-8000-000000000000",
+              "subjectAgentId": "61000000-0000-4000-8000-000000000001",
+              "depth": 1,
+              "maxDepth": 4,
+              "classes": [
+                "delegate",
+                "read",
+                "write"
+              ],
+              "tools": null,
+              "maxActions": null
+            },
+            "publicKeyId": "tenant-a:key_v1",
+            "signature": "BGPS1W/NOLs5f7606u1bk5Z14SglhSEa0OK0WgLrErwB6pJ7mc02TEiNl7fdqgGmHztabMYxB2FCvntJNbXjBg==",
+            "timestamp": 1799996400000
+          },
+          {
+            "expiry": 1800010800000,
+            "payload": {
+              "v": 1,
+              "kind": "delegation",
+              "delegationId": "64000000-0000-4000-8000-000000000001",
+              "tenantId": "tenant-a",
+              "parentId": null,
+              "parentDigest": null,
+              "rootAgentId": "61000000-0000-4000-8000-000000000000",
+              "issuerAgentId": "61000000-0000-4000-8000-000000000000",
+              "subjectAgentId": "61000000-0000-4000-8000-000000000001",
+              "depth": 1,
+              "maxDepth": 4,
+              "classes": [
+                "delegate",
+                "read",
+                "write"
+              ],
+              "tools": null,
+              "maxActions": null
+            },
+            "publicKeyId": "tenant-a:key_v1",
+            "signature": "BGPS1W/NOLs5f7606u1bk5Z14SglhSEa0OK0WgLrErwB6pJ7mc02TEiNl7fdqgGmHztabMYxB2FCvntJNbXjBg==",
+            "timestamp": 1799996400000
+          },
+          {
+            "expiry": 1800010800000,
+            "payload": {
+              "v": 1,
+              "kind": "delegation",
+              "delegationId": "64000000-0000-4000-8000-000000000001",
+              "tenantId": "tenant-a",
+              "parentId": null,
+              "parentDigest": null,
+              "rootAgentId": "61000000-0000-4000-8000-000000000000",
+              "issuerAgentId": "61000000-0000-4000-8000-000000000000",
+              "subjectAgentId": "61000000-0000-4000-8000-000000000001",
+              "depth": 1,
+              "maxDepth": 4,
+              "classes": [
+                "delegate",
+                "read",
+                "write"
+              ],
+              "tools": null,
+              "maxActions": null
+            },
+            "publicKeyId": "tenant-a:key_v1",
+            "signature": "BGPS1W/NOLs5f7606u1bk5Z14SglhSEa0OK0WgLrErwB6pJ7mc02TEiNl7fdqgGmHztabMYxB2FCvntJNbXjBg==",
+            "timestamp": 1799996400000
+          },
+          {
+            "expiry": 1800010800000,
+            "payload": {
+              "v": 1,
+              "kind": "delegation",
+              "delegationId": "64000000-0000-4000-8000-000000000001",
+              "tenantId": "tenant-a",
+              "parentId": null,
+              "parentDigest": null,
+              "rootAgentId": "61000000-0000-4000-8000-000000000000",
+              "issuerAgentId": "61000000-0000-4000-8000-000000000000",
+              "subjectAgentId": "61000000-0000-4000-8000-000000000001",
+              "depth": 1,
+              "maxDepth": 4,
+              "classes": [
+                "delegate",
+                "read",
+                "write"
+              ],
+              "tools": null,
+              "maxActions": null
+            },
+            "publicKeyId": "tenant-a:key_v1",
+            "signature": "BGPS1W/NOLs5f7606u1bk5Z14SglhSEa0OK0WgLrErwB6pJ7mc02TEiNl7fdqgGmHztabMYxB2FCvntJNbXjBg==",
+            "timestamp": 1799996400000
+          }
+        ],
+        "now": 1800000000000
+      },
+      "expected": {
+        "ok": false,
+        "reason": "DELEGATION_INVALID"
+      }
+    },
+    {
+      "id": "DELEG-030",
+      "description": "one link deeper than the maxDepth fixed by the root",
+      "input": {
+        "chain": [
+          {
+            "expiry": 1800010800000,
+            "payload": {
+              "v": 1,
+              "kind": "delegation",
+              "delegationId": "64000000-0000-4000-8000-000000000021",
+              "tenantId": "tenant-a",
+              "parentId": null,
+              "parentDigest": null,
+              "rootAgentId": "61000000-0000-4000-8000-000000000000",
+              "issuerAgentId": "61000000-0000-4000-8000-000000000000",
+              "subjectAgentId": "61000000-0000-4000-8000-000000000001",
+              "depth": 1,
+              "maxDepth": 2,
+              "classes": [
+                "read",
+                "write"
+              ],
+              "tools": null,
+              "maxActions": null
+            },
+            "publicKeyId": "tenant-a:key_v1",
+            "signature": "/LMEN8IM/Kzom/1lFqGiAcDnUwGhTUkMA3GyLjfWn8sB4FeQoUJmiFGUBFQaVYdhGyN54Hyin5277bWchiuhDQ==",
+            "timestamp": 1799996400000
+          },
+          {
+            "expiry": 1800010800000,
+            "payload": {
+              "v": 1,
+              "kind": "delegation",
+              "delegationId": "64000000-0000-4000-8000-000000000022",
+              "tenantId": "tenant-a",
+              "parentId": "64000000-0000-4000-8000-000000000021",
+              "parentDigest": "44ff7fa637610d654cf1e8366d60a63c272d7ffad651f0665fc805c341274e82",
+              "rootAgentId": "61000000-0000-4000-8000-000000000000",
+              "issuerAgentId": "61000000-0000-4000-8000-000000000001",
+              "subjectAgentId": "61000000-0000-4000-8000-000000000002",
+              "depth": 2,
+              "maxDepth": 2,
+              "classes": [
+                "read",
+                "write"
+              ],
+              "tools": null,
+              "maxActions": null
+            },
+            "publicKeyId": "tenant-a:key_v1",
+            "signature": "1FkrDaibULi83cI3ZC+od8PloOfG+gTK3awpLCpmmVivY19cTaLHBTg6XUrsX/8Yca9C6bb5/MNyZD/HaVW0CQ==",
+            "timestamp": 1799996400000
+          },
+          {
+            "expiry": 1800010800000,
+            "payload": {
+              "v": 1,
+              "kind": "delegation",
+              "delegationId": "64000000-0000-4000-8000-000000000023",
+              "tenantId": "tenant-a",
+              "parentId": "64000000-0000-4000-8000-000000000022",
+              "parentDigest": "5153a16bb65d9c11384ddd0162b854e864228d647abfd880c6e2eba7753a4a81",
+              "rootAgentId": "61000000-0000-4000-8000-000000000000",
+              "issuerAgentId": "61000000-0000-4000-8000-000000000002",
+              "subjectAgentId": "61000000-0000-4000-8000-000000000003",
+              "depth": 3,
+              "maxDepth": 2,
+              "classes": [
+                "read",
+                "write"
+              ],
+              "tools": null,
+              "maxActions": null
+            },
+            "publicKeyId": "tenant-a:key_v1",
+            "signature": "AAjfdViLKYp14Sbd8GxKCjmrtlAm55BydQvjWDHPFVo70u0T2t1nEuuZ2+NKoR1GfeQ4ZVvD2Iin6VfaNQ4oDw==",
+            "timestamp": 1799996400000
+          }
+        ],
+        "now": 1800000000000
+      },
+      "expected": {
+        "ok": false,
+        "reason": "DELEGATION_DEPTH_EXCEEDED",
+        "index": 2
+      }
+    },
+    {
+      "id": "DELEG-031",
+      "description": "a child that raises maxDepth",
+      "input": {
+        "chain": [
+          {
+            "expiry": 1800010800000,
+            "payload": {
+              "v": 1,
+              "kind": "delegation",
+              "delegationId": "64000000-0000-4000-8000-000000000021",
+              "tenantId": "tenant-a",
+              "parentId": null,
+              "parentDigest": null,
+              "rootAgentId": "61000000-0000-4000-8000-000000000000",
+              "issuerAgentId": "61000000-0000-4000-8000-000000000000",
+              "subjectAgentId": "61000000-0000-4000-8000-000000000001",
+              "depth": 1,
+              "maxDepth": 2,
+              "classes": [
+                "read",
+                "write"
+              ],
+              "tools": null,
+              "maxActions": null
+            },
+            "publicKeyId": "tenant-a:key_v1",
+            "signature": "/LMEN8IM/Kzom/1lFqGiAcDnUwGhTUkMA3GyLjfWn8sB4FeQoUJmiFGUBFQaVYdhGyN54Hyin5277bWchiuhDQ==",
+            "timestamp": 1799996400000
+          },
+          {
+            "expiry": 1800010800000,
+            "payload": {
+              "v": 1,
+              "kind": "delegation",
+              "delegationId": "64000000-0000-4000-8000-000000000022",
+              "tenantId": "tenant-a",
+              "parentId": "64000000-0000-4000-8000-000000000021",
+              "parentDigest": "44ff7fa637610d654cf1e8366d60a63c272d7ffad651f0665fc805c341274e82",
+              "rootAgentId": "61000000-0000-4000-8000-000000000000",
+              "issuerAgentId": "61000000-0000-4000-8000-000000000001",
+              "subjectAgentId": "61000000-0000-4000-8000-000000000002",
+              "depth": 2,
+              "maxDepth": 5,
+              "classes": [
+                "read",
+                "write"
+              ],
+              "tools": null,
+              "maxActions": null
+            },
+            "publicKeyId": "tenant-a:key_v1",
+            "signature": "96m5d/kwBZys6+6nUAYor0XoPr/uaNmIjsPL242xmVOhHiw/N49zN+8WoZ+X8Ch16Ew4pIcE5yEjRbzwlZuqBQ==",
+            "timestamp": 1799996400000
+          }
+        ],
+        "now": 1800000000000
+      },
+      "expected": {
+        "ok": false,
+        "reason": "DELEGATION_INVALID",
+        "index": 1
+      }
+    },
+    {
+      "id": "DELEG-032",
+      "description": "a delegation back to the root agent",
+      "input": {
+        "chain": [
+          {
+            "expiry": 1800010800000,
+            "payload": {
+              "v": 1,
+              "kind": "delegation",
+              "delegationId": "64000000-0000-4000-8000-000000000024",
+              "tenantId": "tenant-a",
+              "parentId": null,
+              "parentDigest": null,
+              "rootAgentId": "61000000-0000-4000-8000-000000000000",
+              "issuerAgentId": "61000000-0000-4000-8000-000000000000",
+              "subjectAgentId": "61000000-0000-4000-8000-000000000001",
+              "depth": 1,
+              "maxDepth": 5,
+              "classes": [
+                "read",
+                "write"
+              ],
+              "tools": null,
+              "maxActions": null
+            },
+            "publicKeyId": "tenant-a:key_v1",
+            "signature": "zZPKMLdvrM07hXap0G0sGVez8wuflA4+CasCR70aovTaxCwuVvl4OHRi7Zr5G9CxOHeSddcRAZyylNBPsZ0cBA==",
+            "timestamp": 1799996400000
+          },
+          {
+            "expiry": 1800010800000,
+            "payload": {
+              "v": 1,
+              "kind": "delegation",
+              "delegationId": "64000000-0000-4000-8000-000000000025",
+              "tenantId": "tenant-a",
+              "parentId": "64000000-0000-4000-8000-000000000024",
+              "parentDigest": "2a4a8abd501ca0e725a5b0ace24a4a3ff35928d026c2b508dc73493086630daa",
+              "rootAgentId": "61000000-0000-4000-8000-000000000000",
+              "issuerAgentId": "61000000-0000-4000-8000-000000000001",
+              "subjectAgentId": "61000000-0000-4000-8000-000000000002",
+              "depth": 2,
+              "maxDepth": 5,
+              "classes": [
+                "read",
+                "write"
+              ],
+              "tools": null,
+              "maxActions": null
+            },
+            "publicKeyId": "tenant-a:key_v1",
+            "signature": "fj4aOiJVJAfjufZv+PLspU0Pgij+GtfEwpZ8QrVzQ+klwid9iIF5BUUbr3PcQQdgzd5gOrB918muGnOu+R+pAw==",
+            "timestamp": 1799996400000
+          },
+          {
+            "expiry": 1800010800000,
+            "payload": {
+              "v": 1,
+              "kind": "delegation",
+              "delegationId": "64000000-0000-4000-8000-000000000027",
+              "tenantId": "tenant-a",
+              "parentId": "64000000-0000-4000-8000-000000000025",
+              "parentDigest": "199fda1c98f3ecc0d364abe2c64236ad1c7d80f41267a3b5e2dc20c96332a182",
+              "rootAgentId": "61000000-0000-4000-8000-000000000000",
+              "issuerAgentId": "61000000-0000-4000-8000-000000000002",
+              "subjectAgentId": "61000000-0000-4000-8000-000000000000",
+              "depth": 3,
+              "maxDepth": 5,
+              "classes": [
+                "read",
+                "write"
+              ],
+              "tools": null,
+              "maxActions": null
+            },
+            "publicKeyId": "tenant-a:key_v1",
+            "signature": "8w7yCQUYzh7wIchckY3WgYKL+iv3KC5d7ySFiITVOIu/JFwX8uJgON1ycWdLU3D8eTFjs2ouRwE6xRN8X/P9Dw==",
+            "timestamp": 1799996400000
+          }
+        ],
+        "now": 1800000000000
+      },
+      "expected": {
+        "ok": false,
+        "reason": "DELEGATION_CYCLE",
+        "index": 2
+      }
+    },
+    {
+      "id": "DELEG-033",
+      "description": "a delegation back to an agent in the middle of the chain",
+      "input": {
+        "chain": [
+          {
+            "expiry": 1800010800000,
+            "payload": {
+              "v": 1,
+              "kind": "delegation",
+              "delegationId": "64000000-0000-4000-8000-000000000024",
+              "tenantId": "tenant-a",
+              "parentId": null,
+              "parentDigest": null,
+              "rootAgentId": "61000000-0000-4000-8000-000000000000",
+              "issuerAgentId": "61000000-0000-4000-8000-000000000000",
+              "subjectAgentId": "61000000-0000-4000-8000-000000000001",
+              "depth": 1,
+              "maxDepth": 5,
+              "classes": [
+                "read",
+                "write"
+              ],
+              "tools": null,
+              "maxActions": null
+            },
+            "publicKeyId": "tenant-a:key_v1",
+            "signature": "zZPKMLdvrM07hXap0G0sGVez8wuflA4+CasCR70aovTaxCwuVvl4OHRi7Zr5G9CxOHeSddcRAZyylNBPsZ0cBA==",
+            "timestamp": 1799996400000
+          },
+          {
+            "expiry": 1800010800000,
+            "payload": {
+              "v": 1,
+              "kind": "delegation",
+              "delegationId": "64000000-0000-4000-8000-000000000025",
+              "tenantId": "tenant-a",
+              "parentId": "64000000-0000-4000-8000-000000000024",
+              "parentDigest": "2a4a8abd501ca0e725a5b0ace24a4a3ff35928d026c2b508dc73493086630daa",
+              "rootAgentId": "61000000-0000-4000-8000-000000000000",
+              "issuerAgentId": "61000000-0000-4000-8000-000000000001",
+              "subjectAgentId": "61000000-0000-4000-8000-000000000002",
+              "depth": 2,
+              "maxDepth": 5,
+              "classes": [
+                "read",
+                "write"
+              ],
+              "tools": null,
+              "maxActions": null
+            },
+            "publicKeyId": "tenant-a:key_v1",
+            "signature": "fj4aOiJVJAfjufZv+PLspU0Pgij+GtfEwpZ8QrVzQ+klwid9iIF5BUUbr3PcQQdgzd5gOrB918muGnOu+R+pAw==",
+            "timestamp": 1799996400000
+          },
+          {
+            "expiry": 1800010800000,
+            "payload": {
+              "v": 1,
+              "kind": "delegation",
+              "delegationId": "64000000-0000-4000-8000-000000000026",
+              "tenantId": "tenant-a",
+              "parentId": "64000000-0000-4000-8000-000000000025",
+              "parentDigest": "199fda1c98f3ecc0d364abe2c64236ad1c7d80f41267a3b5e2dc20c96332a182",
+              "rootAgentId": "61000000-0000-4000-8000-000000000000",
+              "issuerAgentId": "61000000-0000-4000-8000-000000000002",
+              "subjectAgentId": "61000000-0000-4000-8000-000000000003",
+              "depth": 3,
+              "maxDepth": 5,
+              "classes": [
+                "read",
+                "write"
+              ],
+              "tools": null,
+              "maxActions": null
+            },
+            "publicKeyId": "tenant-a:key_v1",
+            "signature": "E2paqUEh7l4536kLwve94yTS8sYnOPO0tWRa5goZXBP8WpFgsGqs5dgfyLwEnypoYisWoQpZ3FtPo1xeIl8ECw==",
+            "timestamp": 1799996400000
+          },
+          {
+            "expiry": 1800010800000,
+            "payload": {
+              "v": 1,
+              "kind": "delegation",
+              "delegationId": "64000000-0000-4000-8000-000000000028",
+              "tenantId": "tenant-a",
+              "parentId": "64000000-0000-4000-8000-000000000026",
+              "parentDigest": "f01689d857b64a2d63a15d2cde4e7afccc8d1592b8917b320cbd8a299ca8b75c",
+              "rootAgentId": "61000000-0000-4000-8000-000000000000",
+              "issuerAgentId": "61000000-0000-4000-8000-000000000003",
+              "subjectAgentId": "61000000-0000-4000-8000-000000000001",
+              "depth": 4,
+              "maxDepth": 5,
+              "classes": [
+                "read",
+                "write"
+              ],
+              "tools": null,
+              "maxActions": null
+            },
+            "publicKeyId": "tenant-a:key_v1",
+            "signature": "Y5xVhnEXVrL9LhlpCsT1QhoCjjAN8FD5bdBoLrOhD3XpZZH+5sscNm8r/z8wjTGULb88NxFH37/gCICMqltbBA==",
+            "timestamp": 1799996400000
+          }
+        ],
+        "now": 1800000000000
+      },
+      "expected": {
+        "ok": false,
+        "reason": "DELEGATION_CYCLE",
+        "index": 3
+      }
+    },
+    {
+      "id": "DELEG-034",
+      "description": "an agent delegating to itself",
+      "input": {
+        "chain": [
+          {
+            "expiry": 1800010800000,
+            "payload": {
+              "v": 1,
+              "kind": "delegation",
+              "delegationId": "64000000-0000-4000-8000-000000000024",
+              "tenantId": "tenant-a",
+              "parentId": null,
+              "parentDigest": null,
+              "rootAgentId": "61000000-0000-4000-8000-000000000000",
+              "issuerAgentId": "61000000-0000-4000-8000-000000000000",
+              "subjectAgentId": "61000000-0000-4000-8000-000000000000",
+              "depth": 1,
+              "maxDepth": 5,
+              "classes": [
+                "read",
+                "write"
+              ],
+              "tools": null,
+              "maxActions": null
+            },
+            "publicKeyId": "tenant-a:key_v1",
+            "signature": "1tEGMFbqi6Ax/RESHjZlTssQ7p6x2VYxG2rg3mxFUAfVd51KAe9kH/hEIHenrLnxvj4lZga5SJtntZL2Jr+5CA==",
+            "timestamp": 1799996400000
+          }
+        ],
+        "now": 1800000000000
+      },
+      "expected": {
+        "ok": false,
+        "reason": "DELEGATION_CYCLE",
+        "index": 0
+      }
+    },
+    {
+      "id": "DELEG-035",
+      "description": "a child with a class its parent does not have",
+      "input": {
+        "chain": [
+          {
+            "expiry": 1800003600000,
+            "payload": {
+              "v": 1,
+              "kind": "delegation",
+              "delegationId": "64000000-0000-4000-8000-000000000029",
+              "tenantId": "tenant-a",
+              "parentId": null,
+              "parentDigest": null,
+              "rootAgentId": "61000000-0000-4000-8000-000000000000",
+              "issuerAgentId": "61000000-0000-4000-8000-000000000000",
+              "subjectAgentId": "61000000-0000-4000-8000-000000000001",
+              "depth": 1,
+              "maxDepth": 3,
+              "classes": [
+                "read",
+                "write"
+              ],
+              "tools": [
+                {
+                  "server": "s",
+                  "name": "a"
+                }
+              ],
+              "maxActions": 5
+            },
+            "publicKeyId": "tenant-a:key_v1",
+            "signature": "B8G0b31psJb1DOUR7Fxu6guq3AxUaTXIKECqoN80TFvGvz1V3Vh8EWQwUSH/LisvLa4FZK5RoD1RLW1g1dmtDg==",
+            "timestamp": 1799996400000
+          },
+          {
+            "expiry": 1800000000000,
+            "payload": {
+              "v": 1,
+              "kind": "delegation",
+              "delegationId": "64000000-0000-4000-8000-000000000030",
+              "tenantId": "tenant-a",
+              "parentId": "64000000-0000-4000-8000-000000000029",
+              "parentDigest": "70e99cbbb3ea5007351c61e82466ef7e35bf2b9cffe0da15f9718cb3e74d3031",
+              "rootAgentId": "61000000-0000-4000-8000-000000000000",
+              "issuerAgentId": "61000000-0000-4000-8000-000000000001",
+              "subjectAgentId": "61000000-0000-4000-8000-000000000002",
+              "depth": 2,
+              "maxDepth": 3,
+              "classes": [
+                "file",
+                "read"
+              ],
+              "tools": [
+                {
+                  "server": "s",
+                  "name": "a"
+                }
+              ],
+              "maxActions": 5
+            },
+            "publicKeyId": "tenant-a:key_v1",
+            "signature": "1qNpfk8rIdG2iQqbgTtL5LqJHJklDVWJFQyaNawDakvIytkL9I5bA6E7SRezi2UAh3fFAXm/bKQ8xCIMZLuwAg==",
+            "timestamp": 1799996400000
+          }
+        ],
+        "now": 1800000000000
+      },
+      "expected": {
+        "ok": false,
+        "reason": "DELEGATION_ATTENUATION_VIOLATION",
+        "index": 1
+      }
+    },
+    {
+      "id": "DELEG-036",
+      "description": "a child with a tool its parent does not list",
+      "input": {
+        "chain": [
+          {
+            "expiry": 1800003600000,
+            "payload": {
+              "v": 1,
+              "kind": "delegation",
+              "delegationId": "64000000-0000-4000-8000-000000000029",
+              "tenantId": "tenant-a",
+              "parentId": null,
+              "parentDigest": null,
+              "rootAgentId": "61000000-0000-4000-8000-000000000000",
+              "issuerAgentId": "61000000-0000-4000-8000-000000000000",
+              "subjectAgentId": "61000000-0000-4000-8000-000000000001",
+              "depth": 1,
+              "maxDepth": 3,
+              "classes": [
+                "read",
+                "write"
+              ],
+              "tools": [
+                {
+                  "server": "s",
+                  "name": "a"
+                }
+              ],
+              "maxActions": 5
+            },
+            "publicKeyId": "tenant-a:key_v1",
+            "signature": "B8G0b31psJb1DOUR7Fxu6guq3AxUaTXIKECqoN80TFvGvz1V3Vh8EWQwUSH/LisvLa4FZK5RoD1RLW1g1dmtDg==",
+            "timestamp": 1799996400000
+          },
+          {
+            "expiry": 1800000000000,
+            "payload": {
+              "v": 1,
+              "kind": "delegation",
+              "delegationId": "64000000-0000-4000-8000-000000000031",
+              "tenantId": "tenant-a",
+              "parentId": "64000000-0000-4000-8000-000000000029",
+              "parentDigest": "70e99cbbb3ea5007351c61e82466ef7e35bf2b9cffe0da15f9718cb3e74d3031",
+              "rootAgentId": "61000000-0000-4000-8000-000000000000",
+              "issuerAgentId": "61000000-0000-4000-8000-000000000001",
+              "subjectAgentId": "61000000-0000-4000-8000-000000000002",
+              "depth": 2,
+              "maxDepth": 3,
+              "classes": [
+                "read"
+              ],
+              "tools": [
+                {
+                  "server": "s",
+                  "name": "z"
+                }
+              ],
+              "maxActions": 5
+            },
+            "publicKeyId": "tenant-a:key_v1",
+            "signature": "qsdZW4L4U61u1rdrGGEJddMkcJoykb+Ixq57swUV2j/G9Tkoo8HqtiHEyyNHtgrgisPRYF4vgc4E0Qi0qyZpDw==",
+            "timestamp": 1799996400000
+          }
+        ],
+        "now": 1800000000000
+      },
+      "expected": {
+        "ok": false,
+        "reason": "DELEGATION_ATTENUATION_VIOLATION",
+        "index": 1
+      }
+    },
+    {
+      "id": "DELEG-037",
+      "description": "a child with one extra tool beside the listed one",
+      "input": {
+        "chain": [
+          {
+            "expiry": 1800003600000,
+            "payload": {
+              "v": 1,
+              "kind": "delegation",
+              "delegationId": "64000000-0000-4000-8000-000000000029",
+              "tenantId": "tenant-a",
+              "parentId": null,
+              "parentDigest": null,
+              "rootAgentId": "61000000-0000-4000-8000-000000000000",
+              "issuerAgentId": "61000000-0000-4000-8000-000000000000",
+              "subjectAgentId": "61000000-0000-4000-8000-000000000001",
+              "depth": 1,
+              "maxDepth": 3,
+              "classes": [
+                "read",
+                "write"
+              ],
+              "tools": [
+                {
+                  "server": "s",
+                  "name": "a"
+                }
+              ],
+              "maxActions": 5
+            },
+            "publicKeyId": "tenant-a:key_v1",
+            "signature": "B8G0b31psJb1DOUR7Fxu6guq3AxUaTXIKECqoN80TFvGvz1V3Vh8EWQwUSH/LisvLa4FZK5RoD1RLW1g1dmtDg==",
+            "timestamp": 1799996400000
+          },
+          {
+            "expiry": 1800000000000,
+            "payload": {
+              "v": 1,
+              "kind": "delegation",
+              "delegationId": "64000000-0000-4000-8000-000000000032",
+              "tenantId": "tenant-a",
+              "parentId": "64000000-0000-4000-8000-000000000029",
+              "parentDigest": "70e99cbbb3ea5007351c61e82466ef7e35bf2b9cffe0da15f9718cb3e74d3031",
+              "rootAgentId": "61000000-0000-4000-8000-000000000000",
+              "issuerAgentId": "61000000-0000-4000-8000-000000000001",
+              "subjectAgentId": "61000000-0000-4000-8000-000000000002",
+              "depth": 2,
+              "maxDepth": 3,
+              "classes": [
+                "read"
+              ],
+              "tools": [
+                {
+                  "server": "s",
+                  "name": "a"
+                },
+                {
+                  "server": "s",
+                  "name": "z"
+                }
+              ],
+              "maxActions": 5
+            },
+            "publicKeyId": "tenant-a:key_v1",
+            "signature": "6MKjjMJUYOAWm+H26djVcHRjpeKZD8xGiXaSNv8q/dNTTsyeLI/FYWDXiRVVjNHNwMaW0ELN7zUCaXtZW9+IDQ==",
+            "timestamp": 1799996400000
+          }
+        ],
+        "now": 1800000000000
+      },
+      "expected": {
+        "ok": false,
+        "reason": "DELEGATION_ATTENUATION_VIOLATION",
+        "index": 1
+      }
+    },
+    {
+      "id": "DELEG-038",
+      "description": "an unrestricted child of a parent that lists tools",
+      "input": {
+        "chain": [
+          {
+            "expiry": 1800003600000,
+            "payload": {
+              "v": 1,
+              "kind": "delegation",
+              "delegationId": "64000000-0000-4000-8000-000000000029",
+              "tenantId": "tenant-a",
+              "parentId": null,
+              "parentDigest": null,
+              "rootAgentId": "61000000-0000-4000-8000-000000000000",
+              "issuerAgentId": "61000000-0000-4000-8000-000000000000",
+              "subjectAgentId": "61000000-0000-4000-8000-000000000001",
+              "depth": 1,
+              "maxDepth": 3,
+              "classes": [
+                "read",
+                "write"
+              ],
+              "tools": [
+                {
+                  "server": "s",
+                  "name": "a"
+                }
+              ],
+              "maxActions": 5
+            },
+            "publicKeyId": "tenant-a:key_v1",
+            "signature": "B8G0b31psJb1DOUR7Fxu6guq3AxUaTXIKECqoN80TFvGvz1V3Vh8EWQwUSH/LisvLa4FZK5RoD1RLW1g1dmtDg==",
+            "timestamp": 1799996400000
+          },
+          {
+            "expiry": 1800000000000,
+            "payload": {
+              "v": 1,
+              "kind": "delegation",
+              "delegationId": "64000000-0000-4000-8000-000000000033",
+              "tenantId": "tenant-a",
+              "parentId": "64000000-0000-4000-8000-000000000029",
+              "parentDigest": "70e99cbbb3ea5007351c61e82466ef7e35bf2b9cffe0da15f9718cb3e74d3031",
+              "rootAgentId": "61000000-0000-4000-8000-000000000000",
+              "issuerAgentId": "61000000-0000-4000-8000-000000000001",
+              "subjectAgentId": "61000000-0000-4000-8000-000000000002",
+              "depth": 2,
+              "maxDepth": 3,
+              "classes": [
+                "read"
+              ],
+              "tools": null,
+              "maxActions": 5
+            },
+            "publicKeyId": "tenant-a:key_v1",
+            "signature": "pr2L5mTpNBZBitTvuUnXIzh5oM7fvpOu2MpY4qfBVcwpnETuPeKgAjYa9CF4oCb9q+bntsVx7/M/oCiNLk99Bg==",
+            "timestamp": 1799996400000
+          }
+        ],
+        "now": 1800000000000
+      },
+      "expected": {
+        "ok": false,
+        "reason": "DELEGATION_ATTENUATION_VIOLATION",
+        "index": 1
+      }
+    },
+    {
+      "id": "DELEG-039",
+      "description": "a child with a larger action limit",
+      "input": {
+        "chain": [
+          {
+            "expiry": 1800003600000,
+            "payload": {
+              "v": 1,
+              "kind": "delegation",
+              "delegationId": "64000000-0000-4000-8000-000000000029",
+              "tenantId": "tenant-a",
+              "parentId": null,
+              "parentDigest": null,
+              "rootAgentId": "61000000-0000-4000-8000-000000000000",
+              "issuerAgentId": "61000000-0000-4000-8000-000000000000",
+              "subjectAgentId": "61000000-0000-4000-8000-000000000001",
+              "depth": 1,
+              "maxDepth": 3,
+              "classes": [
+                "read",
+                "write"
+              ],
+              "tools": [
+                {
+                  "server": "s",
+                  "name": "a"
+                }
+              ],
+              "maxActions": 5
+            },
+            "publicKeyId": "tenant-a:key_v1",
+            "signature": "B8G0b31psJb1DOUR7Fxu6guq3AxUaTXIKECqoN80TFvGvz1V3Vh8EWQwUSH/LisvLa4FZK5RoD1RLW1g1dmtDg==",
+            "timestamp": 1799996400000
+          },
+          {
+            "expiry": 1800000000000,
+            "payload": {
+              "v": 1,
+              "kind": "delegation",
+              "delegationId": "64000000-0000-4000-8000-000000000034",
+              "tenantId": "tenant-a",
+              "parentId": "64000000-0000-4000-8000-000000000029",
+              "parentDigest": "70e99cbbb3ea5007351c61e82466ef7e35bf2b9cffe0da15f9718cb3e74d3031",
+              "rootAgentId": "61000000-0000-4000-8000-000000000000",
+              "issuerAgentId": "61000000-0000-4000-8000-000000000001",
+              "subjectAgentId": "61000000-0000-4000-8000-000000000002",
+              "depth": 2,
+              "maxDepth": 3,
+              "classes": [
+                "read"
+              ],
+              "tools": [
+                {
+                  "server": "s",
+                  "name": "a"
+                }
+              ],
+              "maxActions": 6
+            },
+            "publicKeyId": "tenant-a:key_v1",
+            "signature": "qgV3J+zDY07nG9a1eFFl+TVYkTS85XpzVSfheF82y5mYVSkgip5Gt8F0009CgUAk95z6mPkpf+UI2JIbL9OoBQ==",
+            "timestamp": 1799996400000
+          }
+        ],
+        "now": 1800000000000
+      },
+      "expected": {
+        "ok": false,
+        "reason": "DELEGATION_ATTENUATION_VIOLATION",
+        "index": 1
+      }
+    },
+    {
+      "id": "DELEG-040",
+      "description": "an unlimited child of a parent with an action limit",
+      "input": {
+        "chain": [
+          {
+            "expiry": 1800003600000,
+            "payload": {
+              "v": 1,
+              "kind": "delegation",
+              "delegationId": "64000000-0000-4000-8000-000000000029",
+              "tenantId": "tenant-a",
+              "parentId": null,
+              "parentDigest": null,
+              "rootAgentId": "61000000-0000-4000-8000-000000000000",
+              "issuerAgentId": "61000000-0000-4000-8000-000000000000",
+              "subjectAgentId": "61000000-0000-4000-8000-000000000001",
+              "depth": 1,
+              "maxDepth": 3,
+              "classes": [
+                "read",
+                "write"
+              ],
+              "tools": [
+                {
+                  "server": "s",
+                  "name": "a"
+                }
+              ],
+              "maxActions": 5
+            },
+            "publicKeyId": "tenant-a:key_v1",
+            "signature": "B8G0b31psJb1DOUR7Fxu6guq3AxUaTXIKECqoN80TFvGvz1V3Vh8EWQwUSH/LisvLa4FZK5RoD1RLW1g1dmtDg==",
+            "timestamp": 1799996400000
+          },
+          {
+            "expiry": 1800000000000,
+            "payload": {
+              "v": 1,
+              "kind": "delegation",
+              "delegationId": "64000000-0000-4000-8000-000000000035",
+              "tenantId": "tenant-a",
+              "parentId": "64000000-0000-4000-8000-000000000029",
+              "parentDigest": "70e99cbbb3ea5007351c61e82466ef7e35bf2b9cffe0da15f9718cb3e74d3031",
+              "rootAgentId": "61000000-0000-4000-8000-000000000000",
+              "issuerAgentId": "61000000-0000-4000-8000-000000000001",
+              "subjectAgentId": "61000000-0000-4000-8000-000000000002",
+              "depth": 2,
+              "maxDepth": 3,
+              "classes": [
+                "read"
+              ],
+              "tools": [
+                {
+                  "server": "s",
+                  "name": "a"
+                }
+              ],
+              "maxActions": null
+            },
+            "publicKeyId": "tenant-a:key_v1",
+            "signature": "mSpa3ZRIn9MNtaskaFEMK5KzwKndzixDJDFwKWknoSp6wsGZ4zU1+3eyJ+ZyOBMuUSNTsqFe8QHi3KxFj1E+AQ==",
+            "timestamp": 1799996400000
+          }
+        ],
+        "now": 1800000000000
+      },
+      "expected": {
+        "ok": false,
+        "reason": "DELEGATION_ATTENUATION_VIOLATION",
+        "index": 1
+      }
+    },
+    {
+      "id": "DELEG-041",
+      "description": "a child that outlives its parent",
+      "input": {
+        "chain": [
+          {
+            "expiry": 1800003600000,
+            "payload": {
+              "v": 1,
+              "kind": "delegation",
+              "delegationId": "64000000-0000-4000-8000-000000000029",
+              "tenantId": "tenant-a",
+              "parentId": null,
+              "parentDigest": null,
+              "rootAgentId": "61000000-0000-4000-8000-000000000000",
+              "issuerAgentId": "61000000-0000-4000-8000-000000000000",
+              "subjectAgentId": "61000000-0000-4000-8000-000000000001",
+              "depth": 1,
+              "maxDepth": 3,
+              "classes": [
+                "read",
+                "write"
+              ],
+              "tools": [
+                {
+                  "server": "s",
+                  "name": "a"
+                }
+              ],
+              "maxActions": 5
+            },
+            "publicKeyId": "tenant-a:key_v1",
+            "signature": "B8G0b31psJb1DOUR7Fxu6guq3AxUaTXIKECqoN80TFvGvz1V3Vh8EWQwUSH/LisvLa4FZK5RoD1RLW1g1dmtDg==",
+            "timestamp": 1799996400000
+          },
+          {
+            "expiry": 1800007200000,
+            "payload": {
+              "v": 1,
+              "kind": "delegation",
+              "delegationId": "64000000-0000-4000-8000-000000000036",
+              "tenantId": "tenant-a",
+              "parentId": "64000000-0000-4000-8000-000000000029",
+              "parentDigest": "70e99cbbb3ea5007351c61e82466ef7e35bf2b9cffe0da15f9718cb3e74d3031",
+              "rootAgentId": "61000000-0000-4000-8000-000000000000",
+              "issuerAgentId": "61000000-0000-4000-8000-000000000001",
+              "subjectAgentId": "61000000-0000-4000-8000-000000000002",
+              "depth": 2,
+              "maxDepth": 3,
+              "classes": [
+                "read"
+              ],
+              "tools": [
+                {
+                  "server": "s",
+                  "name": "a"
+                }
+              ],
+              "maxActions": 5
+            },
+            "publicKeyId": "tenant-a:key_v1",
+            "signature": "OgYxO0TgKwqWwOU9hqU6TfiAzh3HLvIRkaP68BWtK4sDucAKSRDbKfT+X5yoyIX46dHH1d6+jgclDCvJgauVCA==",
+            "timestamp": 1799996400000
+          }
+        ],
+        "now": 1800000000000
+      },
+      "expected": {
+        "ok": false,
+        "reason": "DELEGATION_ATTENUATION_VIOLATION",
+        "index": 1
+      }
+    },
+    {
+      "id": "DELEG-042",
+      "description": "expired at the moment of verification",
+      "input": {
+        "chain": [
+          {
+            "expiry": 1800010800000,
+            "payload": {
+              "v": 1,
+              "kind": "delegation",
+              "delegationId": "64000000-0000-4000-8000-000000000001",
+              "tenantId": "tenant-a",
+              "parentId": null,
+              "parentDigest": null,
+              "rootAgentId": "61000000-0000-4000-8000-000000000000",
+              "issuerAgentId": "61000000-0000-4000-8000-000000000000",
+              "subjectAgentId": "61000000-0000-4000-8000-000000000001",
+              "depth": 1,
+              "maxDepth": 4,
+              "classes": [
+                "delegate",
+                "read",
+                "write"
+              ],
+              "tools": null,
+              "maxActions": null
+            },
+            "publicKeyId": "tenant-a:key_v1",
+            "signature": "BGPS1W/NOLs5f7606u1bk5Z14SglhSEa0OK0WgLrErwB6pJ7mc02TEiNl7fdqgGmHztabMYxB2FCvntJNbXjBg==",
+            "timestamp": 1799996400000
+          }
+        ],
+        "now": 1800010800000
+      },
+      "expected": {
+        "ok": false,
+        "reason": "DELEGATION_INVALID",
+        "index": 0
+      }
+    },
+    {
+      "id": "DELEG-043",
+      "description": "the second link expired while its parent is still valid",
+      "input": {
+        "chain": [
+          {
+            "expiry": 1800010800000,
+            "payload": {
+              "v": 1,
+              "kind": "delegation",
+              "delegationId": "64000000-0000-4000-8000-000000000001",
+              "tenantId": "tenant-a",
+              "parentId": null,
+              "parentDigest": null,
+              "rootAgentId": "61000000-0000-4000-8000-000000000000",
+              "issuerAgentId": "61000000-0000-4000-8000-000000000000",
+              "subjectAgentId": "61000000-0000-4000-8000-000000000001",
+              "depth": 1,
+              "maxDepth": 4,
+              "classes": [
+                "delegate",
+                "read",
+                "write"
+              ],
+              "tools": null,
+              "maxActions": null
+            },
+            "publicKeyId": "tenant-a:key_v1",
+            "signature": "BGPS1W/NOLs5f7606u1bk5Z14SglhSEa0OK0WgLrErwB6pJ7mc02TEiNl7fdqgGmHztabMYxB2FCvntJNbXjBg==",
+            "timestamp": 1799996400000
+          },
+          {
+            "expiry": 1799998200000,
+            "payload": {
+              "v": 1,
+              "kind": "delegation",
+              "delegationId": "64000000-0000-4000-8000-000000000037",
+              "tenantId": "tenant-a",
+              "parentId": "64000000-0000-4000-8000-000000000001",
+              "parentDigest": "5ac3e3524646d84b369f16766175e49af5a4cec865130f5e36d5332dc74e9a7d",
+              "rootAgentId": "61000000-0000-4000-8000-000000000000",
+              "issuerAgentId": "61000000-0000-4000-8000-000000000001",
+              "subjectAgentId": "61000000-0000-4000-8000-000000000002",
+              "depth": 2,
+              "maxDepth": 4,
+              "classes": [
+                "read",
+                "write"
+              ],
+              "tools": null,
+              "maxActions": null
+            },
+            "publicKeyId": "tenant-a:key_v1",
+            "signature": "aISRDeVsg/gc7may/PtrwPWWrKMAeHkkLBpAgDnjJ58TF/dzRb4G5EUZVYGEgZF3esXvgnelQoyTTZDt3kvUAQ==",
+            "timestamp": 1799996400000
+          }
+        ],
+        "now": 1800000000000
+      },
+      "expected": {
+        "ok": false,
+        "reason": "DELEGATION_INVALID",
+        "index": 1
+      }
+    },
+    {
+      "id": "DELEG-044",
+      "description": "issued far in the future",
+      "input": {
+        "chain": [
+          {
+            "expiry": 1800018000000,
+            "payload": {
+              "v": 1,
+              "kind": "delegation",
+              "delegationId": "64000000-0000-4000-8000-000000000038",
+              "tenantId": "tenant-a",
+              "parentId": null,
+              "parentDigest": null,
+              "rootAgentId": "61000000-0000-4000-8000-000000000000",
+              "issuerAgentId": "61000000-0000-4000-8000-000000000000",
+              "subjectAgentId": "61000000-0000-4000-8000-000000000001",
+              "depth": 1,
+              "maxDepth": 3,
+              "classes": [
+                "read",
+                "write"
+              ],
+              "tools": null,
+              "maxActions": null
+            },
+            "publicKeyId": "tenant-a:key_v1",
+            "signature": "UuiSJN9h6gLBtjopDooPOVLgTgkUVHkRtxDrrTR9WOyqkFjRul03MX5f7RnNjJBA1kEqNNGP0GXj5xmNov/CBg==",
+            "timestamp": 1800003600000
+          }
+        ],
+        "now": 1800000000000
+      },
+      "expected": {
+        "ok": false,
+        "reason": "DELEGATION_INVALID",
+        "index": 0
+      }
+    },
+    {
+      "id": "DELEG-045",
+      "description": "a link issued before its parent",
+      "input": {
+        "chain": [
+          {
+            "expiry": 1800010800000,
+            "payload": {
+              "v": 1,
+              "kind": "delegation",
+              "delegationId": "64000000-0000-4000-8000-000000000001",
+              "tenantId": "tenant-a",
+              "parentId": null,
+              "parentDigest": null,
+              "rootAgentId": "61000000-0000-4000-8000-000000000000",
+              "issuerAgentId": "61000000-0000-4000-8000-000000000000",
+              "subjectAgentId": "61000000-0000-4000-8000-000000000001",
+              "depth": 1,
+              "maxDepth": 4,
+              "classes": [
+                "delegate",
+                "read",
+                "write"
+              ],
+              "tools": null,
+              "maxActions": null
+            },
+            "publicKeyId": "tenant-a:key_v1",
+            "signature": "BGPS1W/NOLs5f7606u1bk5Z14SglhSEa0OK0WgLrErwB6pJ7mc02TEiNl7fdqgGmHztabMYxB2FCvntJNbXjBg==",
+            "timestamp": 1799996400000
+          },
+          {
+            "expiry": 1799999999000,
+            "payload": {
+              "v": 1,
+              "kind": "delegation",
+              "delegationId": "64000000-0000-4000-8000-000000000039",
+              "tenantId": "tenant-a",
+              "parentId": "64000000-0000-4000-8000-000000000001",
+              "parentDigest": "5ac3e3524646d84b369f16766175e49af5a4cec865130f5e36d5332dc74e9a7d",
+              "rootAgentId": "61000000-0000-4000-8000-000000000000",
+              "issuerAgentId": "61000000-0000-4000-8000-000000000001",
+              "subjectAgentId": "61000000-0000-4000-8000-000000000002",
+              "depth": 2,
+              "maxDepth": 4,
+              "classes": [
+                "read",
+                "write"
+              ],
+              "tools": null,
+              "maxActions": null
+            },
+            "publicKeyId": "tenant-a:key_v1",
+            "signature": "qxwAYvDDbgVkQ2QTcPcMEYElIG+3Ms9+lQD8QE+1ojkhY63pnCKHKitjNDT2wwkVyKXT3XopuszSpTFSbvG9AQ==",
+            "timestamp": 1799996399000
+          }
+        ],
+        "now": 1800000000000
+      },
+      "expected": {
+        "ok": false,
+        "reason": "DELEGATION_INVALID",
+        "index": 1
+      }
+    },
+    {
+      "id": "DELEG-046",
+      "description": "too deep, a cycle and wider rights at once: depth is reported first",
+      "input": {
+        "chain": [
+          {
+            "expiry": 1800010800000,
+            "payload": {
+              "v": 1,
+              "kind": "delegation",
+              "delegationId": "64000000-0000-4000-8000-000000000040",
+              "tenantId": "tenant-a",
+              "parentId": null,
+              "parentDigest": null,
+              "rootAgentId": "61000000-0000-4000-8000-000000000000",
+              "issuerAgentId": "61000000-0000-4000-8000-000000000000",
+              "subjectAgentId": "61000000-0000-4000-8000-000000000001",
+              "depth": 1,
+              "maxDepth": 1,
+              "classes": [
+                "read"
+              ],
+              "tools": null,
+              "maxActions": null
+            },
+            "publicKeyId": "tenant-a:key_v1",
+            "signature": "fGKOK6/2MWeLNVgY9+/4tgjuGxueOBb6SnX4WLUkO00XdsY2Th441sbj4mJtKapiA9p9+brc+q1AtVNSjWpGCg==",
+            "timestamp": 1799996400000
+          },
+          {
+            "expiry": 1800003600000,
+            "payload": {
+              "v": 1,
+              "kind": "delegation",
+              "delegationId": "64000000-0000-4000-8000-000000000041",
+              "tenantId": "tenant-a",
+              "parentId": "64000000-0000-4000-8000-000000000040",
+              "parentDigest": "183486a23972ada4b3e3595fac8bd9e9512cb74c3f1f38909045ea033d2264ae",
+              "rootAgentId": "61000000-0000-4000-8000-000000000000",
+              "issuerAgentId": "61000000-0000-4000-8000-000000000001",
+              "subjectAgentId": "61000000-0000-4000-8000-000000000000",
+              "depth": 2,
+              "maxDepth": 1,
+              "classes": [
+                "read",
+                "write"
+              ],
+              "tools": null,
+              "maxActions": null
+            },
+            "publicKeyId": "tenant-a:key_v1",
+            "signature": "sBuXAn+oO2r97xU/OKsqJQAlKETiFzNzRkCaZ1Z2kL0iK952N4gLJpu6iAKztr7J9F8F2zR/+7po4Uj95KY1AA==",
+            "timestamp": 1799996400000
+          }
+        ],
+        "now": 1800000000000
+      },
+      "expected": {
+        "ok": false,
+        "reason": "DELEGATION_DEPTH_EXCEEDED",
+        "index": 1
+      }
+    },
+    {
+      "id": "DELEG-047",
+      "description": "a cycle and wider rights at once: the cycle is reported first",
+      "input": {
+        "chain": [
+          {
+            "expiry": 1800010800000,
+            "payload": {
+              "v": 1,
+              "kind": "delegation",
+              "delegationId": "64000000-0000-4000-8000-000000000042",
+              "tenantId": "tenant-a",
+              "parentId": null,
+              "parentDigest": null,
+              "rootAgentId": "61000000-0000-4000-8000-000000000000",
+              "issuerAgentId": "61000000-0000-4000-8000-000000000000",
+              "subjectAgentId": "61000000-0000-4000-8000-000000000001",
+              "depth": 1,
+              "maxDepth": 3,
+              "classes": [
+                "read"
+              ],
+              "tools": null,
+              "maxActions": null
+            },
+            "publicKeyId": "tenant-a:key_v1",
+            "signature": "BzT+bjD7WMmcoXFijoCY/kI4KlxaGwpHn3Ha1y37/6rFUNBjz/SvbWD0FiGQwbkX7KIGL5v4sIPC5Ho3vzmwAw==",
+            "timestamp": 1799996400000
+          },
+          {
+            "expiry": 1800003600000,
+            "payload": {
+              "v": 1,
+              "kind": "delegation",
+              "delegationId": "64000000-0000-4000-8000-000000000043",
+              "tenantId": "tenant-a",
+              "parentId": "64000000-0000-4000-8000-000000000042",
+              "parentDigest": "a241674fbc0baa2627501bdc0fc1eb2603af4b399dbf2b57b702e8252923fd4c",
+              "rootAgentId": "61000000-0000-4000-8000-000000000000",
+              "issuerAgentId": "61000000-0000-4000-8000-000000000001",
+              "subjectAgentId": "61000000-0000-4000-8000-000000000000",
+              "depth": 2,
+              "maxDepth": 3,
+              "classes": [
+                "read",
+                "write"
+              ],
+              "tools": null,
+              "maxActions": null
+            },
+            "publicKeyId": "tenant-a:key_v1",
+            "signature": "G3YHbTGmc9xA+f0r6PMr0SXuRGP9bwi5Y2+UtJiKyrQgLchvCM1z8b2tzVqvOu2bFPYNNg4zudsj/f6cgobFCQ==",
+            "timestamp": 1799996400000
+          }
+        ],
+        "now": 1800000000000
+      },
+      "expected": {
+        "ok": false,
+        "reason": "DELEGATION_CYCLE",
+        "index": 1
+      }
+    },
+    {
+      "id": "DELEG-048",
+      "description": "wider rights and an expired link at once: attenuation is reported before time",
+      "input": {
+        "chain": [
+          {
+            "expiry": 1800003600000,
+            "payload": {
+              "v": 1,
+              "kind": "delegation",
+              "delegationId": "64000000-0000-4000-8000-000000000029",
+              "tenantId": "tenant-a",
+              "parentId": null,
+              "parentDigest": null,
+              "rootAgentId": "61000000-0000-4000-8000-000000000000",
+              "issuerAgentId": "61000000-0000-4000-8000-000000000000",
+              "subjectAgentId": "61000000-0000-4000-8000-000000000001",
+              "depth": 1,
+              "maxDepth": 3,
+              "classes": [
+                "read",
+                "write"
+              ],
+              "tools": [
+                {
+                  "server": "s",
+                  "name": "a"
+                }
+              ],
+              "maxActions": 5
+            },
+            "publicKeyId": "tenant-a:key_v1",
+            "signature": "B8G0b31psJb1DOUR7Fxu6guq3AxUaTXIKECqoN80TFvGvz1V3Vh8EWQwUSH/LisvLa4FZK5RoD1RLW1g1dmtDg==",
+            "timestamp": 1799996400000
+          },
+          {
+            "expiry": 1799985600000,
+            "payload": {
+              "v": 1,
+              "kind": "delegation",
+              "delegationId": "64000000-0000-4000-8000-000000000044",
+              "tenantId": "tenant-a",
+              "parentId": "64000000-0000-4000-8000-000000000029",
+              "parentDigest": "70e99cbbb3ea5007351c61e82466ef7e35bf2b9cffe0da15f9718cb3e74d3031",
+              "rootAgentId": "61000000-0000-4000-8000-000000000000",
+              "issuerAgentId": "61000000-0000-4000-8000-000000000001",
+              "subjectAgentId": "61000000-0000-4000-8000-000000000002",
+              "depth": 2,
+              "maxDepth": 3,
+              "classes": [
+                "file",
+                "read"
+              ],
+              "tools": [
+                {
+                  "server": "s",
+                  "name": "a"
+                }
+              ],
+              "maxActions": 5
+            },
+            "publicKeyId": "tenant-a:key_v1",
+            "signature": "wJxcrLtZ3Li1LENRcT5EFsqxSkAobFKDcVlCNZCsOKAHmtjSc5JFC3uSU8o0ydYKyXknLBKRZ/BAFsT7jlnGCA==",
+            "timestamp": 1799982000000
+          }
+        ],
+        "now": 1800000000000
+      },
+      "expected": {
+        "ok": false,
+        "reason": "DELEGATION_ATTENUATION_VIOLATION",
+        "index": 1
+      }
+    }
+  ],
+  "counts": {
+    "cases": 48,
+    "valid": 8,
+    "refused": 40,
+    "byReason": {
+      "DELEGATION_INVALID": 26,
+      "DELEGATION_DEPTH_EXCEEDED": 2,
+      "DELEGATION_CYCLE": 4,
+      "DELEGATION_ATTENUATION_VIOLATION": 8
+    }
+  }
+}

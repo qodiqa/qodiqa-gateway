@@ -1,0 +1,75 @@
+# QODIQA Docker build context — ALLOW-LIST
+#
+# this file was a deny-list whose patterns (no `**/` prefix) only matched at the
+# context root. A build from a developer working tree therefore shipped tls/*.key, dev keystores,
+# a MAC keyring, Python venvs and 6.5 GB of evidence/ in a 23.2 GB image. The previous
+# version is preserved at
+#
+# Rule: EVERYTHING is excluded; only the runtime inputs below are re-included, and nested
+# test/secret material is excluded again at ANY depth afterwards. Adding a runtime file means
+# adding it here deliberately. gates the result.
+
+*
+
+# ── Runtime sources ───────────────────────────────────────────────────────────
+!package.json
+!package-lock.json
+!server.js
+!start.js
+!server/**
+!src/**
+!services/**
+# the DLP module is reached ONLY through src/core/dlp/extensionPoint.js; without this line the image would silently run without it (and a DLP policy would refuse to load)
+!enterprise/**
+!middleware/**
+!public/**
+!LICENSE
+!licenses/THIRD-PARTY.md
+# licence texts and provenance records travel with the binaries/models/data they cover
+!licenses/**
+!MODEL-PROVENANCE.md
+!DATASET-LICENSES.md
+!IP-CHAIN-OF-TITLE.md
+!sbom.cdx.json
+
+# ── Runtime model / anchor files (loaded by src/core/semantic/embeddingSimilarity/*) ──
+# ft2_fp32.onnx is NOT shipped — QODIQA_SEM_FT2_ENABLED=true is refused in production
+# (bootValidator) and defaults false, so the 90 MB artifact was dead weight in the image. It stays in the repository (rollback + pins).
+
+# ── Operator tools the running image must be able to execute ──────────
+!scripts/security/macKeyring.js
+!scripts/db/role-credentials.js
+!scripts/rbac-bootstrap-key.js
+!scripts/provision-signing-identity.js
+!scripts/revoke-signing-identity.js
+# (K7-D3): operators need provision-consent-signer.js for /public-key. A .dockerignore has NO inline
+# comments: text after a pattern becomes part of the pattern (the first RC image shipped without this file because of it).
+!scripts/provision-consent-signer.js
+!scripts/controlPlane/import.js
+# OA-RC-2: the offline key-store seal step of the upgrade runbook (section 3.4) runs inside the container.
+!scripts/keys/seal-keystore.js
+
+# ── Excluded again at ANY depth, whatever was re-included above ──────────────────
+**/__tests__/**
+enterprise/dlp/eval/**
+enterprise/identity/testkit/**
+enterprise/identity/__tests__/**
+**/*.test.js
+**/*.spec.js
+**/*.test.ts
+**/test-fixtures/**
+**/node_modules/**
+**/.env
+**/.env.*
+**/*.pem
+**/*.key
+**/*.p12
+**/*.pfx
+**/*.crt
+**/keys.json
+**/*-keys.json
+**/mac-keys*.json
+**/signing-identities.json
+**/*.log
+**/*.sqlite
+**/.DS_Store

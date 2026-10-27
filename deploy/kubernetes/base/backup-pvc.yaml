@@ -1,0 +1,64 @@
+# Persistent storage for QODIQA's scheduled backup CronJobs.
+#
+# Two separate PVCs, matching the two independent backup mechanisms this
+# repository already ships (see docs/operations/backup-scheduling.md):
+#
+#   qodiqa-pg-backups — scripts/pg-backup.sh output: tiered *.dump files
+#     (full/daily, full/weekly, full/monthly), WAL streaming archives, and
+#     the JSONL backup-audit log.
+#
+#   qodiqa-dr-backups — scripts/dr/backup.js output: timestamped
+#     qodiqa-backup-<createdAt>/ directories (manifest.json + component
+#     archives + Postgres table JSON dumps), pruned by scripts/dr/retention.js.
+#
+# ── Why ReadWriteMany ─────────────────────────────────────────────────────
+# Every backup CronJob below sets `concurrencyPolicy: Forbid`, which only
+# prevents two runs of the SAME CronJob overlapping — the daily, weekly,
+# monthly, verify, and DR-backup CronJobs are all independent and can and do
+# fire concurrently. A ReadWriteOnce volume only attaches to one node at a
+# time; if the Kubernetes scheduler places two of these CronJobs' pods on
+# different nodes at the same time, the second pod would fail to attach and
+# the run would be lost — silently defeating "never silently succeed"
+#. Using the same ReadWriteMany pattern already established for
+# qodiqa-keystore in pvc.yaml avoids this entirely. See that file's own
+# comment block for the StorageClass options (AWS EFS, Azure Files, GCP
+# Filestore, NFS provisioner) — the same guidance applies here.
+#
+# If your cluster genuinely has no RWX-capable StorageClass, fall back to
+# ReadWriteOnce plus a fixed `nodeSelector`/`nodeAffinity` on every backup
+# CronJob's pod template pinning
+# every one of them to the same node — documented in
+# docs/operations/backup-scheduling.md's Troubleshooting section.
+#
+---
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: qodiqa-pg-backups
+  namespace: qodiqa
+  labels:
+    app.kubernetes.io/name:      qodiqa
+    app.kubernetes.io/component: backup
+spec:
+  accessModes:
+    - ReadWriteMany
+  storageClassName: efs-sc   # Placeholder — replace with your cluster's ReadWriteMany-capable StorageClass
+  resources:
+    requests:
+      storage: 50Gi
+---
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: qodiqa-dr-backups
+  namespace: qodiqa
+  labels:
+    app.kubernetes.io/name:      qodiqa
+    app.kubernetes.io/component: backup
+spec:
+  accessModes:
+    - ReadWriteMany
+  storageClassName: efs-sc   # Placeholder — replace with your cluster's ReadWriteMany-capable StorageClass
+  resources:
+    requests:
+      storage: 20Gi

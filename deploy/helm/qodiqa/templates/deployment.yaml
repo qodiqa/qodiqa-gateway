@@ -1,0 +1,284 @@
+{{- include "qodiqa.validate" . -}}
+{{- $prod := eq .Values.profile "production" -}}
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ include "qodiqa.fullname" . }}
+  labels:
+    {{- include "qodiqa.labels" . | nindent 4 }}
+spec:
+  {{- if not .Values.autoscaling.enabled }}
+  replicas: {{ .Values.replicaCount }}
+  {{- end }}
+  strategy:
+    type: RollingUpdate
+    rollingUpdate:
+      maxSurge: 1
+      maxUnavailable: 0
+  selector:
+    matchLabels:
+      {{- include "qodiqa.selectorLabels" . | nindent 6 }}
+  template:
+    metadata:
+      labels:
+        {{- include "qodiqa.selectorLabels" . | nindent 8 }}
+        topology: distributed
+        {{- with .Values.podLabels }}
+        {{- toYaml . | nindent 8 }}
+        {{- end }}
+      annotations:
+        checksum/config: {{ include (print $.Template.BasePath "/configmap.yaml") . | sha256sum }}
+        {{- if .Values.apparmor.enabled }}
+        container.apparmor.security.beta.kubernetes.io/qodiqa: runtime/default
+        {{- end }}
+        {{- with .Values.podAnnotations }}
+        {{- toYaml . | nindent 8 }}
+        {{- end }}
+    spec:
+      serviceAccountName: {{ include "qodiqa.serviceAccountName" . }}
+      automountServiceAccountToken: false
+      {{- with .Values.imagePullSecrets }}
+      imagePullSecrets:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      securityContext:
+        runAsNonRoot: true
+        runAsUser: 1000
+        runAsGroup: 1000
+        fsGroup: 1000
+        seccompProfile:
+          type: RuntimeDefault
+      {{- if or .Values.postgres.waitFor .Values.redis.waitFor .Values.keystore.provision.enabled }}
+      initContainers:
+        {{- if .Values.redis.waitFor }}
+        - name: wait-for-redis
+          image: {{ include "qodiqa.image" . }}
+          imagePullPolicy: {{ .Values.image.pullPolicy }}
+          securityContext:
+            runAsNonRoot: true
+            runAsUser: 1000
+            readOnlyRootFilesystem: true
+            allowPrivilegeEscalation: false
+            capabilities: { drop: [ALL] }
+          # The gateway image has Node only: a bounded (about 5 minutes) TCP wait on the Redis endpoint; the gateway itself speaks the real protocol (TLS, ACL user) and fails closed.
+          command:
+            - node
+            - -e
+            - |
+              const net = require('net'); const u = new URL(process.env.REDIS_URL); const port = Number(u.port || 6379); let n = 0;
+              const t = () => { const s = net.connect({ host: u.hostname, port, timeout: 3000 }); s.on('connect', () => { console.log('redis reachable'); s.end(); process.exit(0); });
+                const retry = () => { s.destroy(); if (++n >= 100) { console.error('redis not reachable'); process.exit(1); } setTimeout(t, 3000); }; s.on('error', retry); s.on('timeout', retry); }; t();
+          env:
+            - name: REDIS_URL
+              valueFrom: { configMapKeyRef: { name: {{ include "qodiqa.fullname" . }}-config, key: REDIS_URL } }
+          resources:
+            requests: { cpu: 10m, memory: 32Mi }
+            limits: { cpu: 100m, memory: 96Mi }
+        {{- end }}
+        {{- if .Values.postgres.waitFor }}
+        - name: wait-for-postgres
+          image: {{ include "qodiqa.image" . }}
+          imagePullPolicy: {{ .Values.image.pullPolicy }}
+          securityContext:
+            runAsNonRoot: true
+            runAsUser: 1000
+            readOnlyRootFilesystem: true
+            allowPrivilegeEscalation: false
+            capabilities: { drop: [ALL] }
+          command:
+            - node
+            - -e
+            - |
+              const net = require('net'); const host = process.env.PGHOST; const port = Number(process.env.PGPORT); let n = 0;
+              const t = () => { const s = net.connect({ host, port, timeout: 3000 }); s.on('connect', () => { console.log('postgres reachable'); s.end(); process.exit(0); });
+                const retry = () => { s.destroy(); if (++n >= 100) { console.error('postgres not reachable'); process.exit(1); } setTimeout(t, 3000); }; s.on('error', retry); s.on('timeout', retry); }; t();
+          env:
+            - name: PGHOST
+              valueFrom: { configMapKeyRef: { name: {{ include "qodiqa.fullname" . }}-config, key: QODIQA_PG_HOST } }
+            - name: PGPORT
+              valueFrom: { configMapKeyRef: { name: {{ include "qodiqa.fullname" . }}-config, key: QODIQA_PG_PORT } }
+          resources:
+            requests: { cpu: 10m, memory: 32Mi }
+            limits: { cpu: 100m, memory: 96Mi }
+        {{- end }}
+        {{- if .Values.keystore.provision.enabled }}
+        - name: provision-keystore
+          image: {{ include "qodiqa.image" . }}
+          imagePullPolicy: {{ .Values.image.pullPolicy }}
+          securityContext:
+            runAsNonRoot: true
+            runAsUser: 1000
+            readOnlyRootFilesystem: true
+            allowPrivilegeEscalation: false
+            capabilities: { drop: [ALL] }
+          command:
+            - node
+            - -e
+            - |
+              // Idempotent first-run provisioning of the key stores (the same calls as docs/guides/quickstart.md, under a lock so that replicas sharing one volume do not both create a key).
+              const fs = require('fs'); const path = require('path');
+              const dir = path.dirname(process.env.QODIQA_KEYS_PATH); const lock = path.join(dir, '.provision.lock');
+              const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
+              (async () => {
+                for (let i = 0; ; i++) {
+                  try { fs.mkdirSync(lock); break; } catch (e) { if (e.code !== 'EEXIST') throw e; if (i >= 120) throw new Error('could not take ' + lock + ' (a crashed provisioner leaves it: remove it by hand after checking)'); await sleep(1000); }
+                }
+                try {
+                  const ks = require('./services/artifact/keyStore');
+                  const tenant = process.env.QODIQA_PROVISION_CLIENT_ID || process.env.QODIQA_CLIENT_ID;
+                  for (const client of [tenant, 'consent-signer']) { if (!ks.validateKeyStore().clients[client]) { ks.rotateKey(client); console.log('provisioned signing key for', client); } }
+                  const tk = require('./src/core/transparency/transparencyKeyStore');
+                  if (tk.validateKeyStore().totalActive === 0) { tk.rotateKey(); console.log('provisioned transparency key'); }
+                } finally { fs.rmdirSync(lock); }
+              })().catch((e) => { console.error(e.message); process.exit(1); });
+          envFrom:
+            - configMapRef:
+                name: {{ include "qodiqa.fullname" . }}-config
+          env:
+            {{- include "qodiqa.secretEnv" (dict "name" "QODIQA_KEY_ENCRYPTION_KEY" "key" "key-encryption-key" "ctx" .) | nindent 12 }}
+            {{- include "qodiqa.secretEnv" (dict "name" "QODIQA_CLIENT_ID" "key" "client-id" "ctx" .) | nindent 12 }}
+            {{- if .Values.keystore.provision.clientId }}
+            - name: QODIQA_PROVISION_CLIENT_ID
+              value: {{ .Values.keystore.provision.clientId | quote }}
+            {{- end }}
+          resources:
+            requests: { cpu: 50m, memory: 128Mi }
+            limits: { cpu: 500m, memory: 256Mi }
+          volumeMounts:
+            - { name: keystore, mountPath: /opt/qodiqa/data }
+            - { name: tmp, mountPath: /tmp }
+        {{- end }}
+      {{- end }}
+      containers:
+        - name: qodiqa
+          image: {{ include "qodiqa.image" . }}
+          imagePullPolicy: {{ .Values.image.pullPolicy }}
+          ports:
+            - name: http
+              containerPort: {{ .Values.gateway.port }}
+              protocol: TCP
+          lifecycle:
+            preStop:
+              exec:
+                command: ["sleep", "{{ .Values.gateway.preStopSleepSeconds }}"]
+          securityContext:
+            runAsNonRoot: true
+            runAsUser: 1000
+            runAsGroup: 1000
+            readOnlyRootFilesystem: true
+            allowPrivilegeEscalation: false
+            capabilities: { drop: [ALL] }
+          envFrom:
+            - configMapRef:
+                name: {{ include "qodiqa.fullname" . }}-config
+          env:
+            {{- include "qodiqa.secretEnv" (dict "name" "QODIQA_KEY_ENCRYPTION_KEY" "key" "key-encryption-key" "ctx" .) | nindent 12 }}
+            {{- include "qodiqa.secretEnv" (dict "name" "QODIQA_CLIENT_ID" "key" "client-id" "ctx" .) | nindent 12 }}
+            {{- include "qodiqa.secretEnv" (dict "name" "REDIS_PASSWORD" "key" "redis-password" "ctx" .) | nindent 12 }}
+            {{- include "qodiqa.secretEnv" (dict "name" "QODIQA_PG_PASSWORD" "key" "postgres-password" "ctx" .) | nindent 12 }}
+            {{- include "qodiqa.secretEnv" (dict "name" "QODIQA_PG_RETENTION_PASSWORD" "key" "postgres-retention-password" "ctx" .) | nindent 12 }}
+            {{- include "qodiqa.secretEnv" (dict "name" "QODIQA_PG_SYSTEM_PASSWORD" "key" "postgres-system-password" "ctx" .) | nindent 12 }}
+            {{- include "qodiqa.secretEnv" (dict "name" "QODIQA_PG_REPORTING_PASSWORD" "key" "postgres-reporting-password" "ctx" .) | nindent 12 }}
+            {{- include "qodiqa.secretEnv" (dict "name" "QODIQA_PG_CONTROL_PASSWORD" "key" "postgres-control-password" "ctx" .) | nindent 12 }}
+            {{- include "qodiqa.secretEnv" (dict "name" "QODIQA_EXECUTION_INVARIANT_SECRET" "key" "execution-invariant-secret" "ctx" .) | nindent 12 }}
+            {{- include "qodiqa.secretEnv" (dict "name" "QODIQA_DSR_PSEUDONYM_PEPPER" "key" "dsr-pseudonym-pepper" "ctx" .) | nindent 12 }}
+            {{- include "qodiqa.secretEnv" (dict "name" "OPENAI_API_KEY" "key" "openai-api-key" "ctx" . "optional" true) | nindent 12 }}
+            {{- include "qodiqa.secretEnv" (dict "name" "ALERT_WEBHOOK_URL" "key" "alert-webhook-url" "ctx" . "optional" true) | nindent 12 }}
+            {{- include "qodiqa.secretEnv" (dict "name" "ALERT_WEBHOOK_SECRET" "key" "alert-webhook-secret" "ctx" . "optional" true) | nindent 12 }}
+            {{- if $prod }}
+            - name: QODIQA_MAC_KEYS_PATH
+              value: /etc/qodiqa-mac/mac-keys.json
+            {{- end }}
+            {{- with .Values.gateway.extraEnv }}
+            {{- toYaml . | nindent 12 }}
+            {{- end }}
+          startupProbe:
+            httpGet: { path: /health, port: http }
+            periodSeconds: 5
+            timeoutSeconds: 5
+            failureThreshold: 36
+          livenessProbe:
+            httpGet: { path: /health, port: http }
+            periodSeconds: 15
+            timeoutSeconds: 5
+            failureThreshold: 3
+          readinessProbe:
+            httpGet: { path: /ready, port: http }
+            periodSeconds: 5
+            timeoutSeconds: 3
+            failureThreshold: 3
+          resources:
+            {{- toYaml .Values.resources | nindent 12 }}
+          volumeMounts:
+            - { name: tmp, mountPath: /tmp }
+            - { name: keystore, mountPath: /opt/qodiqa/data }
+            - { name: logs, mountPath: /opt/qodiqa/logs }
+            - { name: config, mountPath: /opt/qodiqa/config/policies.json, subPath: policies.json, readOnly: true }
+            {{- if .Values.redis.tls }}
+            - { name: redis-tls, mountPath: /etc/qodiqa-tls, readOnly: true }
+            {{- end }}
+            {{- if $prod }}
+            - { name: mac-keyring, mountPath: /etc/qodiqa-mac, readOnly: true }
+            - { name: pg-tls, mountPath: /etc/qodiqa-pg-tls, readOnly: true }
+            {{- end }}
+      terminationGracePeriodSeconds: {{ .Values.gateway.terminationGracePeriodSeconds }}
+      {{- if .Values.topologySpread.enabled }}
+      topologySpreadConstraints:
+        - maxSkew: {{ .Values.topologySpread.maxSkew }}
+          topologyKey: kubernetes.io/hostname
+          whenUnsatisfiable: {{ .Values.topologySpread.whenUnsatisfiable }}
+          labelSelector:
+            matchLabels:
+              {{- include "qodiqa.selectorLabels" . | nindent 14 }}
+      {{- end }}
+      {{- with .Values.nodeSelector }}
+      nodeSelector:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      {{- with .Values.affinity }}
+      affinity:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      {{- with .Values.tolerations }}
+      tolerations:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      volumes:
+        - name: tmp
+          emptyDir: { sizeLimit: 64Mi }
+        - name: logs
+          emptyDir: { sizeLimit: 256Mi }
+        - name: config
+          configMap:
+            name: {{ include "qodiqa.fullname" . }}-config
+            defaultMode: 0440
+            items:
+              - { key: policies.json, path: policies.json }
+        - name: keystore
+          {{- if .Values.keystore.useEmptyDir }}
+          emptyDir: { sizeLimit: 128Mi }
+          {{- else }}
+          persistentVolumeClaim:
+            claimName: {{ default (printf "%s-keystore" (include "qodiqa.fullname" .)) .Values.keystore.persistence.existingClaim }}
+          {{- end }}
+        {{- if .Values.redis.tls }}
+        - name: redis-tls
+          secret:
+            secretName: {{ .Values.secrets.redisTlsSecret }}
+            defaultMode: 0400
+            items:
+              - { key: ca.crt, path: ca.crt, mode: 0440 }
+              - { key: client.crt, path: client.crt, mode: 0440 }
+              - { key: client.key, path: client.key, mode: 0400 }
+        {{- end }}
+        {{- if $prod }}
+        - name: mac-keyring
+          secret:
+            secretName: {{ .Values.secrets.macKeyringSecret }}
+            defaultMode: 0400
+        - name: pg-tls
+          secret:
+            secretName: {{ .Values.secrets.pgTlsSecret }}
+            optional: true
+            defaultMode: 0440
+        {{- end }}

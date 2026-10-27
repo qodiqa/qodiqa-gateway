@@ -1,0 +1,98 @@
+# QODIQA Kubernetes Manifest Validation
+#
+# Guards against a regression of the dual-topology deployment defect: the
+# single-node and distributed overlays under deploy/kubernetes/overlays/
+# must each build to a valid, independently applicable set of resources, and
+# the root deploy/kubernetes/kustomization.yaml must remain intentionally
+# non-buildable so a stray `kubectl apply -k deploy/kubernetes/` cannot
+# silently deploy both topologies (or an incomplete one) again.
+#
+# Runs on every push/PR that touches the manifests, plus whenever this
+# workflow itself changes.
+
+name: Kubernetes Manifests
+
+on:
+  # callable by .github/workflows/release.yml, which requires every gate to pass before a release.
+  workflow_call: {}
+  push:
+    branches: [main, master, release/**, hotfix/**]
+    paths:
+      - 'deploy/kubernetes/**'
+      - '.github/workflows/k8s-manifests.yml'
+      # a boot-validator or validator-tool change can make an unchanged manifest unbootable
+      - 'src/infra/config/**'
+      - 'scripts/deploy/**'
+  pull_request:
+    branches: [main, master, release/**]
+    paths:
+      - 'deploy/kubernetes/**'
+      - '.github/workflows/k8s-manifests.yml'
+      # a boot-validator or validator-tool change can make an unchanged manifest unbootable
+      - 'src/infra/config/**'
+      - 'scripts/deploy/**'
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.event_name }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  validate-overlays:
+    name: Validate single-node and distributed overlays
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+        with:
+          fetch-depth: 1
+
+      - name: Create kind cluster
+        uses: helm/kind-action@ef37e7f390d99f746eb8b610417061a60e82a6cc # v1
+        with:
+          cluster_name: qodiqa-manifest-validation
+
+      - name: Render single-node overlay (kubectl kustomize)
+        run: kubectl kustomize deploy/kubernetes/overlays/single-node/ > /tmp/single-node.yaml
+
+      - name: Render distributed overlay (kubectl kustomize)
+        run: kubectl kustomize deploy/kubernetes/overlays/distributed/ > /tmp/distributed.yaml
+
+      - name: Assert single-node overlay creates no Deployment
+        run: |
+          if grep -q '^kind: Deployment$' /tmp/single-node.yaml; then
+            echo "FAIL: single-node overlay rendered a Deployment — dual-topology regression"
+            exit 1
+          fi
+
+      - name: Assert distributed overlay creates no StatefulSet
+        run: |
+          if grep -q '^kind: StatefulSet$' /tmp/distributed.yaml; then
+            echo "FAIL: distributed overlay rendered a StatefulSet — dual-topology regression"
+            exit 1
+          fi
+
+      # A server-side dry-run does not create the Namespace object of the same manifest, so every namespaced object would be refused;
+      # the kind cluster is throw-away, so the namespace is created for real first.
+      - name: Create the qodiqa namespace in the throw-away cluster
+        run: kubectl create namespace qodiqa
+
+      - name: Dry-run (server) — single-node overlay
+        run: kubectl apply --dry-run=server -k deploy/kubernetes/overlays/single-node/
+
+      - name: Dry-run (server) — distributed overlay
+        run: kubectl apply --dry-run=server -k deploy/kubernetes/overlays/distributed/
+
+      - name: Assert root kustomization is intentionally non-buildable
+        run: |
+          if kubectl kustomize deploy/kubernetes/ > /dev/null 2>/tmp/root.err; then
+            echo "FAIL: deploy/kubernetes/ built successfully — the root entry point must remain"
+            echo "intentionally broken (see deploy/kubernetes/kustomization.yaml header comment)"
+            echo "to prevent 'kubectl apply -k deploy/kubernetes/' from silently deploying"
+            echo "an ambiguous or dual topology."
+            exit 1
+          fi
+          echo "PASS: root kustomization fails to build, as intended:"
+          cat /tmp/root.err

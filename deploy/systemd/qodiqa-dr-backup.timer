@@ -1,0 +1,11 @@
+# Fires qodiqa-dr-backup.service hourly.
+[Unit]
+Description=QODIQA file + PostgreSQL DR backup schedule
+
+[Timer]
+OnCalendar=hourly
+Persistent=true
+RandomizedDelaySec=60
+
+[Install]
+WantedBy=timers.target

@@ -1,0 +1,92 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>QODIQA Approvals</title>
+<style>
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+:root {
+  --bg: #0d0d14; --surface: #13131f; --surface2: #1a1a2e; --border: #2a2a45; --accent: #8b84ff; --text: #e2e2f0; --muted: #a0a0bd;
+  --green: #4ade80; --red: #f87171; --yellow: #fbbf24; --radius: 8px;
+  --font: 'Inter', system-ui, sans-serif; --mono: 'JetBrains Mono', 'Fira Mono', monospace;
+}
+body { background: var(--bg); color: var(--text); font-family: var(--font); font-size: 14px; min-height: 100vh; }
+header { background: var(--surface); border-bottom: 1px solid var(--border); padding: 10px 24px; display: flex; align-items: center; gap: 12px; }
+header h1 { font-size: 16px; font-weight: 700; letter-spacing: 0.04em; }
+header .subtitle { font-size: 12px; color: var(--muted); }
+main { padding: 20px 24px; max-width: 1400px; margin: 0 auto; display: grid; grid-template-columns: minmax(0, 3fr) minmax(0, 2fr); gap: 20px; }
+@media (max-width: 900px) { main { grid-template-columns: 1fr; } }
+section { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); padding: 16px; }
+h2 { font-size: 13px; text-transform: uppercase; letter-spacing: .08em; color: var(--muted); margin-bottom: 12px; }
+.row { display: flex; gap: 10px; flex-wrap: wrap; align-items: flex-end; margin-bottom: 12px; }
+label { display: flex; flex-direction: column; gap: 4px; font-size: 12px; color: var(--muted); }
+input, select, textarea { background: var(--surface2); color: var(--text); border: 1px solid var(--border); border-radius: 6px; padding: 6px 8px; font: inherit; }
+button { background: var(--accent); color: #0d0d14; border: 0; border-radius: 6px; padding: 7px 14px; font: inherit; font-weight: 600; cursor: pointer; }
+button.deny { background: var(--red); }
+button.ghost { background: var(--surface2); color: var(--text); border: 1px solid var(--border); }
+button:disabled { opacity: .5; cursor: not-allowed; }
+table { width: 100%; border-collapse: collapse; font-size: 13px; }
+caption { text-align: left; color: var(--muted); font-size: 12px; padding-bottom: 6px; }
+th, td { text-align: left; padding: 7px 8px; border-bottom: 1px solid var(--border); vertical-align: top; }
+th { color: var(--muted); font-weight: 600; font-size: 12px; }
+tr.sel td { background: var(--surface2); }
+tr.pick { cursor: pointer; }
+.badge { display: inline-block; padding: 1px 8px; border-radius: 10px; font-size: 11px; font-weight: 700; border: 1px solid var(--border); }
+.badge.PENDING { color: var(--yellow); } .badge.APPROVED { color: var(--green); } .badge.DENIED, .badge.CANCELLED, .badge.EXPIRED { color: var(--red); }
+pre { background: var(--bg); border: 1px solid var(--border); border-radius: 6px; padding: 10px; overflow: auto; font-family: var(--mono); font-size: 12px; max-height: 260px; white-space: pre-wrap; word-break: break-word; }
+dl { display: grid; grid-template-columns: 9em 1fr; gap: 4px 12px; font-size: 13px; margin-bottom: 12px; }
+dt { color: var(--muted); } dd { word-break: break-all; }
+.msg { margin-top: 10px; font-size: 13px; min-height: 1.4em; } .msg.err { color: var(--red); } .msg.ok { color: var(--green); }
+.hint { color: var(--muted); font-size: 12px; margin-top: 8px; }
+.spaced { margin-top: 12px; }
+</style>
+</head>
+<body>
+<header>
+  <h1>QODIQA Approvals</h1>
+  <span class="subtitle">Human approval of agent actions — you decide on exactly what is shown here</span>
+</header>
+<main>
+  <section aria-labelledby="h-list">
+    <h2 id="h-list">Requests</h2>
+    <div class="row">
+      <label for="tenant">Tenant<input id="tenant" type="text" autocomplete="off" value="default"></label>
+      <label for="status">Status
+        <select id="status">
+          <option value="PENDING">Pending</option><option value="">All</option><option value="APPROVED">Approved</option><option value="DENIED">Denied</option><option value="EXPIRED">Expired</option><option value="CANCELLED">Cancelled</option>
+        </select>
+      </label>
+      <button id="refresh" type="button">Refresh</button>
+    </div>
+    <table>
+      <caption id="list-caption">No requests loaded</caption>
+      <thead><tr><th scope="col">Requested</th><th scope="col">Tool</th><th scope="col">Class</th><th scope="col">Requester</th><th scope="col">Status</th><th scope="col">Expires</th></tr></thead>
+      <tbody id="rows"></tbody>
+    </table>
+    <p class="msg" id="list-msg" role="status" aria-live="polite"></p>
+  </section>
+  <section aria-labelledby="h-detail">
+    <h2 id="h-detail">Decision</h2>
+    <p class="hint" id="nothing">Select a request to see the action it is about.</p>
+    <div id="detail" hidden>
+      <dl id="facts"></dl>
+      <h2 id="h-args">Arguments</h2>
+      <pre id="args" aria-labelledby="h-args"></pre>
+      <div class="row spaced">
+        <label for="reason">Reason (required to deny)<textarea id="reason" rows="2" maxlength="500"></textarea></label>
+        <label for="otp">One-time code (MFA step-up)<input id="otp" type="password" inputmode="numeric" autocomplete="one-time-code" maxlength="12"></label>
+      </div>
+      <div class="row">
+        <button id="approve" type="button">Approve this action</button>
+        <button id="deny" type="button" class="deny">Deny</button>
+      </div>
+      <p class="hint">An approval is bound to the action hash shown above, is valid for a short time, and can be used once. You cannot approve a request you made, or one made for you.</p>
+      <p class="msg" id="decision-msg" role="status" aria-live="polite"></p>
+    </div>
+  </section>
+</main>
+<script src="/js/common/adminAuth.js" defer></script>
+<script src="/js/approvals.js" defer></script>
+</body>
+</html>

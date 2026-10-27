@@ -1,0 +1,582 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>QODIQA Policy Management</title>
+<style>
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+:root {
+  --bg:       #0d0d14;
+  --surface:  #13131f;
+  --surface2: #1a1a2e;
+  --border:   #2a2a45;
+  --accent:   #6c63ff;
+  --accent2:  #00d4ff;
+  --text:     #e2e2f0;
+  --muted:    #6b6b8a;
+  --green:    #22c55e;
+  --red:      #ef4444;
+  --yellow:   #f59e0b;
+  --blue:     #3b82f6;
+  --orange:   #f97316;
+  --radius:   8px;
+  --font:     'Inter', system-ui, sans-serif;
+  --mono:     'JetBrains Mono', 'Fira Mono', monospace;
+}
+body { background: var(--bg); color: var(--text); font-family: var(--font); font-size: 14px; min-height: 100vh; }
+a { color: var(--accent); text-decoration: none; }
+a:hover { text-decoration: underline; }
+
+/* Header */
+header { background: var(--surface); border-bottom: 1px solid var(--border); padding: 10px 24px; display: flex; align-items: center; gap: 12px; position: sticky; top: 0; z-index: 100; }
+header h1 { font-size: 16px; font-weight: 700; letter-spacing: 0.04em; white-space: nowrap; }
+header .subtitle { font-size: 11px; color: var(--muted); }
+header .header-links { margin-left: auto; display: flex; align-items: center; gap: 16px; }
+header .header-links a { font-size: 11px; color: var(--muted); transition: color .15s; }
+header .header-links a:hover { color: var(--accent); text-decoration: none; }
+
+/* Nav */
+nav { display: flex; gap: 2px; padding: 8px 24px; background: var(--surface); border-bottom: 1px solid var(--border); flex-wrap: wrap; overflow-x: auto; }
+.tab-btn { background: none; border: none; color: var(--muted); cursor: pointer; padding: 6px 14px; border-radius: var(--radius); font-size: 12px; font-family: var(--font); transition: all .15s; white-space: nowrap; }
+.tab-btn:hover { background: var(--surface2); color: var(--text); }
+.tab-btn.active { background: var(--accent); color: #fff; }
+
+/* Main layout */
+main { padding: 20px 24px; max-width: 1500px; margin: 0 auto; }
+.tab-panel { display: none; }
+.tab-panel.active { display: block; }
+
+/* Cards */
+.cards { display: grid; grid-template-columns: repeat(auto-fill, minmax(160px, 1fr)); gap: 12px; margin-bottom: 20px; }
+.card { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); padding: 14px 16px; }
+.card .label { font-size: 10px; text-transform: uppercase; letter-spacing: .08em; color: var(--muted); margin-bottom: 6px; }
+.card .value { font-size: 26px; font-weight: 700; line-height: 1; }
+.card .sub   { font-size: 10px; color: var(--muted); margin-top: 4px; }
+
+/* Color helpers */
+.green  { color: var(--green); }
+.red    { color: var(--red); }
+.yellow { color: var(--yellow); }
+.blue   { color: var(--blue); }
+.orange { color: var(--orange); }
+.muted  { color: var(--muted); }
+
+/* Sections */
+.section { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); margin-bottom: 16px; }
+.section-header { padding: 12px 16px; border-bottom: 1px solid var(--border); font-weight: 600; font-size: 12px; display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
+.section-header-actions { margin-left: auto; display: flex; gap: 6px; align-items: center; }
+.section-body { padding: 16px; }
+
+/* Badges */
+.badge { font-size: 10px; padding: 2px 7px; border-radius: 99px; background: var(--surface2); color: var(--muted); display: inline-block; }
+.badge.green  { background: rgba(34,197,94,.15);  color: var(--green); }
+.badge.red    { background: rgba(239,68,68,.15);   color: var(--red); }
+.badge.yellow { background: rgba(245,158,11,.15);  color: var(--yellow); }
+.badge.blue   { background: rgba(59,130,246,.15);  color: var(--blue); }
+.badge.orange { background: rgba(249,115,22,.15);  color: var(--orange); }
+.badge.accent { background: rgba(108,99,255,.15);  color: var(--accent); }
+.badge.accent2{ background: rgba(0,212,255,.15);   color: var(--accent2); }
+
+/* Tables */
+table { width: 100%; border-collapse: collapse; }
+th { text-align: left; padding: 8px 14px; font-size: 10px; text-transform: uppercase; letter-spacing: .06em; color: var(--muted); background: var(--surface2); white-space: nowrap; }
+td { padding: 8px 14px; border-top: 1px solid var(--border); font-size: 11px; font-family: var(--mono); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 200px; }
+tr.clickable-row:hover td { background: var(--surface2); cursor: pointer; }
+tr:not(.clickable-row):hover td { background: rgba(108,99,255,.04); }
+.empty { padding: 28px 16px; text-align: center; color: var(--muted); font-size: 12px; }
+
+/* Pagination */
+.pagination { display: flex; align-items: center; gap: 8px; padding: 10px 14px; border-top: 1px solid var(--border); font-size: 11px; }
+.pagination button { background: var(--surface2); border: 1px solid var(--border); color: var(--text); padding: 3px 10px; border-radius: 4px; cursor: pointer; font-size: 11px; }
+.pagination button:disabled { opacity: .35; cursor: default; }
+.pagination .info { color: var(--muted); }
+
+/* Forms */
+.filter-bar { display: flex; gap: 8px; flex-wrap: wrap; margin-bottom: 16px; align-items: flex-end; }
+.filter-bar .field { display: flex; flex-direction: column; gap: 4px; }
+.filter-bar label { font-size: 10px; text-transform: uppercase; letter-spacing: .06em; color: var(--muted); }
+.form-group { margin-bottom: 14px; }
+.form-group label { display: block; font-size: 10px; text-transform: uppercase; letter-spacing: .06em; color: var(--muted); margin-bottom: 5px; }
+.form-group .hint { font-size: 10px; color: var(--muted); margin-top: 3px; }
+input[type=text], input[type=number], input[type=time], input[type=date], select, textarea {
+  background: var(--surface2); border: 1px solid var(--border); color: var(--text);
+  border-radius: 4px; padding: 6px 10px; font-size: 12px; font-family: var(--font);
+  outline: none; transition: border .15s;
+}
+input[type=text]:focus, input[type=number]:focus, input[type=time]:focus, input[type=date]:focus, select:focus, textarea:focus { border-color: var(--accent); }
+input[type=text]::placeholder, textarea::placeholder { color: var(--muted); }
+input[type=text].error, input[type=number].error, textarea.error { border-color: var(--red); }
+textarea { resize: vertical; min-height: 80px; }
+.checkbox-field { display: flex; align-items: center; gap: 6px; font-size: 12px; cursor: pointer; }
+.checkbox-field input { accent-color: var(--accent); cursor: pointer; }
+
+/* Buttons */
+button.btn { background: var(--accent); border: none; color: #fff; padding: 6px 16px; border-radius: 4px; cursor: pointer; font-size: 12px; font-family: var(--font); font-weight: 500; transition: opacity .15s; }
+button.btn:hover { opacity: .85; }
+button.btn.secondary { background: var(--surface2); color: var(--text); border: 1px solid var(--border); }
+button.btn.danger { background: var(--red); }
+button.btn.success { background: var(--green); color: #fff; }
+button.btn.sm { padding: 3px 10px; font-size: 11px; }
+button.btn.xs { padding: 2px 7px; font-size: 10px; }
+button.btn:disabled { opacity: .4; cursor: default; }
+
+/* Filter toggles */
+.filter-toggles { display: flex; gap: 4px; }
+.filter-toggle { background: var(--surface2); border: 1px solid var(--border); color: var(--muted); padding: 4px 12px; border-radius: 4px; cursor: pointer; font-size: 11px; font-family: var(--font); transition: all .15s; }
+.filter-toggle:hover { color: var(--text); }
+.filter-toggle.active { background: var(--accent); border-color: var(--accent); color: #fff; }
+
+/* KV list */
+.kv-list { font-size: 12px; }
+.kv-row { display: flex; padding: 6px 0; border-bottom: 1px solid var(--border); gap: 12px; align-items: flex-start; }
+.kv-row:last-child { border-bottom: none; }
+.kv-key   { font-size: 10px; text-transform: uppercase; letter-spacing: .06em; color: var(--muted); flex-shrink: 0; width: 150px; padding-top: 1px; }
+.kv-value { font-family: var(--mono); font-size: 11px; word-break: break-all; flex: 1; }
+.copy-btn { background: none; border: none; cursor: pointer; color: var(--muted); font-size: 10px; padding: 0 4px; flex-shrink: 0; transition: color .1s; }
+.copy-btn:hover { color: var(--accent); }
+
+/* Raw JSON */
+.raw-json { background: var(--surface2); border: 1px solid var(--border); border-radius: 4px; padding: 12px; font-family: var(--mono); font-size: 10px; overflow: auto; max-height: 400px; white-space: pre; color: var(--text); line-height: 1.5; }
+
+/* Score display */
+.score-big { font-size: 56px; font-weight: 800; line-height: 1; }
+.score-big.good  { color: var(--green); }
+.score-big.warn  { color: var(--yellow); }
+.score-big.bad   { color: var(--red); }
+
+/* Diff viewer */
+.diff-summary { padding: 10px 14px; background: rgba(108,99,255,.1); border: 1px solid rgba(108,99,255,.3); border-radius: var(--radius); margin-bottom: 12px; font-size: 12px; color: var(--accent); }
+.diff-change { padding: 8px 12px; margin-bottom: 6px; border-radius: 4px; font-size: 11px; font-family: var(--mono); }
+.diff-change.ADDED    { background: rgba(34,197,94,.08); border-left: 3px solid var(--green); }
+.diff-change.REMOVED  { background: rgba(239,68,68,.08); border-left: 3px solid var(--red); }
+.diff-change.MODIFIED { background: rgba(245,158,11,.08); border-left: 3px solid var(--yellow); }
+.diff-change-label { font-size: 9px; font-weight: 700; letter-spacing: .08em; margin-bottom: 3px; }
+.diff-change.ADDED    .diff-change-label { color: var(--green); }
+.diff-change.REMOVED  .diff-change-label { color: var(--red); }
+.diff-change.MODIFIED .diff-change-label { color: var(--yellow); }
+.diff-side-by-side { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-top: 12px; }
+@media (max-width: 900px) { .diff-side-by-side { grid-template-columns: 1fr; } }
+.diff-pane-label { font-size: 10px; color: var(--muted); text-transform: uppercase; letter-spacing: .06em; margin-bottom: 6px; }
+
+/* Validation result */
+.val-result { padding: 16px; }
+.val-result .score-row { display: flex; align-items: center; gap: 20px; margin-bottom: 16px; flex-wrap: wrap; }
+.val-list { list-style: none; }
+.val-list li { padding: 5px 0; border-bottom: 1px solid var(--border); font-size: 11px; font-family: var(--mono); display: flex; gap: 8px; }
+.val-list li:last-child { border-bottom: none; }
+.val-list li::before { content: '•'; flex-shrink: 0; }
+.val-list.errors li::before { color: var(--red); }
+.val-list.warnings li::before { color: var(--yellow); }
+
+/* Loading / Error */
+.loading { padding: 32px; text-align: center; color: var(--muted); font-size: 12px; }
+.loading::after { content: ''; display: inline-block; width: 12px; height: 12px; border: 2px solid var(--muted); border-top-color: var(--accent); border-radius: 50%; animation: spin .6s linear infinite; margin-left: 8px; vertical-align: middle; }
+@keyframes spin { to { transform: rotate(360deg); } }
+.error-box { background: rgba(239,68,68,.1); border: 1px solid rgba(239,68,68,.3); border-radius: var(--radius); padding: 12px 16px; font-size: 12px; color: var(--red); margin-bottom: 12px; }
+.success-box { background: rgba(34,197,94,.1); border: 1px solid rgba(34,197,94,.3); border-radius: var(--radius); padding: 12px 16px; font-size: 12px; color: var(--green); margin-bottom: 12px; }
+.info-box { background: rgba(108,99,255,.1); border: 1px solid rgba(108,99,255,.3); border-radius: var(--radius); padding: 12px 16px; font-size: 12px; color: var(--accent); margin-bottom: 12px; }
+
+/* Modal */
+.modal-overlay { display: none; position: fixed; inset: 0; background: rgba(0,0,0,.65); z-index: 500; align-items: center; justify-content: center; }
+.modal-overlay.open { display: flex; }
+.modal { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); padding: 24px; max-width: 480px; width: 90%; }
+.modal h2 { font-size: 15px; font-weight: 700; margin-bottom: 10px; }
+.modal p { font-size: 12px; color: var(--muted); margin-bottom: 20px; }
+.modal-actions { display: flex; gap: 8px; justify-content: flex-end; }
+
+/* Time window builder */
+.time-window-item { background: var(--surface2); border: 1px solid var(--border); border-radius: var(--radius); padding: 12px; margin-bottom: 8px; }
+.time-window-days { display: flex; gap: 6px; flex-wrap: wrap; margin-bottom: 8px; }
+.day-toggle { background: var(--surface); border: 1px solid var(--border); color: var(--muted); padding: 3px 8px; border-radius: 4px; cursor: pointer; font-size: 10px; font-family: var(--font); transition: all .15s; }
+.day-toggle.active { background: var(--accent); border-color: var(--accent); color: #fff; }
+.time-window-times { display: flex; gap: 10px; align-items: center; flex-wrap: wrap; }
+.time-window-times label { font-size: 10px; color: var(--muted); }
+
+/* Version snapshot toggle */
+.toggle-link { font-size: 10px; color: var(--accent); cursor: pointer; background: none; border: none; font-family: var(--font); padding: 0; transition: opacity .15s; }
+.toggle-link:hover { opacity: .75; }
+
+/* Rollback version select */
+.rollback-ver-item { display: flex; align-items: center; gap: 10px; padding: 8px 12px; border: 1px solid var(--border); border-radius: 4px; margin-bottom: 6px; cursor: pointer; transition: border-color .15s; }
+.rollback-ver-item:hover { border-color: var(--accent); }
+.rollback-ver-item.selected { border-color: var(--accent); background: rgba(108,99,255,.08); }
+.rollback-ver-item input[type=radio] { accent-color: var(--accent); }
+
+/* Detail sections */
+.detail-section { margin-bottom: 20px; }
+.detail-section h3 { font-size: 11px; text-transform: uppercase; letter-spacing: .08em; color: var(--muted); margin-bottom: 8px; padding-bottom: 4px; border-bottom: 1px solid var(--border); }
+
+/* Two col */
+.two-col { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
+@media (max-width: 900px) { .two-col { grid-template-columns: 1fr; } }
+
+/* Inline row */
+.input-row { display: flex; gap: 8px; align-items: flex-end; }
+.input-row input { flex: 1; }
+
+/* Status banner */
+.status-banner { display: flex; align-items: center; gap: 10px; padding: 10px 16px; border-radius: var(--radius); margin-bottom: 16px; font-size: 12px; font-weight: 500; }
+.status-banner.info { background: rgba(108,99,255,.1); border: 1px solid rgba(108,99,255,.3); color: var(--accent); }
+.status-banner.warn { background: rgba(245,158,11,.1); border: 1px solid rgba(245,158,11,.3); color: var(--yellow); }
+
+/* Config block highlight */
+#cfg-block { background: var(--surface2); border: 1px solid var(--border); border-radius: var(--radius); padding: 14px; margin-top: 4px; }
+
+/* ── Visually hidden (accessible name only) ── */
+.vh { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
+</style>
+</head>
+<body>
+
+<header>
+  <h1>QODIQA Policy Management</h1>
+  <span class="subtitle">Enterprise Policy Administration</span>
+  <div class="header-links">
+    <a href="/dashboard.html">Dashboard</a>
+    <a href="/audit-viewer.html">Audit Viewer</a>
+  </div>
+</header>
+
+<nav id="main-nav">
+  <button class="tab-btn active" data-tab="dashboard">Dashboard</button>
+  <button class="tab-btn" data-tab="policies">Policies</button>
+  <button class="tab-btn" data-tab="editor">New Policy</button>
+  <button class="tab-btn" data-tab="validation">Validation</button>
+  <button class="tab-btn" data-tab="versions">Versions</button>
+  <button class="tab-btn" data-tab="diff">Diff Viewer</button>
+  <button class="tab-btn" data-tab="rollback">Rollback</button>
+  <button class="tab-btn" data-tab="history">History</button>
+</nav>
+
+<main>
+
+<!-- ══════════════════════════════════════════════════════════ -->
+<!-- TAB 1 — DASHBOARD                                         -->
+<!-- ══════════════════════════════════════════════════════════ -->
+<div id="tab-dashboard" class="tab-panel active">
+  <div class="cards" id="dash-cards">
+    <div class="card"><div class="label">Total Policies</div><div class="value" id="dc-total">—</div></div>
+    <div class="card"><div class="label">Active</div><div class="value green" id="dc-active">—</div></div>
+    <div class="card"><div class="label">Disabled</div><div class="value red" id="dc-disabled">—</div></div>
+    <div class="card"><div class="label">Total Versions</div><div class="value blue" id="dc-versions">—</div></div>
+    <div class="card"><div class="label">Validation Failures</div><div class="value yellow" id="dc-valfails">—</div></div>
+  </div>
+  <div class="section">
+    <div class="section-header">
+      Recent Changes
+      <div class="section-header-actions">
+        <button class="btn secondary sm" data-action="loadDashboard">Refresh</button>
+      </div>
+    </div>
+    <div id="dash-recent-wrap">
+      <div class="loading"></div>
+    </div>
+  </div>
+</div>
+
+<!-- ══════════════════════════════════════════════════════════ -->
+<!-- TAB 2 — POLICIES                                          -->
+<!-- ══════════════════════════════════════════════════════════ -->
+<div id="tab-policies" class="tab-panel">
+  <div class="section">
+    <div class="section-header">
+      Policy List
+      <div class="section-header-actions">
+        <label for="pol-search" class="vh">Search ID or name</label>
+        <input type="text" id="pol-search" placeholder="Search ID or name…" style="width:200px" data-oninput-action="debouncedPoliciesLoad">
+        <div class="filter-toggles">
+          <button class="filter-toggle active" data-status="" data-action="setPolicyFilter" data-arg="">All</button>
+          <button class="filter-toggle" data-status="ACTIVE" data-action="setPolicyFilter" data-arg="ACTIVE">Active</button>
+          <button class="filter-toggle" data-status="DISABLED" data-action="setPolicyFilter" data-arg="DISABLED">Disabled</button>
+        </div>
+        <button class="btn sm" data-action="newPolicy">+ New Policy</button>
+      </div>
+    </div>
+    <div id="pol-table-wrap"><div class="loading"></div></div>
+    <div class="pagination" id="pol-pagination" style="display:none">
+      <button id="pol-prev" class="btn secondary sm" data-action="policiesPage" data-arg="-1">&#8592; Prev</button>
+      <span class="info" id="pol-page-info"></span>
+      <button id="pol-next" class="btn secondary sm" data-action="policiesPage" data-arg="1">Next &#8594;</button>
+    </div>
+  </div>
+</div>
+
+<!-- ══════════════════════════════════════════════════════════ -->
+<!-- TAB 3 — EDITOR (New / Edit)                               -->
+<!-- ══════════════════════════════════════════════════════════ -->
+<div id="tab-editor" class="tab-panel">
+  <div class="section">
+    <div class="section-header" id="editor-title">New Policy</div>
+    <div class="section-body">
+      <div id="editor-msg"></div>
+      <div class="two-col">
+        <div>
+          <div class="form-group">
+            <label for="ed-id">Policy ID <span style="color:var(--red)">*</span></label>
+            <input type="text" id="ed-id" placeholder="my_policy_id" style="width:100%">
+            <div class="hint">Pattern: <code>[A-Za-z0-9_-]{1,64}</code></div>
+          </div>
+          <div class="form-group">
+            <label for="ed-name">Policy Name <span style="color:var(--red)">*</span></label>
+            <input type="text" id="ed-name" placeholder="Human-readable name" style="width:100%">
+          </div>
+          <div class="form-group">
+            <label for="ed-desc">Description</label>
+            <textarea id="ed-desc" placeholder="Describe what this policy does…" style="width:100%;height:70px"></textarea>
+          </div>
+        </div>
+        <div>
+          <div class="form-group">
+            <label for="ed-type">Policy Type <span style="color:var(--red)">*</span></label>
+            <select id="ed-type" data-onchange-action="onTypeChange" style="width:100%">
+              <option value="REQUIRE_CONSENT">Require Consent</option>
+              <option value="BLOCK_IP">Block IP</option>
+              <option value="TIME_WINDOW">Time Window</option>
+              <option value="RATE_LIMIT">Rate Limit</option>
+            </select>
+          </div>
+          <div class="form-group">
+            <label for="ed-priority">Priority</label>
+            <input type="number" id="ed-priority" value="100" min="0" max="999999" style="width:100%">
+            <div class="hint">0 = highest. Range: 0 – 999 999</div>
+          </div>
+          <div class="form-group">
+            <label for="ed-enabled">Enabled</label>
+            <label class="checkbox-field"><input type="checkbox" id="ed-enabled" checked> Policy is active on save</label>
+          </div>
+          <div class="form-group">
+            <label for="ed-comment">Change Reason / Comment</label>
+            <input type="text" id="ed-comment" placeholder="Why is this policy being created/modified?" style="width:100%">
+          </div>
+        </div>
+      </div>
+
+      <!-- Dynamic config block -->
+      <div id="cfg-block">
+        <div style="font-size:10px;text-transform:uppercase;letter-spacing:.08em;color:var(--muted);margin-bottom:12px;">Type Configuration</div>
+
+        <!-- REQUIRE_CONSENT -->
+        <div id="cfg-REQUIRE_CONSENT">
+          <label class="checkbox-field">
+            <input type="checkbox" checked disabled> Require Valid Artifact
+          </label>
+          <div style="font-size:10px;color:var(--muted);margin-top:6px;">This setting is always enforced and cannot be changed.</div>
+        </div>
+
+        <!-- BLOCK_IP -->
+        <div id="cfg-BLOCK_IP" style="display:none">
+          <div class="form-group">
+            <label for="cfg-blocklist">IP Blocklist (one per line)</label>
+            <textarea id="cfg-blocklist" placeholder="192.168.1.1&#10;10.0.0.5" style="width:100%;height:100px;font-family:var(--mono);font-size:11px"></textarea>
+          </div>
+          <div class="form-group">
+            <label for="cfg-cidrs">CIDR Ranges (one per line)</label>
+            <textarea id="cfg-cidrs" placeholder="10.0.0.0/8&#10;172.16.0.0/12" style="width:100%;height:80px;font-family:var(--mono);font-size:11px"></textarea>
+          </div>
+        </div>
+
+        <!-- TIME_WINDOW -->
+        <div id="cfg-TIME_WINDOW" style="display:none">
+          <div id="tw-list"></div>
+          <button class="btn secondary sm" data-action="addTimeWindow" style="margin-top:8px">+ Add Window</button>
+        </div>
+
+        <!-- RATE_LIMIT -->
+        <div id="cfg-RATE_LIMIT" style="display:none">
+          <div class="two-col">
+            <div class="form-group">
+              <label for="cfg-ws">Window (seconds)</label>
+              <input type="number" id="cfg-ws" value="60" min="1" style="width:100%">
+            </div>
+            <div class="form-group">
+              <label for="cfg-mr">Max Requests</label>
+              <input type="number" id="cfg-mr" value="100" min="1" style="width:100%">
+            </div>
+          </div>
+          <div class="form-group">
+            <label for="cfg-kb">Key By</label>
+            <select id="cfg-kb" style="width:200px">
+              <option value="userId">User ID</option>
+              <option value="ip">IP Address</option>
+            </select>
+          </div>
+        </div>
+      </div>
+
+      <div style="display:flex;gap:8px;margin-top:18px;flex-wrap:wrap;">
+        <button class="btn secondary" data-action="validateFromEditor">Validate</button>
+        <button class="btn" id="editor-save-btn" data-action="savePolicy">Save Policy</button>
+        <button class="btn secondary" data-action="cancelEditor">Cancel</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ══════════════════════════════════════════════════════════ -->
+<!-- TAB 4 — VALIDATION                                        -->
+<!-- ══════════════════════════════════════════════════════════ -->
+<div id="tab-validation" class="tab-panel">
+  <div class="two-col">
+    <div class="section">
+      <div class="section-header">Validate by Policy ID</div>
+      <div class="section-body">
+        <div class="form-group">
+          <label for="val-pid">Policy ID</label>
+          <div class="input-row">
+            <input type="text" id="val-pid" placeholder="Enter policy ID…">
+            <button class="btn" data-action="validateById">Validate</button>
+          </div>
+        </div>
+        <div class="hint" style="margin-top:4px">Fetches the current policy config and validates it server-side.</div>
+      </div>
+    </div>
+    <div class="section">
+      <div class="section-header">Ad-hoc JSON Validation</div>
+      <div class="section-body">
+        <div class="form-group">
+          <label for="val-json">Paste Policy JSON</label>
+          <textarea id="val-json" placeholder='{"policyId":"test","type":"RATE_LIMIT","config":{…}}' style="width:100%;height:120px;font-family:var(--mono);font-size:11px"></textarea>
+        </div>
+        <button class="btn" data-action="validateAdHoc">Validate JSON</button>
+      </div>
+    </div>
+  </div>
+  <div class="section" id="val-result-section" style="display:none">
+    <div class="section-header">Validation Result</div>
+    <div id="val-result-body"><div class="loading"></div></div>
+  </div>
+</div>
+
+<!-- ══════════════════════════════════════════════════════════ -->
+<!-- TAB 5 — VERSIONS                                          -->
+<!-- ══════════════════════════════════════════════════════════ -->
+<div id="tab-versions" class="tab-panel">
+  <div class="section">
+    <div class="section-header">
+      Policy Versions
+      <div class="section-header-actions">
+        <label for="ver-pid" class="vh">Policy ID</label>
+        <input type="text" id="ver-pid" placeholder="Policy ID…" style="width:200px">
+        <button class="btn sm" data-action="loadVersions">Load Versions</button>
+      </div>
+    </div>
+    <div id="ver-table-wrap"><div class="empty">Enter a Policy ID and click Load Versions.</div></div>
+  </div>
+  <div class="section" id="ver-snapshot-section" style="display:none">
+    <div class="section-header" id="ver-snapshot-title">Version Snapshot</div>
+    <div class="section-body">
+      <div id="ver-snapshot-body"></div>
+    </div>
+  </div>
+</div>
+
+<!-- ══════════════════════════════════════════════════════════ -->
+<!-- TAB 6 — DIFF VIEWER                                       -->
+<!-- ══════════════════════════════════════════════════════════ -->
+<div id="tab-diff" class="tab-panel">
+  <div class="section">
+    <div class="section-header">
+      Diff Viewer
+      <div class="section-header-actions">
+        <label for="diff-pid" class="vh">Policy ID</label>
+        <input type="text" id="diff-pid" placeholder="Policy ID…" style="width:180px">
+        <label for="diff-from" class="vh">From version</label>
+        <input type="number" id="diff-from" placeholder="From ver" style="width:90px" min="1">
+        <label for="diff-to" class="vh">To version</label>
+        <input type="number" id="diff-to"   placeholder="To ver"   style="width:90px" min="1">
+        <button class="btn sm" data-action="loadDiff">Load Diff</button>
+      </div>
+    </div>
+    <div id="diff-result-wrap"><div class="empty">Enter Policy ID and two version numbers, then click Load Diff.</div></div>
+  </div>
+</div>
+
+<!-- ══════════════════════════════════════════════════════════ -->
+<!-- TAB 7 — ROLLBACK                                          -->
+<!-- ══════════════════════════════════════════════════════════ -->
+<div id="tab-rollback" class="tab-panel">
+  <div class="two-col">
+    <div class="section">
+      <div class="section-header">
+        Select Version to Restore
+        <div class="section-header-actions">
+          <label for="rb-pid" class="vh">Policy ID</label>
+          <input type="text" id="rb-pid" placeholder="Policy ID…" style="width:160px">
+          <button class="btn sm" data-action="loadRollbackVersions">Load Versions</button>
+        </div>
+      </div>
+      <div id="rb-versions-wrap"><div class="empty">Enter a Policy ID and click Load Versions.</div></div>
+    </div>
+    <div>
+      <div class="section" id="rb-snapshot-section" style="display:none">
+        <div class="section-header" id="rb-snapshot-title">Version Snapshot</div>
+        <div class="section-body">
+          <div id="rb-snapshot-body"></div>
+        </div>
+      </div>
+      <div class="section" id="rb-confirm-section" style="display:none">
+        <div class="section-header">Confirm Rollback</div>
+        <div class="section-body">
+          <div id="rb-msg"></div>
+          <div class="form-group">
+            <label for="rb-comment">Rollback Reason / Comment <span style="color:var(--red)">*</span></label>
+            <textarea id="rb-comment" placeholder="Reason for rollback…" style="width:100%;height:80px"></textarea>
+          </div>
+          <button class="btn danger" data-action="confirmRollback">Execute Rollback</button>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ══════════════════════════════════════════════════════════ -->
+<!-- TAB 8 — HISTORY                                           -->
+<!-- ══════════════════════════════════════════════════════════ -->
+<div id="tab-history" class="tab-panel">
+  <div class="section">
+    <div class="section-header">
+      Policy History
+      <div class="section-header-actions">
+        <label for="hist-pid" class="vh">Policy ID</label>
+        <input type="text" id="hist-pid" placeholder="Policy ID…" style="width:200px">
+        <button class="btn sm" data-action="loadHistory">Load History</button>
+      </div>
+    </div>
+    <div id="hist-table-wrap"><div class="empty">Enter a Policy ID and click Load History.</div></div>
+  </div>
+</div>
+
+<!-- ══════════════════════════════════════════════════════════ -->
+<!-- TAB 9 — DETAILS (hidden from nav, shown programmatically) -->
+<!-- ══════════════════════════════════════════════════════════ -->
+<div id="tab-details" class="tab-panel">
+  <div style="margin-bottom:12px">
+    <button class="btn secondary sm" data-action="backFromDetails">&#8592; Back</button>
+  </div>
+  <div id="det-body"><div class="loading"></div></div>
+</div>
+
+</main>
+
+<!-- Modal -->
+<div class="modal-overlay" id="confirm-modal">
+  <div class="modal">
+    <h2 id="modal-title">Confirm Action</h2>
+    <p id="modal-body">Are you sure?</p>
+    <div class="modal-actions">
+      <button class="btn secondary" data-action="closeModal">Cancel</button>
+      <button class="btn danger" id="modal-confirm-btn">Confirm</button>
+    </div>
+  </div>
+</div>
+
+<!-- shared frontend infrastructure — load order matters (esc before pagination/badges/actions) -->
+<script src="/js/common/adminAuth.js" defer></script>
+<script src="/js/common/esc.js" defer></script>
+<script src="/js/common/pagination.js" defer></script>
+<script src="/js/common/badges.js" defer></script>
+<script src="/js/common/actions.js" defer></script>
+<script src="/js/policy-management.js" defer></script>
+</body>
+</html>

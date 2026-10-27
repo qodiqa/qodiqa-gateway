@@ -1,0 +1,58 @@
+{
+  "comment": "QODIQA nginx reverse-proxy seccomp profile. Derived from deploy/docker/seccomp.json (the app's own Node-oriented profile) rather than falling back to Docker's unrestricted default, matching this project's own no-broader-than-needed posture for the qodiqa container. nginx's master->worker privilege-drop model (root master forks, then setuid/setgid/setgroups/chown to the unprivileged `nginx` user for each worker -- see compose-fragment.example.yml's own cap_add comment) needs several syscalls the Node profile never required. Empirically derived: booted the real nginx:1.27-alpine image from this project's own compose-fragment.example.yml shape under a temporary SCMP_ACT_LOG diagnostic copy of this file, drove real HTTP->HTTPS-redirect and HTTPS /health traffic through it, and captured `wsl -d docker-desktop dmesg` for every syscall the kernel logged as outside the base allow-list (fork, utimensat -- both from nginx's busybox-shell docker-entrypoint.d/ startup scripts). The master/worker privilege-drop syscalls (setuid/setgid/setgroups/chown family, capset) did not appear in the diagnostic log themselves (Linux audit rate-limiting on a shared, busy Docker Desktop VM already running an unrelated kind cluster is a known, disclosed limitation of this exact measurement), but `ps aux` inside the running diagnostic container proved they executed successfully (worker processes correctly shown running as the unprivileged `nginx` user, not root) -- included here on that direct evidence, then the complete profile (this file, SCMP_ACT_ERRNO, deny-by-default) was independently verified by a real boot-and-serve test, not by the diagnostic log alone -- which is exactly how the io_setup/io_submit/io_getevents/io_cancel/io_destroy (Linux native AIO) syscalls were found: they never appeared in the SCMP_ACT_LOG diagnostic run's dmesg output (the same audit rate-limiting/timing caveat as the privilege-drop syscalls above), but the real ERRNO-mode boot logged repeated 'io_setup() failed (1: Operation not permitted)' [emerg] lines from every worker (workers still started and served real requests -- nginx treats this as non-fatal -- but the log spam is itself an operational-hygiene defect: false alarms mask real emergencies), proving the LOG-mode diagnostic alone would have shipped an incomplete profile. Re-verified clean after adding these five.",
+  "defaultAction": "SCMP_ACT_ERRNO",
+  "defaultErrnoRet": 1,
+  "archMap": [
+    {
+      "architecture": "SCMP_ARCH_X86_64",
+      "subArchitectures": ["SCMP_ARCH_X86", "SCMP_ARCH_X32"]
+    },
+    {
+      "architecture": "SCMP_ARCH_AARCH64",
+      "subArchitectures": ["SCMP_ARCH_ARM"]
+    }
+  ],
+  "syscalls": [
+    {
+      "comment": "Base syscall set shared with QODIQA's own Node.js profile (deploy/docker/seccomp.json) -- ordinary process/socket/filesystem operations common to both a Node HTTP server and an nginx worker's own request-handling loop.",
+      "action": "SCMP_ACT_ALLOW",
+      "names": [
+        "accept4","access","arch_prctl","bind","brk","clock_gettime","clock_gettime64",
+        "clock_nanosleep","clone","clone3","close","connect","dup","dup2","dup3",
+        "epoll_create1","epoll_ctl","epoll_pwait","epoll_wait","eventfd2","execve",
+        "exit","exit_group","faccessat","faccessat2","fadvise64","fallocate","fchmod",
+        "fchown","fcntl","fdatasync","flock","fstat","fstat64","fstatat64","fsync",
+        "ftruncate","futex","futex_time64","getcwd","getdents64","getegid","geteuid",
+        "getgid","getpeername","getpid","getppid","getrandom","getrlimit","getsockname",
+        "getsockopt","getuid","inotify_add_watch","inotify_init1","inotify_rm_watch",
+        "ioctl","kill","listen","lseek","lstat","lstat64","madvise","memfd_create",
+        "mincore","mkdir","mkdirat","mmap","mmap2","mprotect","munmap","nanosleep",
+        "newfstatat","open","openat","openat2","pipe","pipe2","poll","ppoll",
+        "ppoll_time64","prctl","pread64","preadv","preadv2","prlimit64","pwrite64",
+        "pwritev","pwritev2","read","readlink","readlinkat","readv","recvfrom",
+        "recvmsg","rename","renameat","renameat2","rseq","rt_sigaction",
+        "rt_sigprocmask","rt_sigreturn","rt_sigsuspend","sched_getaffinity",
+        "sched_yield","sendmsg","sendto","set_robust_list","set_tid_address",
+        "setitimer","setsockopt","shutdown","sigaltstack","socket","socketpair",
+        "stat","stat64","statfs","statx","sysinfo","tgkill","timer_create",
+        "timer_delete","timer_gettime","timer_gettime64","timer_settime",
+        "timer_settime64","timerfd_create","timerfd_gettime","timerfd_gettime64",
+        "timerfd_settime","timerfd_settime64","umask","uname","unlink","unlinkat",
+        "wait4","waitid","write","writev","fstatfs"
+      ]
+    },
+    {
+      "comment": "nginx-specific additions beyond the base Node profile. 'fork'/'utimensat': directly observed via wsl -d docker-desktop dmesg SCMP_ACT_LOG diagnostic entries during this profile's own boot-and-serve test (nginx's busybox-shell docker-entrypoint.d/*.sh startup scripts, e.g. 10-listen-on-ipv6-by-default.sh calling fork(), and 'touch' calling utimensat()). 'setuid'/'setgid'/'setgroups'/'chown'/'chown32'/'capset' (plus 32-bit/'_res' variants for broad kernel/arch coverage): the master->worker privilege-drop this same compose fragment's cap_add (CHOWN/SETUID/SETGID) already documents as empirically required -- capabilities alone do not bypass seccomp, the syscall must also be allowed; not directly captured in the diagnostic dmesg log itself (a disclosed limitation -- Linux audit rate-limiting on the shared, busy Docker Desktop VM), but proven necessary and sufficient by this profile's own real boot-and-serve verification (worker processes confirmed running as the unprivileged 'nginx' user via 'ps aux', not root, under this exact ERRNO profile, not just the LOG one).",
+      "action": "SCMP_ACT_ALLOW",
+      "names": [
+        "fork", "vfork", "utimensat",
+        "setuid", "setuid32", "setresuid", "setresuid32",
+        "setgid", "setgid32", "setresgid", "setresgid32",
+        "setgroups", "setgroups32",
+        "chown", "chown32", "fchownat",
+        "capset", "capget",
+        "io_setup", "io_submit", "io_getevents", "io_cancel", "io_destroy"
+      ]
+    }
+  ]
+}

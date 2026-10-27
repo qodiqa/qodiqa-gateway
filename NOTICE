@@ -1,0 +1,9 @@
+QODIQA Gateway
+Copyright 2026 QODIQA. Licensed under the Apache License, Version 2.0; see LICENSE.
+
+This product includes software and models developed by third parties. Their licences apply to them, not to QODIQA's own code.
+
+- Base embedding model Xenova/all-MiniLM-L6-v2 (Apache-2.0) and QODIQA's fine-tuned derivatives of it: see MODEL-PROVENANCE.md and licenses/Apache-2.0.txt.
+- npm dependencies: see THIRD-PARTY-LICENSES.md and sbom.cdx.json.
+- Datasets used only for evaluation: see DATASET-LICENSES.md.
+- libvips (LGPL-3.0), loaded dynamically through the sharp package: see licenses/LGPL-3.0.txt.

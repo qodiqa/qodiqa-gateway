@@ -1,0 +1,1517 @@
+{
+  "format": "qodiqa-vectors/1",
+  "family": "approval",
+  "spec": "src/core/approvals/approvalToken.js (QODIQA::APPROVAL::V1)",
+  "specVersion": "v2-freeze-1",
+  "generatedBy": "scripts/protocol/gen-approval-vectors.js",
+  "domain": "QODIQA::APPROVAL::V1",
+  "keys": [
+    {
+      "publicKeyId": "tenant-a:key_v1",
+      "clientId": "tenant-a",
+      "publicKeySpkiB64": "MCowBQYDK2VwAyEAokh5D9rEABFvyuLt7TOXIuV/B/tAJEUWp0Wfi9BM/As=",
+      "seedNote": "published test seed: SHA-256(\"QODIQA published approval test seed: <clientId>\")"
+    },
+    {
+      "publicKeyId": "tenant-b:key_v1",
+      "clientId": "tenant-b",
+      "publicKeySpkiB64": "MCowBQYDK2VwAyEAaj53xfFkax824Kpz2SXqXswYSANSB6R9LZYt6VTs34A=",
+      "seedNote": "published test seed: SHA-256(\"QODIQA published approval test seed: <clientId>\")"
+    }
+  ],
+  "cases": [
+    {
+      "id": "APPROVAL-001",
+      "description": "a valid approval",
+      "input": {
+        "envelope": {
+          "expiry": 1800000540000,
+          "payload": {
+            "v": 1,
+            "kind": "approval",
+            "approvalId": "00000003-0000-4000-8000-000000000003",
+            "tenantId": "tenant-a",
+            "actionHash": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+            "agentId": "00000001-0000-4000-8000-000000000001",
+            "sessionId": "00000002-0000-4000-8000-000000000002",
+            "seq": 3,
+            "requesterId": "identity:i-1",
+            "approverId": "bob@example.com",
+            "decision": "APPROVED",
+            "notBefore": 1799999940000,
+            "expiresAt": 1800000540000,
+            "mfa": "step-up",
+            "policyRuleId": "tool:requiresApproval"
+          },
+          "publicKeyId": "tenant-a:key_v1",
+          "signature": "r37GbQjmqJmcJU7aqZNTSkp0t3eUizuQ0pWsvkZWVtrA+f1ueW/so6yp730NLiLm2j5uZKisk39KdqcNOcirCg==",
+          "timestamp": 1799999940000
+        },
+        "now": 1800000000000
+      },
+      "expected": {
+        "ok": true,
+        "digest": "9eeee9d56e65670cb5c477de1aac4241c37cada998b4367865e244a1f3d4ba0e"
+      }
+    },
+    {
+      "id": "APPROVAL-002",
+      "description": "a valid approval, presented for exactly this action",
+      "input": {
+        "envelope": {
+          "expiry": 1800000540000,
+          "payload": {
+            "v": 1,
+            "kind": "approval",
+            "approvalId": "00000003-0000-4000-8000-000000000003",
+            "tenantId": "tenant-a",
+            "actionHash": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+            "agentId": "00000001-0000-4000-8000-000000000001",
+            "sessionId": "00000002-0000-4000-8000-000000000002",
+            "seq": 3,
+            "requesterId": "identity:i-1",
+            "approverId": "bob@example.com",
+            "decision": "APPROVED",
+            "notBefore": 1799999940000,
+            "expiresAt": 1800000540000,
+            "mfa": "step-up",
+            "policyRuleId": "tool:requiresApproval"
+          },
+          "publicKeyId": "tenant-a:key_v1",
+          "signature": "r37GbQjmqJmcJU7aqZNTSkp0t3eUizuQ0pWsvkZWVtrA+f1ueW/so6yp730NLiLm2j5uZKisk39KdqcNOcirCg==",
+          "timestamp": 1799999940000
+        },
+        "now": 1800000000000,
+        "expect": {
+          "actionHash": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+          "tenantId": "tenant-a",
+          "agentId": "00000001-0000-4000-8000-000000000001",
+          "sessionId": "00000002-0000-4000-8000-000000000002",
+          "seq": 3,
+          "approvalId": "00000003-0000-4000-8000-000000000003"
+        }
+      },
+      "expected": {
+        "ok": true,
+        "digest": "9eeee9d56e65670cb5c477de1aac4241c37cada998b4367865e244a1f3d4ba0e"
+      }
+    },
+    {
+      "id": "APPROVAL-003",
+      "description": "valid at the first millisecond of its window",
+      "input": {
+        "envelope": {
+          "expiry": 1800000540000,
+          "payload": {
+            "v": 1,
+            "kind": "approval",
+            "approvalId": "00000003-0000-4000-8000-000000000003",
+            "tenantId": "tenant-a",
+            "actionHash": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+            "agentId": "00000001-0000-4000-8000-000000000001",
+            "sessionId": "00000002-0000-4000-8000-000000000002",
+            "seq": 3,
+            "requesterId": "identity:i-1",
+            "approverId": "bob@example.com",
+            "decision": "APPROVED",
+            "notBefore": 1799999940000,
+            "expiresAt": 1800000540000,
+            "mfa": "step-up",
+            "policyRuleId": "tool:requiresApproval"
+          },
+          "publicKeyId": "tenant-a:key_v1",
+          "signature": "r37GbQjmqJmcJU7aqZNTSkp0t3eUizuQ0pWsvkZWVtrA+f1ueW/so6yp730NLiLm2j5uZKisk39KdqcNOcirCg==",
+          "timestamp": 1799999940000
+        },
+        "now": 1799999940000
+      },
+      "expected": {
+        "ok": true,
+        "digest": "9eeee9d56e65670cb5c477de1aac4241c37cada998b4367865e244a1f3d4ba0e"
+      }
+    },
+    {
+      "id": "APPROVAL-004",
+      "description": "valid one millisecond before it expires",
+      "input": {
+        "envelope": {
+          "expiry": 1800000540000,
+          "payload": {
+            "v": 1,
+            "kind": "approval",
+            "approvalId": "00000003-0000-4000-8000-000000000003",
+            "tenantId": "tenant-a",
+            "actionHash": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+            "agentId": "00000001-0000-4000-8000-000000000001",
+            "sessionId": "00000002-0000-4000-8000-000000000002",
+            "seq": 3,
+            "requesterId": "identity:i-1",
+            "approverId": "bob@example.com",
+            "decision": "APPROVED",
+            "notBefore": 1799999940000,
+            "expiresAt": 1800000540000,
+            "mfa": "step-up",
+            "policyRuleId": "tool:requiresApproval"
+          },
+          "publicKeyId": "tenant-a:key_v1",
+          "signature": "r37GbQjmqJmcJU7aqZNTSkp0t3eUizuQ0pWsvkZWVtrA+f1ueW/so6yp730NLiLm2j5uZKisk39KdqcNOcirCg==",
+          "timestamp": 1799999940000
+        },
+        "now": 1800000539999
+      },
+      "expected": {
+        "ok": true,
+        "digest": "9eeee9d56e65670cb5c477de1aac4241c37cada998b4367865e244a1f3d4ba0e"
+      }
+    },
+    {
+      "id": "APPROVAL-005",
+      "description": "a valid approval with a window that starts later (not yet valid before)",
+      "input": {
+        "envelope": {
+          "expiry": 1800000540000,
+          "payload": {
+            "v": 1,
+            "kind": "approval",
+            "approvalId": "00000003-0000-4000-8000-000000000003",
+            "tenantId": "tenant-a",
+            "actionHash": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+            "agentId": "00000001-0000-4000-8000-000000000001",
+            "sessionId": "00000002-0000-4000-8000-000000000002",
+            "seq": 3,
+            "requesterId": "identity:i-1",
+            "approverId": "bob@example.com",
+            "decision": "APPROVED",
+            "notBefore": 1800000060000,
+            "expiresAt": 1800000540000,
+            "mfa": "step-up",
+            "policyRuleId": "tool:requiresApproval"
+          },
+          "publicKeyId": "tenant-a:key_v1",
+          "signature": "tvbHAX+/zZ9AJcLXauc4KT0c+aECYtE2UxPhV1AoXaSg7O5vU/rKoVKj9fajYsId+h6m2PrS+XTlk+S6x4nfBA==",
+          "timestamp": 1799999940000
+        },
+        "now": 1800000000000
+      },
+      "expected": {
+        "ok": false,
+        "reason": "APPROVAL_INVALID",
+        "detail": "not yet valid"
+      }
+    },
+    {
+      "id": "APPROVAL-006",
+      "description": "the same approval once its window has opened",
+      "input": {
+        "envelope": {
+          "expiry": 1800000540000,
+          "payload": {
+            "v": 1,
+            "kind": "approval",
+            "approvalId": "00000003-0000-4000-8000-000000000003",
+            "tenantId": "tenant-a",
+            "actionHash": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+            "agentId": "00000001-0000-4000-8000-000000000001",
+            "sessionId": "00000002-0000-4000-8000-000000000002",
+            "seq": 3,
+            "requesterId": "identity:i-1",
+            "approverId": "bob@example.com",
+            "decision": "APPROVED",
+            "notBefore": 1800000060000,
+            "expiresAt": 1800000540000,
+            "mfa": "step-up",
+            "policyRuleId": "tool:requiresApproval"
+          },
+          "publicKeyId": "tenant-a:key_v1",
+          "signature": "tvbHAX+/zZ9AJcLXauc4KT0c+aECYtE2UxPhV1AoXaSg7O5vU/rKoVKj9fajYsId+h6m2PrS+XTlk+S6x4nfBA==",
+          "timestamp": 1799999940000
+        },
+        "now": 1800000060000
+      },
+      "expected": {
+        "ok": true,
+        "digest": "7edef32936f232124de0bbbd1de9a63c257ace1244310f758533141db7bf1579"
+      }
+    },
+    {
+      "id": "APPROVAL-007",
+      "description": "a different approver and requester",
+      "input": {
+        "envelope": {
+          "expiry": 1800000540000,
+          "payload": {
+            "v": 1,
+            "kind": "approval",
+            "approvalId": "00000003-0000-4000-8000-000000000003",
+            "tenantId": "tenant-a",
+            "actionHash": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+            "agentId": "00000001-0000-4000-8000-000000000001",
+            "sessionId": "00000002-0000-4000-8000-000000000002",
+            "seq": 3,
+            "requesterId": "identity:i-2",
+            "approverId": "carol",
+            "decision": "APPROVED",
+            "notBefore": 1799999940000,
+            "expiresAt": 1800000540000,
+            "mfa": "step-up",
+            "policyRuleId": "tool:requiresApproval"
+          },
+          "publicKeyId": "tenant-a:key_v1",
+          "signature": "l9e3mPoxYNSEOg4Uf7fJEBTfC6iZ29rvRq9TfmNOwtp7k7tlWDaxlTwYnXdqJyZA0rMpwDkqtCBS5mAqBHB8CA==",
+          "timestamp": 1799999940000
+        },
+        "now": 1800000000000
+      },
+      "expected": {
+        "ok": true,
+        "digest": "339fefbb53cd0216ca3495f752ed876da788db2f0574d9e12eb571ec8164b410"
+      }
+    },
+    {
+      "id": "APPROVAL-008",
+      "description": "expired at the moment of expiry",
+      "input": {
+        "envelope": {
+          "expiry": 1800000540000,
+          "payload": {
+            "v": 1,
+            "kind": "approval",
+            "approvalId": "00000003-0000-4000-8000-000000000003",
+            "tenantId": "tenant-a",
+            "actionHash": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+            "agentId": "00000001-0000-4000-8000-000000000001",
+            "sessionId": "00000002-0000-4000-8000-000000000002",
+            "seq": 3,
+            "requesterId": "identity:i-1",
+            "approverId": "bob@example.com",
+            "decision": "APPROVED",
+            "notBefore": 1799999940000,
+            "expiresAt": 1800000540000,
+            "mfa": "step-up",
+            "policyRuleId": "tool:requiresApproval"
+          },
+          "publicKeyId": "tenant-a:key_v1",
+          "signature": "r37GbQjmqJmcJU7aqZNTSkp0t3eUizuQ0pWsvkZWVtrA+f1ueW/so6yp730NLiLm2j5uZKisk39KdqcNOcirCg==",
+          "timestamp": 1799999940000
+        },
+        "now": 1800000540000
+      },
+      "expected": {
+        "ok": false,
+        "reason": "APPROVAL_EXPIRED"
+      }
+    },
+    {
+      "id": "APPROVAL-009",
+      "description": "expired long ago",
+      "input": {
+        "envelope": {
+          "expiry": 1800000540000,
+          "payload": {
+            "v": 1,
+            "kind": "approval",
+            "approvalId": "00000003-0000-4000-8000-000000000003",
+            "tenantId": "tenant-a",
+            "actionHash": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+            "agentId": "00000001-0000-4000-8000-000000000001",
+            "sessionId": "00000002-0000-4000-8000-000000000002",
+            "seq": 3,
+            "requesterId": "identity:i-1",
+            "approverId": "bob@example.com",
+            "decision": "APPROVED",
+            "notBefore": 1799999940000,
+            "expiresAt": 1800000540000,
+            "mfa": "step-up",
+            "policyRuleId": "tool:requiresApproval"
+          },
+          "publicKeyId": "tenant-a:key_v1",
+          "signature": "r37GbQjmqJmcJU7aqZNTSkp0t3eUizuQ0pWsvkZWVtrA+f1ueW/so6yp730NLiLm2j5uZKisk39KdqcNOcirCg==",
+          "timestamp": 1799999940000
+        },
+        "now": 1800003600000
+      },
+      "expected": {
+        "ok": false,
+        "reason": "APPROVAL_EXPIRED"
+      }
+    },
+    {
+      "id": "APPROVAL-010",
+      "description": "decided in the future",
+      "input": {
+        "envelope": {
+          "expiry": 1800001200000,
+          "payload": {
+            "v": 1,
+            "kind": "approval",
+            "approvalId": "00000003-0000-4000-8000-000000000003",
+            "tenantId": "tenant-a",
+            "actionHash": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+            "agentId": "00000001-0000-4000-8000-000000000001",
+            "sessionId": "00000002-0000-4000-8000-000000000002",
+            "seq": 3,
+            "requesterId": "identity:i-1",
+            "approverId": "bob@example.com",
+            "decision": "APPROVED",
+            "notBefore": 1799999940000,
+            "expiresAt": 1800001200000,
+            "mfa": "step-up",
+            "policyRuleId": "tool:requiresApproval"
+          },
+          "publicKeyId": "tenant-a:key_v1",
+          "signature": "sI8YqBxkQJlr4aqC4V0SY7i1g8qHWlnryfyEzPXrI/340yxPYVVvPvLmpx8m1F+wBaW9JFiUIUTtQxP1jkjsDA==",
+          "timestamp": 1800000600000
+        },
+        "now": 1800000000000
+      },
+      "expected": {
+        "ok": false,
+        "reason": "APPROVAL_INVALID",
+        "detail": "decided in the future"
+      }
+    },
+    {
+      "id": "APPROVAL-011",
+      "description": "denied (a signed refusal is evidence, not an approval)",
+      "input": {
+        "envelope": {
+          "expiry": 1800000540000,
+          "payload": {
+            "v": 1,
+            "kind": "approval",
+            "approvalId": "00000003-0000-4000-8000-000000000003",
+            "tenantId": "tenant-a",
+            "actionHash": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+            "agentId": "00000001-0000-4000-8000-000000000001",
+            "sessionId": "00000002-0000-4000-8000-000000000002",
+            "seq": 3,
+            "requesterId": "identity:i-1",
+            "approverId": "bob@example.com",
+            "decision": "DENIED",
+            "notBefore": 1799999940000,
+            "expiresAt": 1800000540000,
+            "mfa": "step-up",
+            "policyRuleId": "tool:requiresApproval"
+          },
+          "publicKeyId": "tenant-a:key_v1",
+          "signature": "Wj5V07iu6BNfrt12J9+YcQ08UGjnhVmzBYOZWCBJEgPzsQg8TGVq5brfmFRM974o4zvwa/Z0ZA9Fg67GJimcCA==",
+          "timestamp": 1799999940000
+        },
+        "now": 1800000000000
+      },
+      "expected": {
+        "ok": false,
+        "reason": "APPROVAL_INVALID",
+        "detail": "denied"
+      }
+    },
+    {
+      "id": "APPROVAL-012",
+      "description": "presented for another actionHash",
+      "input": {
+        "envelope": {
+          "expiry": 1800000540000,
+          "payload": {
+            "v": 1,
+            "kind": "approval",
+            "approvalId": "00000003-0000-4000-8000-000000000003",
+            "tenantId": "tenant-a",
+            "actionHash": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+            "agentId": "00000001-0000-4000-8000-000000000001",
+            "sessionId": "00000002-0000-4000-8000-000000000002",
+            "seq": 3,
+            "requesterId": "identity:i-1",
+            "approverId": "bob@example.com",
+            "decision": "APPROVED",
+            "notBefore": 1799999940000,
+            "expiresAt": 1800000540000,
+            "mfa": "step-up",
+            "policyRuleId": "tool:requiresApproval"
+          },
+          "publicKeyId": "tenant-a:key_v1",
+          "signature": "r37GbQjmqJmcJU7aqZNTSkp0t3eUizuQ0pWsvkZWVtrA+f1ueW/so6yp730NLiLm2j5uZKisk39KdqcNOcirCg==",
+          "timestamp": 1799999940000
+        },
+        "now": 1800000000000,
+        "expect": {
+          "actionHash": "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+          "tenantId": "tenant-a",
+          "agentId": "00000001-0000-4000-8000-000000000001",
+          "sessionId": "00000002-0000-4000-8000-000000000002",
+          "seq": 3,
+          "approvalId": "00000003-0000-4000-8000-000000000003"
+        }
+      },
+      "expected": {
+        "ok": false,
+        "reason": "APPROVAL_INVALID",
+        "detail": "not for this actionHash"
+      }
+    },
+    {
+      "id": "APPROVAL-013",
+      "description": "presented for another tenant",
+      "input": {
+        "envelope": {
+          "expiry": 1800000540000,
+          "payload": {
+            "v": 1,
+            "kind": "approval",
+            "approvalId": "00000003-0000-4000-8000-000000000003",
+            "tenantId": "tenant-a",
+            "actionHash": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+            "agentId": "00000001-0000-4000-8000-000000000001",
+            "sessionId": "00000002-0000-4000-8000-000000000002",
+            "seq": 3,
+            "requesterId": "identity:i-1",
+            "approverId": "bob@example.com",
+            "decision": "APPROVED",
+            "notBefore": 1799999940000,
+            "expiresAt": 1800000540000,
+            "mfa": "step-up",
+            "policyRuleId": "tool:requiresApproval"
+          },
+          "publicKeyId": "tenant-a:key_v1",
+          "signature": "r37GbQjmqJmcJU7aqZNTSkp0t3eUizuQ0pWsvkZWVtrA+f1ueW/so6yp730NLiLm2j5uZKisk39KdqcNOcirCg==",
+          "timestamp": 1799999940000
+        },
+        "now": 1800000000000,
+        "expect": {
+          "actionHash": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+          "tenantId": "tenant-b",
+          "agentId": "00000001-0000-4000-8000-000000000001",
+          "sessionId": "00000002-0000-4000-8000-000000000002",
+          "seq": 3,
+          "approvalId": "00000003-0000-4000-8000-000000000003"
+        }
+      },
+      "expected": {
+        "ok": false,
+        "reason": "APPROVAL_INVALID",
+        "detail": "not for this tenantId"
+      }
+    },
+    {
+      "id": "APPROVAL-014",
+      "description": "presented for another agent",
+      "input": {
+        "envelope": {
+          "expiry": 1800000540000,
+          "payload": {
+            "v": 1,
+            "kind": "approval",
+            "approvalId": "00000003-0000-4000-8000-000000000003",
+            "tenantId": "tenant-a",
+            "actionHash": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+            "agentId": "00000001-0000-4000-8000-000000000001",
+            "sessionId": "00000002-0000-4000-8000-000000000002",
+            "seq": 3,
+            "requesterId": "identity:i-1",
+            "approverId": "bob@example.com",
+            "decision": "APPROVED",
+            "notBefore": 1799999940000,
+            "expiresAt": 1800000540000,
+            "mfa": "step-up",
+            "policyRuleId": "tool:requiresApproval"
+          },
+          "publicKeyId": "tenant-a:key_v1",
+          "signature": "r37GbQjmqJmcJU7aqZNTSkp0t3eUizuQ0pWsvkZWVtrA+f1ueW/so6yp730NLiLm2j5uZKisk39KdqcNOcirCg==",
+          "timestamp": 1799999940000
+        },
+        "now": 1800000000000,
+        "expect": {
+          "actionHash": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+          "tenantId": "tenant-a",
+          "agentId": "00000009-0000-4000-8000-000000000009",
+          "sessionId": "00000002-0000-4000-8000-000000000002",
+          "seq": 3,
+          "approvalId": "00000003-0000-4000-8000-000000000003"
+        }
+      },
+      "expected": {
+        "ok": false,
+        "reason": "APPROVAL_INVALID",
+        "detail": "not for this agentId"
+      }
+    },
+    {
+      "id": "APPROVAL-015",
+      "description": "presented for another session",
+      "input": {
+        "envelope": {
+          "expiry": 1800000540000,
+          "payload": {
+            "v": 1,
+            "kind": "approval",
+            "approvalId": "00000003-0000-4000-8000-000000000003",
+            "tenantId": "tenant-a",
+            "actionHash": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+            "agentId": "00000001-0000-4000-8000-000000000001",
+            "sessionId": "00000002-0000-4000-8000-000000000002",
+            "seq": 3,
+            "requesterId": "identity:i-1",
+            "approverId": "bob@example.com",
+            "decision": "APPROVED",
+            "notBefore": 1799999940000,
+            "expiresAt": 1800000540000,
+            "mfa": "step-up",
+            "policyRuleId": "tool:requiresApproval"
+          },
+          "publicKeyId": "tenant-a:key_v1",
+          "signature": "r37GbQjmqJmcJU7aqZNTSkp0t3eUizuQ0pWsvkZWVtrA+f1ueW/so6yp730NLiLm2j5uZKisk39KdqcNOcirCg==",
+          "timestamp": 1799999940000
+        },
+        "now": 1800000000000,
+        "expect": {
+          "actionHash": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+          "tenantId": "tenant-a",
+          "agentId": "00000001-0000-4000-8000-000000000001",
+          "sessionId": "00000009-0000-4000-8000-000000000009",
+          "seq": 3,
+          "approvalId": "00000003-0000-4000-8000-000000000003"
+        }
+      },
+      "expected": {
+        "ok": false,
+        "reason": "APPROVAL_INVALID",
+        "detail": "not for this sessionId"
+      }
+    },
+    {
+      "id": "APPROVAL-016",
+      "description": "presented for another position in the session",
+      "input": {
+        "envelope": {
+          "expiry": 1800000540000,
+          "payload": {
+            "v": 1,
+            "kind": "approval",
+            "approvalId": "00000003-0000-4000-8000-000000000003",
+            "tenantId": "tenant-a",
+            "actionHash": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+            "agentId": "00000001-0000-4000-8000-000000000001",
+            "sessionId": "00000002-0000-4000-8000-000000000002",
+            "seq": 3,
+            "requesterId": "identity:i-1",
+            "approverId": "bob@example.com",
+            "decision": "APPROVED",
+            "notBefore": 1799999940000,
+            "expiresAt": 1800000540000,
+            "mfa": "step-up",
+            "policyRuleId": "tool:requiresApproval"
+          },
+          "publicKeyId": "tenant-a:key_v1",
+          "signature": "r37GbQjmqJmcJU7aqZNTSkp0t3eUizuQ0pWsvkZWVtrA+f1ueW/so6yp730NLiLm2j5uZKisk39KdqcNOcirCg==",
+          "timestamp": 1799999940000
+        },
+        "now": 1800000000000,
+        "expect": {
+          "actionHash": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+          "tenantId": "tenant-a",
+          "agentId": "00000001-0000-4000-8000-000000000001",
+          "sessionId": "00000002-0000-4000-8000-000000000002",
+          "seq": 4,
+          "approvalId": "00000003-0000-4000-8000-000000000003"
+        }
+      },
+      "expected": {
+        "ok": false,
+        "reason": "APPROVAL_INVALID",
+        "detail": "not for this seq"
+      }
+    },
+    {
+      "id": "APPROVAL-017",
+      "description": "presented for another approval id",
+      "input": {
+        "envelope": {
+          "expiry": 1800000540000,
+          "payload": {
+            "v": 1,
+            "kind": "approval",
+            "approvalId": "00000003-0000-4000-8000-000000000003",
+            "tenantId": "tenant-a",
+            "actionHash": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+            "agentId": "00000001-0000-4000-8000-000000000001",
+            "sessionId": "00000002-0000-4000-8000-000000000002",
+            "seq": 3,
+            "requesterId": "identity:i-1",
+            "approverId": "bob@example.com",
+            "decision": "APPROVED",
+            "notBefore": 1799999940000,
+            "expiresAt": 1800000540000,
+            "mfa": "step-up",
+            "policyRuleId": "tool:requiresApproval"
+          },
+          "publicKeyId": "tenant-a:key_v1",
+          "signature": "r37GbQjmqJmcJU7aqZNTSkp0t3eUizuQ0pWsvkZWVtrA+f1ueW/so6yp730NLiLm2j5uZKisk39KdqcNOcirCg==",
+          "timestamp": 1799999940000
+        },
+        "now": 1800000000000,
+        "expect": {
+          "actionHash": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+          "tenantId": "tenant-a",
+          "agentId": "00000001-0000-4000-8000-000000000001",
+          "sessionId": "00000002-0000-4000-8000-000000000002",
+          "seq": 3,
+          "approvalId": "00000009-0000-4000-8000-000000000009"
+        }
+      },
+      "expected": {
+        "ok": false,
+        "reason": "APPROVAL_INVALID",
+        "detail": "not for this approvalId"
+      }
+    },
+    {
+      "id": "APPROVAL-018",
+      "description": "payload altered after signing: the action hash",
+      "input": {
+        "envelope": {
+          "expiry": 1800000540000,
+          "payload": {
+            "v": 1,
+            "kind": "approval",
+            "approvalId": "00000003-0000-4000-8000-000000000003",
+            "tenantId": "tenant-a",
+            "actionHash": "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+            "agentId": "00000001-0000-4000-8000-000000000001",
+            "sessionId": "00000002-0000-4000-8000-000000000002",
+            "seq": 3,
+            "requesterId": "identity:i-1",
+            "approverId": "bob@example.com",
+            "decision": "APPROVED",
+            "notBefore": 1799999940000,
+            "expiresAt": 1800000540000,
+            "mfa": "step-up",
+            "policyRuleId": "tool:requiresApproval"
+          },
+          "publicKeyId": "tenant-a:key_v1",
+          "signature": "r37GbQjmqJmcJU7aqZNTSkp0t3eUizuQ0pWsvkZWVtrA+f1ueW/so6yp730NLiLm2j5uZKisk39KdqcNOcirCg==",
+          "timestamp": 1799999940000
+        },
+        "now": 1800000000000
+      },
+      "expected": {
+        "ok": false,
+        "reason": "APPROVAL_INVALID",
+        "detail": "signature"
+      }
+    },
+    {
+      "id": "APPROVAL-019",
+      "description": "payload altered after signing: the approver",
+      "input": {
+        "envelope": {
+          "expiry": 1800000540000,
+          "payload": {
+            "v": 1,
+            "kind": "approval",
+            "approvalId": "00000003-0000-4000-8000-000000000003",
+            "tenantId": "tenant-a",
+            "actionHash": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+            "agentId": "00000001-0000-4000-8000-000000000001",
+            "sessionId": "00000002-0000-4000-8000-000000000002",
+            "seq": 3,
+            "requesterId": "identity:i-1",
+            "approverId": "mallory",
+            "decision": "APPROVED",
+            "notBefore": 1799999940000,
+            "expiresAt": 1800000540000,
+            "mfa": "step-up",
+            "policyRuleId": "tool:requiresApproval"
+          },
+          "publicKeyId": "tenant-a:key_v1",
+          "signature": "r37GbQjmqJmcJU7aqZNTSkp0t3eUizuQ0pWsvkZWVtrA+f1ueW/so6yp730NLiLm2j5uZKisk39KdqcNOcirCg==",
+          "timestamp": 1799999940000
+        },
+        "now": 1800000000000
+      },
+      "expected": {
+        "ok": false,
+        "reason": "APPROVAL_INVALID",
+        "detail": "signature"
+      }
+    },
+    {
+      "id": "APPROVAL-020",
+      "description": "payload altered after signing: the window extended",
+      "input": {
+        "envelope": {
+          "expiry": 1800000600000,
+          "payload": {
+            "v": 1,
+            "kind": "approval",
+            "approvalId": "00000003-0000-4000-8000-000000000003",
+            "tenantId": "tenant-a",
+            "actionHash": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+            "agentId": "00000001-0000-4000-8000-000000000001",
+            "sessionId": "00000002-0000-4000-8000-000000000002",
+            "seq": 3,
+            "requesterId": "identity:i-1",
+            "approverId": "bob@example.com",
+            "decision": "APPROVED",
+            "notBefore": 1799999940000,
+            "expiresAt": 1800000600000,
+            "mfa": "step-up",
+            "policyRuleId": "tool:requiresApproval"
+          },
+          "publicKeyId": "tenant-a:key_v1",
+          "signature": "r37GbQjmqJmcJU7aqZNTSkp0t3eUizuQ0pWsvkZWVtrA+f1ueW/so6yp730NLiLm2j5uZKisk39KdqcNOcirCg==",
+          "timestamp": 1799999940000
+        },
+        "now": 1800000000000
+      },
+      "expected": {
+        "ok": false,
+        "reason": "APPROVAL_INVALID",
+        "detail": "signature"
+      }
+    },
+    {
+      "id": "APPROVAL-021",
+      "description": "timestamp altered after signing",
+      "input": {
+        "envelope": {
+          "expiry": 1800000540000,
+          "payload": {
+            "v": 1,
+            "kind": "approval",
+            "approvalId": "00000003-0000-4000-8000-000000000003",
+            "tenantId": "tenant-a",
+            "actionHash": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+            "agentId": "00000001-0000-4000-8000-000000000001",
+            "sessionId": "00000002-0000-4000-8000-000000000002",
+            "seq": 3,
+            "requesterId": "identity:i-1",
+            "approverId": "bob@example.com",
+            "decision": "APPROVED",
+            "notBefore": 1799999940000,
+            "expiresAt": 1800000540000,
+            "mfa": "step-up",
+            "policyRuleId": "tool:requiresApproval"
+          },
+          "publicKeyId": "tenant-a:key_v1",
+          "signature": "r37GbQjmqJmcJU7aqZNTSkp0t3eUizuQ0pWsvkZWVtrA+f1ueW/so6yp730NLiLm2j5uZKisk39KdqcNOcirCg==",
+          "timestamp": 1799999940001
+        },
+        "now": 1800000000000
+      },
+      "expected": {
+        "ok": false,
+        "reason": "APPROVAL_INVALID",
+        "detail": "signature"
+      }
+    },
+    {
+      "id": "APPROVAL-022",
+      "description": "signature altered",
+      "input": {
+        "envelope": {
+          "expiry": 1800000540000,
+          "payload": {
+            "v": 1,
+            "kind": "approval",
+            "approvalId": "00000003-0000-4000-8000-000000000003",
+            "tenantId": "tenant-a",
+            "actionHash": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+            "agentId": "00000001-0000-4000-8000-000000000001",
+            "sessionId": "00000002-0000-4000-8000-000000000002",
+            "seq": 3,
+            "requesterId": "identity:i-1",
+            "approverId": "bob@example.com",
+            "decision": "APPROVED",
+            "notBefore": 1799999940000,
+            "expiresAt": 1800000540000,
+            "mfa": "step-up",
+            "policyRuleId": "tool:requiresApproval"
+          },
+          "publicKeyId": "tenant-a:key_v1",
+          "signature": "r37GbQjmqJAcJU7aqZNTSkp0t3eUizuQ0pWsvkZWVtrA+f1ueW/so6yp730NLiLm2j5uZKisk39KdqcNOcirCg==",
+          "timestamp": 1799999940000
+        },
+        "now": 1800000000000
+      },
+      "expected": {
+        "ok": false,
+        "reason": "APPROVAL_INVALID",
+        "detail": "signature"
+      }
+    },
+    {
+      "id": "APPROVAL-023",
+      "description": "signature with non-canonical encoding (no padding)",
+      "input": {
+        "envelope": {
+          "expiry": 1800000540000,
+          "payload": {
+            "v": 1,
+            "kind": "approval",
+            "approvalId": "00000003-0000-4000-8000-000000000003",
+            "tenantId": "tenant-a",
+            "actionHash": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+            "agentId": "00000001-0000-4000-8000-000000000001",
+            "sessionId": "00000002-0000-4000-8000-000000000002",
+            "seq": 3,
+            "requesterId": "identity:i-1",
+            "approverId": "bob@example.com",
+            "decision": "APPROVED",
+            "notBefore": 1799999940000,
+            "expiresAt": 1800000540000,
+            "mfa": "step-up",
+            "policyRuleId": "tool:requiresApproval"
+          },
+          "publicKeyId": "tenant-a:key_v1",
+          "signature": "r37GbQjmqJmcJU7aqZNTSkp0t3eUizuQ0pWsvkZWVtrA+f1ueW/so6yp730NLiLm2j5uZKisk39KdqcNOcirCg",
+          "timestamp": 1799999940000
+        },
+        "now": 1800000000000
+      },
+      "expected": {
+        "ok": false,
+        "reason": "APPROVAL_INVALID",
+        "detail": "shape"
+      }
+    },
+    {
+      "id": "APPROVAL-024",
+      "description": "signed by a key that is not the tenant key",
+      "input": {
+        "envelope": {
+          "expiry": 1800000540000,
+          "payload": {
+            "v": 1,
+            "kind": "approval",
+            "approvalId": "00000003-0000-4000-8000-000000000003",
+            "tenantId": "tenant-a",
+            "actionHash": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+            "agentId": "00000001-0000-4000-8000-000000000001",
+            "sessionId": "00000002-0000-4000-8000-000000000002",
+            "seq": 3,
+            "requesterId": "identity:i-1",
+            "approverId": "bob@example.com",
+            "decision": "APPROVED",
+            "notBefore": 1799999940000,
+            "expiresAt": 1800000540000,
+            "mfa": "step-up",
+            "policyRuleId": "tool:requiresApproval"
+          },
+          "publicKeyId": "tenant-a:key_v1",
+          "signature": "N/GmI1OD73vupw6qQAtb7xXx0XR01Tp2E0Z7dZQOBiG3V3wFwa1i2zmet3jNtrNcvkS0bQrlZqYhfxIfGfXECQ==",
+          "timestamp": 1799999940000
+        },
+        "now": 1800000000000
+      },
+      "expected": {
+        "ok": false,
+        "reason": "APPROVAL_INVALID",
+        "detail": "signature"
+      }
+    },
+    {
+      "id": "APPROVAL-025",
+      "description": "a key id nobody knows",
+      "input": {
+        "envelope": {
+          "expiry": 1800000540000,
+          "payload": {
+            "v": 1,
+            "kind": "approval",
+            "approvalId": "00000003-0000-4000-8000-000000000003",
+            "tenantId": "tenant-a",
+            "actionHash": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+            "agentId": "00000001-0000-4000-8000-000000000001",
+            "sessionId": "00000002-0000-4000-8000-000000000002",
+            "seq": 3,
+            "requesterId": "identity:i-1",
+            "approverId": "bob@example.com",
+            "decision": "APPROVED",
+            "notBefore": 1799999940000,
+            "expiresAt": 1800000540000,
+            "mfa": "step-up",
+            "policyRuleId": "tool:requiresApproval"
+          },
+          "publicKeyId": "tenant-z:key_v1",
+          "signature": "r37GbQjmqJmcJU7aqZNTSkp0t3eUizuQ0pWsvkZWVtrA+f1ueW/so6yp730NLiLm2j5uZKisk39KdqcNOcirCg==",
+          "timestamp": 1799999940000
+        },
+        "now": 1800000000000
+      },
+      "expected": {
+        "ok": false,
+        "reason": "APPROVAL_INVALID",
+        "detail": "signature"
+      }
+    },
+    {
+      "id": "APPROVAL-026",
+      "description": "signed with another tenant's key for this tenant",
+      "input": {
+        "envelope": {
+          "expiry": 1800000540000,
+          "payload": {
+            "v": 1,
+            "kind": "approval",
+            "approvalId": "00000003-0000-4000-8000-000000000003",
+            "tenantId": "tenant-a",
+            "actionHash": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+            "agentId": "00000001-0000-4000-8000-000000000001",
+            "sessionId": "00000002-0000-4000-8000-000000000002",
+            "seq": 3,
+            "requesterId": "identity:i-1",
+            "approverId": "bob@example.com",
+            "decision": "APPROVED",
+            "notBefore": 1799999940000,
+            "expiresAt": 1800000540000,
+            "mfa": "step-up",
+            "policyRuleId": "tool:requiresApproval"
+          },
+          "publicKeyId": "tenant-b:key_v1",
+          "signature": "gtXYx+73AV5R03mJuE55DPqN8P6s6v+lkx3TSYcOjx/DuBry3HIa5dY/bJjByCP8+h7PePfhGAIO1NBTFni7Dg==",
+          "timestamp": 1799999940000
+        },
+        "now": 1800000000000
+      },
+      "expected": {
+        "ok": false,
+        "reason": "APPROVAL_INVALID",
+        "detail": "tenant"
+      }
+    },
+    {
+      "id": "APPROVAL-027",
+      "description": "approved by the requester (approver equals requester)",
+      "input": {
+        "envelope": {
+          "expiry": 1800000540000,
+          "payload": {
+            "v": 1,
+            "kind": "approval",
+            "approvalId": "00000003-0000-4000-8000-000000000003",
+            "tenantId": "tenant-a",
+            "actionHash": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+            "agentId": "00000001-0000-4000-8000-000000000001",
+            "sessionId": "00000002-0000-4000-8000-000000000002",
+            "seq": 3,
+            "requesterId": "identity:i-1",
+            "approverId": "identity:i-1",
+            "decision": "APPROVED",
+            "notBefore": 1799999940000,
+            "expiresAt": 1800000540000,
+            "mfa": "step-up",
+            "policyRuleId": "tool:requiresApproval"
+          },
+          "publicKeyId": "tenant-a:key_v1",
+          "signature": "HI/rEx9PNfg3renkDSgd/Zsnn+AkWCPTjrnlE00tseReZuMRMYdsZ67zo0zrov/tdKxWAadwYJ11mv00zTyHBw==",
+          "timestamp": 1799999940000
+        },
+        "now": 1800000000000
+      },
+      "expected": {
+        "ok": false,
+        "reason": "APPROVAL_INVALID",
+        "detail": "the approver is the requester"
+      }
+    },
+    {
+      "id": "APPROVAL-028",
+      "description": "envelope with an extra member",
+      "input": {
+        "envelope": {
+          "expiry": 1800000540000,
+          "payload": {
+            "v": 1,
+            "kind": "approval",
+            "approvalId": "00000003-0000-4000-8000-000000000003",
+            "tenantId": "tenant-a",
+            "actionHash": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+            "agentId": "00000001-0000-4000-8000-000000000001",
+            "sessionId": "00000002-0000-4000-8000-000000000002",
+            "seq": 3,
+            "requesterId": "identity:i-1",
+            "approverId": "bob@example.com",
+            "decision": "APPROVED",
+            "notBefore": 1799999940000,
+            "expiresAt": 1800000540000,
+            "mfa": "step-up",
+            "policyRuleId": "tool:requiresApproval"
+          },
+          "publicKeyId": "tenant-a:key_v1",
+          "signature": "r37GbQjmqJmcJU7aqZNTSkp0t3eUizuQ0pWsvkZWVtrA+f1ueW/so6yp730NLiLm2j5uZKisk39KdqcNOcirCg==",
+          "timestamp": 1799999940000,
+          "note": "x"
+        },
+        "now": 1800000000000
+      },
+      "expected": {
+        "ok": false,
+        "reason": "APPROVAL_INVALID",
+        "detail": "shape"
+      }
+    },
+    {
+      "id": "APPROVAL-029",
+      "description": "payload with an extra member",
+      "input": {
+        "envelope": {
+          "expiry": 1800000540000,
+          "payload": {
+            "v": 1,
+            "kind": "approval",
+            "approvalId": "00000003-0000-4000-8000-000000000003",
+            "tenantId": "tenant-a",
+            "actionHash": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+            "agentId": "00000001-0000-4000-8000-000000000001",
+            "sessionId": "00000002-0000-4000-8000-000000000002",
+            "seq": 3,
+            "requesterId": "identity:i-1",
+            "approverId": "bob@example.com",
+            "decision": "APPROVED",
+            "notBefore": 1799999940000,
+            "expiresAt": 1800000540000,
+            "mfa": "step-up",
+            "policyRuleId": "tool:requiresApproval",
+            "note": "x"
+          },
+          "publicKeyId": "tenant-a:key_v1",
+          "signature": "jQa34sAdAANTXiO9r/SPBkGW8XwU5ysIonR2ANRa1HMblE4btke8+XK5AeN5WXd8JJfq4/yGnytZjHjHgu46Dg==",
+          "timestamp": 1799999940000
+        },
+        "now": 1800000000000
+      },
+      "expected": {
+        "ok": false,
+        "reason": "APPROVAL_INVALID",
+        "detail": "shape"
+      }
+    },
+    {
+      "id": "APPROVAL-030",
+      "description": "payload missing a member",
+      "input": {
+        "envelope": {
+          "expiry": 1800000540000,
+          "payload": {
+            "v": 1,
+            "kind": "approval",
+            "approvalId": "00000003-0000-4000-8000-000000000003",
+            "tenantId": "tenant-a",
+            "actionHash": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+            "agentId": "00000001-0000-4000-8000-000000000001",
+            "sessionId": "00000002-0000-4000-8000-000000000002",
+            "seq": 3,
+            "requesterId": "identity:i-1",
+            "approverId": "bob@example.com",
+            "decision": "APPROVED",
+            "notBefore": 1799999940000,
+            "expiresAt": 1800000540000,
+            "mfa": "step-up"
+          },
+          "publicKeyId": "tenant-a:key_v1",
+          "signature": "Dl3u/KLlWq4DwVr1K2XJH1aLnOmdw60z6vODBFSMNvQ8X/ITcfQoGTpfE/xVi27fugw3Vahnee7DGuygQA05Aw==",
+          "timestamp": 1799999940000
+        },
+        "now": 1800000000000
+      },
+      "expected": {
+        "ok": false,
+        "reason": "APPROVAL_INVALID",
+        "detail": "shape"
+      }
+    },
+    {
+      "id": "APPROVAL-031",
+      "description": "wrong kind",
+      "input": {
+        "envelope": {
+          "expiry": 1800000540000,
+          "payload": {
+            "v": 1,
+            "kind": "delegation",
+            "approvalId": "00000003-0000-4000-8000-000000000003",
+            "tenantId": "tenant-a",
+            "actionHash": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+            "agentId": "00000001-0000-4000-8000-000000000001",
+            "sessionId": "00000002-0000-4000-8000-000000000002",
+            "seq": 3,
+            "requesterId": "identity:i-1",
+            "approverId": "bob@example.com",
+            "decision": "APPROVED",
+            "notBefore": 1799999940000,
+            "expiresAt": 1800000540000,
+            "mfa": "step-up",
+            "policyRuleId": "tool:requiresApproval"
+          },
+          "publicKeyId": "tenant-a:key_v1",
+          "signature": "9HdbpaTv8FL7+QeCCbZOi5fvlaz2cDQUmfTwlP2cpM+NKag4C/NWhL/t1g8HB63bMGdGIyJXNoDeuDCRjmXBCA==",
+          "timestamp": 1799999940000
+        },
+        "now": 1800000000000
+      },
+      "expected": {
+        "ok": false,
+        "reason": "APPROVAL_INVALID",
+        "detail": "shape"
+      }
+    },
+    {
+      "id": "APPROVAL-032",
+      "description": "wrong version",
+      "input": {
+        "envelope": {
+          "expiry": 1800000540000,
+          "payload": {
+            "v": 2,
+            "kind": "approval",
+            "approvalId": "00000003-0000-4000-8000-000000000003",
+            "tenantId": "tenant-a",
+            "actionHash": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+            "agentId": "00000001-0000-4000-8000-000000000001",
+            "sessionId": "00000002-0000-4000-8000-000000000002",
+            "seq": 3,
+            "requesterId": "identity:i-1",
+            "approverId": "bob@example.com",
+            "decision": "APPROVED",
+            "notBefore": 1799999940000,
+            "expiresAt": 1800000540000,
+            "mfa": "step-up",
+            "policyRuleId": "tool:requiresApproval"
+          },
+          "publicKeyId": "tenant-a:key_v1",
+          "signature": "e9b7jz1+jANluN596ctNLNfOEHMAVDH6FiWWZrGN3oOokDM3fEGae3ug7YVTrtyhGc8Y8iLF46JJy35Vd1NTCg==",
+          "timestamp": 1799999940000
+        },
+        "now": 1800000000000
+      },
+      "expected": {
+        "ok": false,
+        "reason": "APPROVAL_INVALID",
+        "detail": "shape"
+      }
+    },
+    {
+      "id": "APPROVAL-033",
+      "description": "seq 0",
+      "input": {
+        "envelope": {
+          "expiry": 1800000540000,
+          "payload": {
+            "v": 1,
+            "kind": "approval",
+            "approvalId": "00000003-0000-4000-8000-000000000003",
+            "tenantId": "tenant-a",
+            "actionHash": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+            "agentId": "00000001-0000-4000-8000-000000000001",
+            "sessionId": "00000002-0000-4000-8000-000000000002",
+            "seq": 0,
+            "requesterId": "identity:i-1",
+            "approverId": "bob@example.com",
+            "decision": "APPROVED",
+            "notBefore": 1799999940000,
+            "expiresAt": 1800000540000,
+            "mfa": "step-up",
+            "policyRuleId": "tool:requiresApproval"
+          },
+          "publicKeyId": "tenant-a:key_v1",
+          "signature": "4lnDCAXJaLyaXRmGkO1qPZ7bwcSsr8TdQG8UlA3B9Nl0BIoiRwFbtNiSDwHbZFWlmb7e8b9QQAu+L1pCleAyBw==",
+          "timestamp": 1799999940000
+        },
+        "now": 1800000000000
+      },
+      "expected": {
+        "ok": false,
+        "reason": "APPROVAL_INVALID",
+        "detail": "shape"
+      }
+    },
+    {
+      "id": "APPROVAL-034",
+      "description": "seq as a string",
+      "input": {
+        "envelope": {
+          "expiry": 1800000540000,
+          "payload": {
+            "v": 1,
+            "kind": "approval",
+            "approvalId": "00000003-0000-4000-8000-000000000003",
+            "tenantId": "tenant-a",
+            "actionHash": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+            "agentId": "00000001-0000-4000-8000-000000000001",
+            "sessionId": "00000002-0000-4000-8000-000000000002",
+            "seq": "3",
+            "requesterId": "identity:i-1",
+            "approverId": "bob@example.com",
+            "decision": "APPROVED",
+            "notBefore": 1799999940000,
+            "expiresAt": 1800000540000,
+            "mfa": "step-up",
+            "policyRuleId": "tool:requiresApproval"
+          },
+          "publicKeyId": "tenant-a:key_v1",
+          "signature": "qTKoomhcmuLx50TkKK5tQya7rSHQRRnXePMHsAgLvDzgxx7qm91KFcqFUiuJ87dBqxpmq/f+huv3q+r34BcJDg==",
+          "timestamp": 1799999940000
+        },
+        "now": 1800000000000
+      },
+      "expected": {
+        "ok": false,
+        "reason": "APPROVAL_INVALID",
+        "detail": "shape"
+      }
+    },
+    {
+      "id": "APPROVAL-035",
+      "description": "action hash in upper case",
+      "input": {
+        "envelope": {
+          "expiry": 1800000540000,
+          "payload": {
+            "v": 1,
+            "kind": "approval",
+            "approvalId": "00000003-0000-4000-8000-000000000003",
+            "tenantId": "tenant-a",
+            "actionHash": "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA",
+            "agentId": "00000001-0000-4000-8000-000000000001",
+            "sessionId": "00000002-0000-4000-8000-000000000002",
+            "seq": 3,
+            "requesterId": "identity:i-1",
+            "approverId": "bob@example.com",
+            "decision": "APPROVED",
+            "notBefore": 1799999940000,
+            "expiresAt": 1800000540000,
+            "mfa": "step-up",
+            "policyRuleId": "tool:requiresApproval"
+          },
+          "publicKeyId": "tenant-a:key_v1",
+          "signature": "9RZtASGTQ8L6CABoMaCShkMVhHtJaVHYIbntBvHpFtBIVIDjP6gyfsq4BgauqjxwualN5C+WrHd47vswu7KjCQ==",
+          "timestamp": 1799999940000
+        },
+        "now": 1800000000000
+      },
+      "expected": {
+        "ok": false,
+        "reason": "APPROVAL_INVALID",
+        "detail": "shape"
+      }
+    },
+    {
+      "id": "APPROVAL-036",
+      "description": "agent id that is not a UUID v4",
+      "input": {
+        "envelope": {
+          "expiry": 1800000540000,
+          "payload": {
+            "v": 1,
+            "kind": "approval",
+            "approvalId": "00000003-0000-4000-8000-000000000003",
+            "tenantId": "tenant-a",
+            "actionHash": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+            "agentId": "agent-1",
+            "sessionId": "00000002-0000-4000-8000-000000000002",
+            "seq": 3,
+            "requesterId": "identity:i-1",
+            "approverId": "bob@example.com",
+            "decision": "APPROVED",
+            "notBefore": 1799999940000,
+            "expiresAt": 1800000540000,
+            "mfa": "step-up",
+            "policyRuleId": "tool:requiresApproval"
+          },
+          "publicKeyId": "tenant-a:key_v1",
+          "signature": "scqch6WuoEOxykHGBQ0DvXI1GTtbNIDZ0xwfhYckQ9wzstKacXAkCjsYJSDMSeHoEeg7tNMesLIvFvXYQ8LBCw==",
+          "timestamp": 1799999940000
+        },
+        "now": 1800000000000
+      },
+      "expected": {
+        "ok": false,
+        "reason": "APPROVAL_INVALID",
+        "detail": "shape"
+      }
+    },
+    {
+      "id": "APPROVAL-037",
+      "description": "decision neither APPROVED nor DENIED",
+      "input": {
+        "envelope": {
+          "expiry": 1800000540000,
+          "payload": {
+            "v": 1,
+            "kind": "approval",
+            "approvalId": "00000003-0000-4000-8000-000000000003",
+            "tenantId": "tenant-a",
+            "actionHash": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+            "agentId": "00000001-0000-4000-8000-000000000001",
+            "sessionId": "00000002-0000-4000-8000-000000000002",
+            "seq": 3,
+            "requesterId": "identity:i-1",
+            "approverId": "bob@example.com",
+            "decision": "MAYBE",
+            "notBefore": 1799999940000,
+            "expiresAt": 1800000540000,
+            "mfa": "step-up",
+            "policyRuleId": "tool:requiresApproval"
+          },
+          "publicKeyId": "tenant-a:key_v1",
+          "signature": "YPjLuXvZFP9T+93mGApv21iPgwQZj+6+PD0wXIF6o7oADVuvO9CKilQofArls4bQHLSiKtPHP2Cd7DAFBGocBg==",
+          "timestamp": 1799999940000
+        },
+        "now": 1800000000000
+      },
+      "expected": {
+        "ok": false,
+        "reason": "APPROVAL_INVALID",
+        "detail": "shape"
+      }
+    },
+    {
+      "id": "APPROVAL-038",
+      "description": "mfa other than step-up",
+      "input": {
+        "envelope": {
+          "expiry": 1800000540000,
+          "payload": {
+            "v": 1,
+            "kind": "approval",
+            "approvalId": "00000003-0000-4000-8000-000000000003",
+            "tenantId": "tenant-a",
+            "actionHash": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+            "agentId": "00000001-0000-4000-8000-000000000001",
+            "sessionId": "00000002-0000-4000-8000-000000000002",
+            "seq": 3,
+            "requesterId": "identity:i-1",
+            "approverId": "bob@example.com",
+            "decision": "APPROVED",
+            "notBefore": 1799999940000,
+            "expiresAt": 1800000540000,
+            "mfa": "none",
+            "policyRuleId": "tool:requiresApproval"
+          },
+          "publicKeyId": "tenant-a:key_v1",
+          "signature": "GxKmQt+AEdSFSWgJVWBTCXKFZfVyQaKaFWre97y0mM3nM944G9DosCI/CKTRlyBflSbWVzgX8VOSQn+i3Mm4Ag==",
+          "timestamp": 1799999940000
+        },
+        "now": 1800000000000
+      },
+      "expected": {
+        "ok": false,
+        "reason": "APPROVAL_INVALID",
+        "detail": "shape"
+      }
+    },
+    {
+      "id": "APPROVAL-039",
+      "description": "window that ends before it starts",
+      "input": {
+        "envelope": {
+          "expiry": 1799999999999,
+          "payload": {
+            "v": 1,
+            "kind": "approval",
+            "approvalId": "00000003-0000-4000-8000-000000000003",
+            "tenantId": "tenant-a",
+            "actionHash": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+            "agentId": "00000001-0000-4000-8000-000000000001",
+            "sessionId": "00000002-0000-4000-8000-000000000002",
+            "seq": 3,
+            "requesterId": "identity:i-1",
+            "approverId": "bob@example.com",
+            "decision": "APPROVED",
+            "notBefore": 1800000000000,
+            "expiresAt": 1799999999999,
+            "mfa": "step-up",
+            "policyRuleId": "tool:requiresApproval"
+          },
+          "publicKeyId": "tenant-a:key_v1",
+          "signature": "i4MZGQaVqyn1rgaa8XnCBQgH5XTNJY/aD6Um6HynnW24t4+CGij5sjjOZr2DeT/mR38IsyQoz4wPlfx1bSq2DQ==",
+          "timestamp": 1799999940000
+        },
+        "now": 1800000000000
+      },
+      "expected": {
+        "ok": false,
+        "reason": "APPROVAL_INVALID",
+        "detail": "shape"
+      }
+    },
+    {
+      "id": "APPROVAL-040",
+      "description": "empty approver",
+      "input": {
+        "envelope": {
+          "expiry": 1800000540000,
+          "payload": {
+            "v": 1,
+            "kind": "approval",
+            "approvalId": "00000003-0000-4000-8000-000000000003",
+            "tenantId": "tenant-a",
+            "actionHash": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+            "agentId": "00000001-0000-4000-8000-000000000001",
+            "sessionId": "00000002-0000-4000-8000-000000000002",
+            "seq": 3,
+            "requesterId": "identity:i-1",
+            "approverId": "",
+            "decision": "APPROVED",
+            "notBefore": 1799999940000,
+            "expiresAt": 1800000540000,
+            "mfa": "step-up",
+            "policyRuleId": "tool:requiresApproval"
+          },
+          "publicKeyId": "tenant-a:key_v1",
+          "signature": "+xW2Xt+zbuJR+vP8OI3EYQgx5P/3MbiM4qjV6XUaCqP9L1ZJ7+0yxwjsqYjVGAsZFqh31dXnscOob/Mahy/5AQ==",
+          "timestamp": 1799999940000
+        },
+        "now": 1800000000000
+      },
+      "expected": {
+        "ok": false,
+        "reason": "APPROVAL_INVALID",
+        "detail": "shape"
+      }
+    },
+    {
+      "id": "APPROVAL-041",
+      "description": "expiry of the envelope different from payload.expiresAt",
+      "input": {
+        "envelope": {
+          "expiry": 1800000600000,
+          "payload": {
+            "v": 1,
+            "kind": "approval",
+            "approvalId": "00000003-0000-4000-8000-000000000003",
+            "tenantId": "tenant-a",
+            "actionHash": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+            "agentId": "00000001-0000-4000-8000-000000000001",
+            "sessionId": "00000002-0000-4000-8000-000000000002",
+            "seq": 3,
+            "requesterId": "identity:i-1",
+            "approverId": "bob@example.com",
+            "decision": "APPROVED",
+            "notBefore": 1799999940000,
+            "expiresAt": 1800000540000,
+            "mfa": "step-up",
+            "policyRuleId": "tool:requiresApproval"
+          },
+          "publicKeyId": "tenant-a:key_v1",
+          "signature": "ey1oGZc0d9i/uOCfxeQyxqE9hYoJFPPWbcebHiDfhanZoWno9ceJ17R0TlXVRlRduokEcTHpErKusqYavuyDDA==",
+          "timestamp": 1799999940000
+        },
+        "now": 1800000000000
+      },
+      "expected": {
+        "ok": false,
+        "reason": "APPROVAL_INVALID",
+        "detail": "shape"
+      }
+    }
+  ],
+  "counts": {
+    "cases": 41,
+    "valid": 6,
+    "refused": 35,
+    "byReason": {
+      "APPROVAL_INVALID": 33,
+      "APPROVAL_EXPIRED": 2
+    }
+  }
+}

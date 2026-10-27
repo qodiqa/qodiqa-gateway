@@ -1,0 +1,16 @@
+# Opens the (authenticated) diagnostics plane and supplies QODIQA_OPS_TOKEN, which production boot then requires.
+apiVersion: apps/v1
+kind: StatefulSet
+metadata:
+  name: qodiqa
+  namespace: qodiqa
+spec:
+  template:
+    spec:
+      containers:
+        - name: qodiqa
+          env:
+            - name: QODIQA_DIAGNOSTICS_ENABLED
+              value: "true"
+            - name: QODIQA_OPS_TOKEN
+              valueFrom: { secretKeyRef: { name: qodiqa-ops, key: ops-token } }

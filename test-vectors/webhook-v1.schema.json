@@ -1,0 +1,145 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "https://qodiqa.internal/test-vectors/webhook-v1.schema.json",
+  "title": "QODIQA Webhook Protocol Conformance Vectors",
+  "description": "Schema for test-vectors/webhook-v1.json. Every SDK implementation (present and future) consumes vectors matching this schema without any language-specific transformation of the file itself. See test-vectors/README.md for the full contract.",
+  "type": "object",
+  "required": ["protocolVersion", "generatedBy", "vectorCount", "vectors"],
+  "additionalProperties": true,
+  "properties": {
+    "protocolVersion": {
+      "type": "string",
+      "description": "Webhook signature protocol version these vectors describe. Bump this (and the filename, e.g. webhook-v2.json) if the wire protocol ever intentionally changes.",
+      "const": "v1"
+    },
+    "description": { "type": "string" },
+    "generatedBy": {
+      "type": "object",
+      "required": ["generatorScript", "serverImplementation", "generatedAt"],
+      "properties": {
+        "generatorScript": { "type": "string" },
+        "serverImplementation": { "type": "string" },
+        "generatedAt": { "type": "string", "format": "date-time" }
+      }
+    },
+    "vectorCount": {
+      "type": "object",
+      "required": ["positive", "negative", "total"],
+      "properties": {
+        "positive": { "type": "integer", "minimum": 0 },
+        "negative": { "type": "integer", "minimum": 0 },
+        "total": { "type": "integer", "minimum": 0 }
+      }
+    },
+    "vectors": {
+      "type": "array",
+      "minItems": 1,
+      "items": { "$ref": "#/definitions/vector" }
+    }
+  },
+  "definitions": {
+    "vector": {
+      "type": "object",
+      "required": [
+        "id",
+        "description",
+        "protocolVersion",
+        "tags",
+        "scenario",
+        "verify",
+        "expectedResult",
+        "expectedError"
+      ],
+      "additionalProperties": false,
+      "properties": {
+        "id": {
+          "type": "string",
+          "description": "Unique, stable, kebab-case identifier. Do not reuse or repurpose an id once published — add a new vector instead.",
+          "pattern": "^[a-z0-9]+(-[a-z0-9]+)*$"
+        },
+        "description": { "type": "string" },
+        "protocolVersion": { "type": "string", "const": "v1" },
+        "tags": {
+          "type": "array",
+          "items": { "type": "string" }
+        },
+        "scenario": {
+          "type": "object",
+          "description": "The genuine, self-consistent inputs a real server delivery would have used. Server-side conformance tests use ONLY this object: recompute computeSignature(secret, timestamp, body) and assert it equals expectedSignature.",
+          "required": ["secret", "timestamp", "body", "expectedSignature"],
+          "additionalProperties": false,
+          "properties": {
+            "secret": { "type": "string" },
+            "timestamp": {
+              "type": "string",
+              "description": "Raw X-QODIQA-Timestamp value the server would have sent, ISO-8601 UTC."
+            },
+            "body": {
+              "type": "string",
+              "description": "Raw UTF-8 request body exactly as the server would have sent it."
+            },
+            "expectedSignature": {
+              "type": "string",
+              "description": "sha256=<hex>, produced by calling the real production computeSignature(). Never hand-written.",
+              "pattern": "^sha256=[0-9a-f]{64}$"
+            }
+          }
+        },
+        "verify": {
+          "type": "object",
+          "description": "What is actually handed to an SDK's verifier. For positive vectors this is identical to `scenario` (with secrets=[scenario.secret]). For negative vectors, one or more fields are deliberately altered from `scenario` to exercise a specific failure mode.",
+          "required": ["body", "signature", "timestamp", "secrets", "verifyAt", "tolerance"],
+          "additionalProperties": false,
+          "properties": {
+            "body": {
+              "type": "string",
+              "description": "Body to pass as the SDK verifier's `body` argument."
+            },
+            "signature": {
+              "type": "string",
+              "description": "Raw X-QODIQA-Signature header value to pass to the verifier. May be malformed, empty, or a comma-joined duplicate-header simulation in negative vectors."
+            },
+            "timestamp": {
+              "type": "string",
+              "description": "Raw X-QODIQA-Timestamp header value to pass to the verifier. May be malformed, empty, or a comma-joined duplicate-header simulation in negative vectors."
+            },
+            "secrets": {
+              "type": "array",
+              "description": "Secret(s) the SDK is configured with when calling verify(). Pass as-is to the SDK's `secret` parameter (single value or list, per that SDK's API).",
+              "items": { "type": "string" },
+              "minItems": 1
+            },
+            "verifyAt": {
+              "type": "string",
+              "description": "The wall-clock instant (ISO-8601 UTC) at which verification is deemed to occur. Pass this to the SDK's test-only 'override current time' hook (Python: _now as epoch seconds; JS: _now as epoch seconds) so replay-tolerance vectors are deterministic regardless of when the suite actually runs. Convert to epoch seconds if your SDK's override expects that."
+            },
+            "tolerance": {
+              "type": "number",
+              "description": "Replay-tolerance window in seconds to configure the verifier with for this vector.",
+              "minimum": 0
+            }
+          }
+        },
+        "expectedResult": {
+          "type": "string",
+          "enum": ["valid", "invalid"]
+        },
+        "expectedError": {
+          "description": "Canonical error category the verifier must raise when expectedResult is 'invalid'; null when expectedResult is 'valid'. Every SDK must map its own exception/error class names onto these four canonical categories.",
+          "oneOf": [
+            {
+              "type": "string",
+              "enum": [
+                "MalformedSignatureError",
+                "InvalidTimestampError",
+                "ExpiredSignatureError",
+                "InvalidSignatureError"
+              ]
+            },
+            { "type": "null" }
+          ]
+        }
+      }
+    }
+  }
+}

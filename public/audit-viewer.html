@@ -1,0 +1,531 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>QODIQA — Audit Viewer</title>
+<style>
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+:root {
+  --bg:       #0f1117;
+  --surface:  #1a1d27;
+  --surface2: #222536;
+  --surface3: #2a2e42;
+  --border:   #2e3147;
+  --accent:   #5b7cfa;
+  --green:    #22c55e;
+  --red:      #ef4444;
+  --yellow:   #eab308;
+  --orange:   #f97316;
+  --purple:   #a855f7;
+  --cyan:     #06b6d4;
+  --text:     #e2e8f0;
+  --muted:    #64748b;
+  --radius:   8px;
+  --font:     'Inter', system-ui, sans-serif;
+  --mono:     'JetBrains Mono', 'Fira Mono', monospace;
+}
+body { background: var(--bg); color: var(--text); font-family: var(--font); font-size: 14px; min-height: 100vh; }
+a { color: var(--accent); text-decoration: none; }
+a:hover { text-decoration: underline; }
+
+/* ── Header ── */
+header { background: var(--surface); border-bottom: 1px solid var(--border); padding: 10px 24px; display: flex; align-items: center; gap: 12px; position: sticky; top: 0; z-index: 100; }
+header h1 { font-size: 16px; font-weight: 700; letter-spacing: 0.04em; white-space: nowrap; }
+header .subtitle { font-size: 11px; color: var(--muted); }
+#inv-badge { margin-left: 6px; background: var(--accent); color: #fff; font-size: 11px; padding: 2px 8px; border-radius: 99px; display: none; }
+#stream-status { margin-left: auto; font-size: 11px; display: flex; align-items: center; gap: 6px; }
+#stream-dot { width: 7px; height: 7px; border-radius: 50%; background: var(--muted); }
+#stream-dot.live { background: var(--green); animation: pulse 2s infinite; }
+@keyframes pulse { 0%,100%{opacity:1} 50%{opacity:.4} }
+
+/* ── Nav ── */
+nav { display: flex; gap: 2px; padding: 8px 24px; background: var(--surface); border-bottom: 1px solid var(--border); flex-wrap: wrap; overflow-x: auto; }
+nav button { background: none; border: none; color: var(--muted); cursor: pointer; padding: 6px 14px; border-radius: var(--radius); font-size: 12px; font-family: var(--font); transition: all .15s; white-space: nowrap; }
+nav button:hover { background: var(--surface2); color: var(--text); }
+nav button.active { background: var(--accent); color: #fff; }
+
+/* ── Main layout ── */
+main { padding: 20px 24px; max-width: 1500px; margin: 0 auto; }
+.panel { display: none; }
+.panel.active { display: block; }
+
+/* ── Cards ── */
+.cards { display: grid; grid-template-columns: repeat(auto-fill, minmax(160px, 1fr)); gap: 12px; margin-bottom: 20px; }
+.card { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); padding: 14px 16px; }
+.card .label { font-size: 10px; text-transform: uppercase; letter-spacing: .08em; color: var(--muted); margin-bottom: 6px; }
+.card .value { font-size: 26px; font-weight: 700; line-height: 1; }
+.card .sub   { font-size: 10px; color: var(--muted); margin-top: 4px; }
+.green  { color: var(--green); }
+.red    { color: var(--red); }
+.yellow { color: var(--yellow); }
+.orange { color: var(--orange); }
+.purple { color: var(--purple); }
+.cyan   { color: var(--cyan); }
+.muted  { color: var(--muted); }
+
+/* ── Sections ── */
+.section { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); margin-bottom: 16px; }
+.section-header { padding: 12px 16px; border-bottom: 1px solid var(--border); font-weight: 600; font-size: 12px; display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
+.section-body { padding: 16px; }
+.badge { font-size: 10px; padding: 2px 7px; border-radius: 99px; background: var(--surface2); color: var(--muted); }
+.badge.green  { background: rgba(34,197,94,.15); color: var(--green); }
+.badge.red    { background: rgba(239,68,68,.15);  color: var(--red); }
+.badge.yellow { background: rgba(234,179,8,.15);  color: var(--yellow); }
+.badge.orange { background: rgba(249,115,22,.15); color: var(--orange); }
+.badge.purple { background: rgba(168,85,247,.15); color: var(--purple); }
+.badge.cyan   { background: rgba(6,182,212,.15);  color: var(--cyan); }
+
+/* ── Tables ── */
+table { width: 100%; border-collapse: collapse; }
+th { text-align: left; padding: 8px 14px; font-size: 10px; text-transform: uppercase; letter-spacing: .06em; color: var(--muted); background: var(--surface2); white-space: nowrap; }
+td { padding: 8px 14px; border-top: 1px solid var(--border); font-size: 11px; font-family: var(--mono); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 200px; }
+tr:hover td { background: var(--surface2); }
+td.allow { color: var(--green); font-weight: 600; }
+td.block { color: var(--red);   font-weight: 600; }
+.empty { padding: 28px 16px; text-align: center; color: var(--muted); font-size: 12px; }
+
+/* ── Pagination ── */
+.pagination { display: flex; align-items: center; gap: 8px; padding: 10px 14px; border-top: 1px solid var(--border); font-size: 11px; }
+.pagination button { background: var(--surface2); border: 1px solid var(--border); color: var(--text); padding: 3px 10px; border-radius: 4px; cursor: pointer; font-size: 11px; }
+.pagination button:disabled { opacity: .35; cursor: default; }
+.pagination .info { color: var(--muted); }
+
+/* ── Forms ── */
+.filter-bar { display: flex; gap: 8px; flex-wrap: wrap; margin-bottom: 16px; align-items: flex-end; }
+.filter-bar .field { display: flex; flex-direction: column; gap: 4px; }
+.filter-bar label { font-size: 10px; text-transform: uppercase; letter-spacing: .06em; color: var(--muted); }
+input[type=text], input[type=date], select, textarea {
+  background: var(--surface2); border: 1px solid var(--border); color: var(--text);
+  border-radius: 4px; padding: 6px 10px; font-size: 12px; font-family: var(--font);
+  outline: none; transition: border .15s;
+}
+input[type=text]:focus, input[type=date]:focus, select:focus, textarea:focus { border-color: var(--accent); }
+input[type=text]::placeholder { color: var(--muted); }
+.checkbox-field { display: flex; align-items: center; gap: 6px; font-size: 12px; cursor: pointer; }
+.checkbox-field input { accent-color: var(--accent); cursor: pointer; }
+button.btn { background: var(--accent); border: none; color: #fff; padding: 6px 16px; border-radius: 4px; cursor: pointer; font-size: 12px; font-family: var(--font); font-weight: 500; transition: opacity .15s; }
+button.btn:hover { opacity: .85; }
+button.btn.secondary { background: var(--surface2); color: var(--text); border: 1px solid var(--border); }
+button.btn.danger { background: var(--red); }
+button.btn.sm { padding: 3px 10px; font-size: 11px; }
+button.btn:disabled { opacity: .4; cursor: default; }
+
+/* ── Artifact detail ── */
+.detail-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
+@media (max-width: 900px) { .detail-grid { grid-template-columns: 1fr; } }
+.kv-list { font-size: 12px; }
+.kv-row { display: flex; padding: 6px 0; border-bottom: 1px solid var(--border); gap: 12px; align-items: flex-start; }
+.kv-row:last-child { border-bottom: none; }
+.kv-key   { font-size: 10px; text-transform: uppercase; letter-spacing: .06em; color: var(--muted); flex-shrink: 0; width: 140px; padding-top: 1px; }
+.kv-value { font-family: var(--mono); font-size: 11px; word-break: break-all; flex: 1; }
+.copy-btn { background: none; border: none; cursor: pointer; color: var(--muted); font-size: 10px; padding: 0 4px; flex-shrink: 0; transition: color .1s; }
+.copy-btn:hover { color: var(--accent); }
+
+/* ── Signature badge ── */
+.sig-badge { display: inline-flex; align-items: center; gap: 6px; padding: 4px 12px; border-radius: 99px; font-size: 12px; font-weight: 600; }
+.sig-VALID    { background: rgba(34,197,94,.15); color: var(--green); }
+.sig-INVALID  { background: rgba(239,68,68,.15); color: var(--red); }
+.sig-EXPIRED  { background: rgba(234,179,8,.15); color: var(--yellow); }
+.sig-REVOKED  { background: rgba(239,68,68,.15); color: var(--red); }
+.sig-MISSING  { background: rgba(100,116,139,.15); color: var(--muted); }
+.sig-UNKNOWN  { background: rgba(100,116,139,.15); color: var(--muted); }
+
+/* ── Lineage graph ── */
+.lineage-graph { display: flex; align-items: flex-start; gap: 0; overflow-x: auto; padding: 20px 8px; }
+.lg-node { display: flex; flex-direction: column; align-items: center; gap: 6px; min-width: 140px; cursor: pointer; }
+.lg-node-box { background: var(--surface2); border: 2px solid var(--border); border-radius: var(--radius); padding: 12px 14px; text-align: center; width: 130px; transition: border-color .15s; }
+.lg-node-box:hover { border-color: var(--accent); }
+.lg-node-box.status-FOUND, .lg-node-box.status-PRESENT, .lg-node-box.status-VERIFIED, .lg-node-box.status-VALID,
+.lg-node-box.status-CURRENT, .lg-node-box.status-LINKED, .lg-node-box.status-AVAILABLE { border-color: var(--green); }
+.lg-node-box.status-FAILED, .lg-node-box.status-INVALID, .lg-node-box.status-REVOKED { border-color: var(--red); }
+.lg-node-box.status-MISSING, .lg-node-box.status-NOT_FOUND { border-color: var(--muted); opacity: .6; }
+.lg-node-box.status-CHANGED, .lg-node-box.status-EXPIRED, .lg-node-box.status-PARTIAL { border-color: var(--yellow); }
+.lg-node-type { font-size: 9px; text-transform: uppercase; letter-spacing: .08em; color: var(--muted); margin-bottom: 4px; }
+.lg-node-label { font-size: 12px; font-weight: 600; }
+.lg-node-status { font-size: 10px; margin-top: 4px; }
+.lg-arrow { display: flex; align-items: center; padding: 0 6px; color: var(--muted); font-size: 18px; flex-shrink: 0; margin-top: 28px; }
+.lg-arrow.linked { color: var(--green); }
+.lg-arrow.failed { color: var(--red); }
+.lg-arrow.missing { color: var(--muted); opacity: .4; }
+.lg-node-detail { font-size: 9px; color: var(--muted); font-family: var(--mono); margin-top: 4px; max-width: 130px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+
+/* ── Timeline ── */
+.timeline { list-style: none; padding: 8px 0; }
+.tl-item { display: flex; gap: 12px; padding: 10px 0; border-bottom: 1px solid var(--border); position: relative; }
+.tl-item:last-child { border-bottom: none; }
+.tl-dot { width: 10px; height: 10px; border-radius: 50%; flex-shrink: 0; margin-top: 3px; }
+.tl-dot.ARTIFACT_ALLOWED  { background: var(--green); }
+.tl-dot.POLICY_BLOCKED    { background: var(--red); }
+.tl-dot.VALIDATION_FAILED { background: var(--orange); }
+.tl-dot.REPLAY_DETECTED   { background: var(--yellow); }
+.tl-dot.ARTIFACT_BLOCKED  { background: var(--red); }
+.tl-dot.SIGNATURE_FAILED  { background: var(--orange); }
+.tl-dot.CONSENT_DENIED    { background: var(--purple); }
+.tl-dot.ANOMALY_DETECTED  { background: var(--cyan); }
+.tl-content { flex: 1; min-width: 0; }
+.tl-header { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
+.tl-type  { font-size: 11px; font-weight: 600; }
+.tl-time  { font-size: 10px; color: var(--muted); font-family: var(--mono); }
+.tl-id    { font-size: 10px; font-family: var(--mono); color: var(--accent); cursor: pointer; }
+.tl-id:hover { text-decoration: underline; }
+.tl-meta  { font-size: 10px; color: var(--muted); margin-top: 2px; }
+.tl-expand { display: none; margin-top: 8px; background: var(--surface2); border-radius: 4px; padding: 8px; }
+.tl-expand.open { display: block; }
+
+/* ── Chain verification ── */
+.chain-links { display: flex; flex-direction: column; gap: 10px; }
+.chain-link { display: flex; align-items: center; gap: 12px; padding: 10px 14px; border: 1px solid var(--border); border-radius: var(--radius); background: var(--surface2); }
+.chain-link.verified { border-left: 3px solid var(--green); }
+.chain-link.failed   { border-left: 3px solid var(--red); }
+.chain-link.partial  { border-left: 3px solid var(--yellow); }
+.chain-link-icon { font-size: 16px; flex-shrink: 0; }
+.chain-link-body { flex: 1; }
+.chain-link-label { font-size: 12px; font-weight: 600; }
+.chain-link-detail { font-size: 10px; color: var(--muted); margin-top: 2px; font-family: var(--mono); }
+.chain-link-status { font-size: 10px; font-weight: 600; }
+
+/* ── Investigation workspace ── */
+.inv-artifact-row { display: flex; align-items: center; gap: 8px; padding: 8px 0; border-bottom: 1px solid var(--border); font-size: 11px; }
+.inv-artifact-row:last-child { border-bottom: none; }
+.inv-artifact-id { font-family: var(--mono); color: var(--accent); cursor: pointer; flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; }
+.inv-artifact-id:hover { text-decoration: underline; }
+
+/* ── Collapse ── */
+.collapsible { cursor: pointer; user-select: none; }
+.collapsible::after { content: ' ▾'; font-size: 10px; }
+.collapsible.collapsed::after { content: ' ▸'; }
+.collapse-body { overflow: hidden; transition: max-height .2s; }
+.collapse-body.collapsed { display: none; }
+
+/* ── Raw JSON ── */
+.raw-json { background: var(--surface2); border: 1px solid var(--border); border-radius: 4px; padding: 12px; font-family: var(--mono); font-size: 10px; overflow: auto; max-height: 300px; white-space: pre; color: var(--text); }
+
+/* ── Status banner ── */
+.status-banner { display: flex; align-items: center; gap: 10px; padding: 10px 16px; border-radius: var(--radius); margin-bottom: 16px; font-size: 12px; font-weight: 500; }
+.status-banner.valid   { background: rgba(34,197,94,.1); border: 1px solid rgba(34,197,94,.3); color: var(--green); }
+.status-banner.invalid { background: rgba(239,68,68,.1); border: 1px solid rgba(239,68,68,.3); color: var(--red); }
+.status-banner.warn    { background: rgba(234,179,8,.1); border: 1px solid rgba(234,179,8,.3); color: var(--yellow); }
+.status-banner.info    { background: rgba(91,124,250,.1); border: 1px solid rgba(91,124,250,.3); color: var(--accent); }
+
+/* ── Loading ── */
+.loading { padding: 32px; text-align: center; color: var(--muted); font-size: 12px; }
+.loading::after { content: ''; display: inline-block; width: 12px; height: 12px; border: 2px solid var(--muted); border-top-color: var(--accent); border-radius: 50%; animation: spin .6s linear infinite; margin-left: 8px; vertical-align: middle; }
+@keyframes spin { to { transform: rotate(360deg); } }
+
+/* ── Error ── */
+.error-box { background: rgba(239,68,68,.1); border: 1px solid rgba(239,68,68,.3); border-radius: var(--radius); padding: 12px 16px; font-size: 12px; color: var(--red); }
+
+/* ── Replay timeline ── */
+.replay-timeline { display: flex; flex-direction: column; gap: 8px; }
+.rpl-event { display: flex; gap: 10px; padding: 8px 12px; background: var(--surface2); border-radius: 4px; border-left: 3px solid var(--border); }
+.rpl-event.original { border-left-color: var(--green); }
+.rpl-event.replay   { border-left-color: var(--red); }
+.rpl-time  { font-size: 10px; font-family: var(--mono); color: var(--muted); flex-shrink: 0; width: 160px; }
+.rpl-body  { font-size: 11px; flex: 1; }
+
+/* ── Export panel ── */
+.export-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; }
+@media (max-width: 700px) { .export-grid { grid-template-columns: 1fr; } }
+.format-btn { display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 6px; padding: 20px; background: var(--surface2); border: 2px solid var(--border); border-radius: var(--radius); cursor: pointer; font-size: 13px; font-weight: 600; transition: border-color .15s; min-height: 80px; }
+.format-btn:hover { border-color: var(--accent); }
+.format-btn .fmt-icon { font-size: 24px; }
+.format-btn .fmt-label { font-size: 12px; color: var(--muted); font-weight: 400; }
+
+/* ── Two-col ── */
+.two-col { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
+@media (max-width: 900px) { .two-col { grid-template-columns: 1fr; } }
+
+/* ── Reason bars ── */
+.reason-bar-wrap { padding: 4px 0; }
+.reason-bar-row { display: flex; align-items: center; gap: 8px; margin-bottom: 6px; font-size: 11px; }
+.reason-bar-label { width: 200px; flex-shrink: 0; color: var(--muted); font-family: var(--mono); font-size: 10px; }
+.reason-bar-bg { flex: 1; height: 5px; background: var(--surface2); border-radius: 3px; }
+.reason-bar-fill { height: 100%; border-radius: 3px; background: var(--red); min-width: 2px; }
+.reason-bar-count { width: 36px; text-align: right; color: var(--muted); font-size: 10px; }
+
+/* ── Tooltip ── */
+.tooltip { position: relative; }
+.tooltip::after { content: attr(data-tip); position: absolute; bottom: calc(100% + 6px); left: 50%; transform: translateX(-50%); background: var(--surface3); border: 1px solid var(--border); color: var(--text); font-size: 10px; padding: 4px 8px; border-radius: 4px; white-space: nowrap; pointer-events: none; opacity: 0; transition: opacity .15s; z-index: 200; }
+.tooltip:hover::after { opacity: 1; }
+
+/* ── Visually hidden (accessible name only) ── */
+.vh { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
+</style>
+</head>
+<body>
+<header>
+  <h1>QODIQA Audit Viewer</h1>
+  <span class="subtitle">Forensic &amp; Compliance Investigation Platform</span>
+  <span id="inv-badge">0 in investigation</span>
+  <div id="stream-status">
+    <div id="stream-dot"></div>
+    <span id="stream-label">Connecting…</span>
+  </div>
+</header>
+
+<nav id="main-nav">
+  <button class="active" data-panel="dashboard">Dashboard</button>
+  <button data-panel="search">Search</button>
+  <button data-panel="artifact">Artifact</button>
+  <button data-panel="signature">Signature</button>
+  <button data-panel="replay">Replay</button>
+  <button data-panel="lineage">Lineage</button>
+  <button data-panel="chain">Chain Verify</button>
+  <button data-panel="timeline">Timeline</button>
+  <button data-panel="investigate">Investigate</button>
+  <button data-panel="export">Export</button>
+</nav>
+
+<main>
+
+<!-- ═══════════════ DASHBOARD ═══════════════ -->
+<div id="panel-dashboard" class="panel active">
+  <div id="dash-banner" class="status-banner info" style="display:none"></div>
+  <div class="cards" id="dash-cards">
+    <div class="card"><div class="label">Chain Length</div><div class="value" id="dc-total">—</div></div>
+    <div class="card"><div class="label">Allowed</div><div class="value green" id="dc-allows">—</div></div>
+    <div class="card"><div class="label">Blocked</div><div class="value red" id="dc-blocks">—</div></div>
+    <div class="card"><div class="label">Replays</div><div class="value yellow" id="dc-replays">—</div></div>
+    <div class="card"><div class="label">Chain Valid</div><div class="value" id="dc-valid">—</div></div>
+    <div class="card"><div class="label">Tampered</div><div class="value" id="dc-tamper">—</div></div>
+  </div>
+  <div class="two-col">
+    <div class="section">
+      <div class="section-header">Recent Events <span class="badge" id="dash-tl-count">0</span></div>
+      <ul class="timeline" id="dash-timeline"><li class="loading"></li></ul>
+    </div>
+    <div class="section">
+      <div class="section-header">Block Reason Breakdown</div>
+      <div class="section-body reason-bar-wrap" id="dash-reasons"><div class="empty">No data.</div></div>
+    </div>
+  </div>
+</div>
+
+<!-- ═══════════════ SEARCH ═══════════════ -->
+<div id="panel-search" class="panel">
+  <div class="section">
+    <div class="section-header">Search Audit Records</div>
+    <div class="section-body">
+      <div class="filter-bar" id="search-filters">
+        <div class="field"><label for="sf-artifact">Artifact ID</label><input type="text" id="sf-artifact" placeholder="UUID or partial…" style="width:300px"></div>
+        <div class="field"><label for="sf-decision">Decision</label>
+          <select id="sf-decision">
+            <option value="">Any</option>
+            <option value="ALLOW">ALLOW</option>
+            <option value="BLOCK">BLOCK</option>
+          </select>
+        </div>
+        <div class="field"><label for="sf-sig">Signature Status</label>
+          <select id="sf-sig">
+            <option value="">Any</option>
+            <option value="VALID">VALID</option>
+            <option value="INVALID">INVALID</option>
+            <option value="EXPIRED">EXPIRED</option>
+            <option value="REVOKED">REVOKED</option>
+            <option value="MISSING">MISSING</option>
+          </select>
+        </div>
+        <div class="field"><label for="sf-verify">Verification</label>
+          <select id="sf-verify">
+            <option value="">Any</option>
+            <option value="VERIFIED">VERIFIED</option>
+            <option value="UNVERIFIED">UNVERIFIED</option>
+          </select>
+        </div>
+        <div class="field"><label for="sf-stage">Stage</label><input type="text" id="sf-stage" placeholder="e.g. POLICY_ENFORCEMENT" style="width:200px"></div>
+        <div class="field"><label for="sf-start">Start Date</label><input type="date" id="sf-start"></div>
+        <div class="field"><label for="sf-end">End Date</label><input type="date" id="sf-end"></div>
+        <div class="field" style="justify-content:flex-end">
+          <label class="checkbox-field"><input type="checkbox" id="sf-replay"> Replay only</label>
+          <label class="checkbox-field"><input type="checkbox" id="sf-failed"> Failed only</label>
+        </div>
+        <div class="field" style="justify-content:flex-end;gap:6px;flex-direction:row;align-items:flex-end">
+          <button class="btn" data-action="runSearch" data-arg="1">Search</button>
+          <button class="btn secondary" data-action="clearSearch">Clear</button>
+        </div>
+      </div>
+    </div>
+    <div id="search-results-wrap"></div>
+    <div class="pagination" id="search-pager" style="display:none"></div>
+  </div>
+</div>
+
+<!-- ═══════════════ ARTIFACT ═══════════════ -->
+<div id="panel-artifact" class="panel">
+  <div class="section" style="margin-bottom:16px">
+    <div class="section-body" style="display:flex;gap:8px;align-items:center">
+      <label for="art-id-input" class="vh">Artifact UUID</label>
+      <input type="text" id="art-id-input" placeholder="Enter Artifact UUID…" style="flex:1;max-width:460px">
+      <button class="btn" data-action="loadArtifact">Inspect</button>
+    </div>
+  </div>
+  <div id="artifact-result"></div>
+</div>
+
+<!-- ═══════════════ SIGNATURE ═══════════════ -->
+<div id="panel-signature" class="panel">
+  <div class="section" style="margin-bottom:16px">
+    <div class="section-body" style="display:flex;gap:8px;align-items:center">
+      <label for="sig-id-input" class="vh">Artifact UUID</label>
+      <input type="text" id="sig-id-input" placeholder="Enter Artifact UUID…" style="flex:1;max-width:460px">
+      <button class="btn" data-action="loadSignature">Validate Signature</button>
+    </div>
+  </div>
+  <div id="signature-result"></div>
+</div>
+
+<!-- ═══════════════ REPLAY ═══════════════ -->
+<div id="panel-replay" class="panel">
+  <div class="section" style="margin-bottom:16px">
+    <div class="section-body" style="display:flex;gap:8px;align-items:center">
+      <label for="rpl-id-input" class="vh">Artifact UUID</label>
+      <input type="text" id="rpl-id-input" placeholder="Enter Artifact UUID…" style="flex:1;max-width:460px">
+      <button class="btn" data-action="loadReplay">Analyze Replay</button>
+    </div>
+  </div>
+  <div id="replay-result"></div>
+</div>
+
+<!-- ═══════════════ LINEAGE ═══════════════ -->
+<div id="panel-lineage" class="panel">
+  <div class="section" style="margin-bottom:16px">
+    <div class="section-body" style="display:flex;gap:8px;align-items:center">
+      <label for="lin-id-input" class="vh">Artifact UUID</label>
+      <input type="text" id="lin-id-input" placeholder="Enter Artifact UUID…" style="flex:1;max-width:460px">
+      <button class="btn" data-action="loadLineage">Trace Lineage</button>
+    </div>
+  </div>
+  <div id="lineage-result"></div>
+</div>
+
+<!-- ═══════════════ CHAIN VERIFY ═══════════════ -->
+<div id="panel-chain" class="panel">
+  <div class="section" style="margin-bottom:16px">
+    <div class="section-body" style="display:flex;gap:8px;align-items:center;flex-wrap:wrap">
+      <label for="chn-id-input" class="vh">Artifact UUID</label>
+      <input type="text" id="chn-id-input" placeholder="Enter Artifact UUID…" style="flex:1;max-width:460px">
+      <button class="btn" data-action="loadChain">Verify Chain</button>
+      <button class="btn secondary" data-action="loadFullChainIntegrity">Full Chain Integrity</button>
+    </div>
+  </div>
+  <div id="chain-result"></div>
+</div>
+
+<!-- ═══════════════ TIMELINE ═══════════════ -->
+<div id="panel-timeline" class="panel">
+  <div class="section">
+    <div class="section-header">
+      Event Timeline
+      <span class="badge" id="tl-total">0</span>
+      <div style="margin-left:auto;display:flex;gap:8px;align-items:center;flex-wrap:wrap">
+        <label for="tl-start" class="vh">Start date</label>
+        <input type="date" id="tl-start" placeholder="Start">
+        <label for="tl-end" class="vh">End date</label>
+        <input type="date" id="tl-end" placeholder="End">
+        <label for="tl-type" class="vh">Event type</label>
+        <select id="tl-type" style="font-size:11px">
+          <option value="">All types</option>
+          <option value="ARTIFACT_ALLOWED">ARTIFACT_ALLOWED</option>
+          <option value="POLICY_BLOCKED">POLICY_BLOCKED</option>
+          <option value="VALIDATION_FAILED">VALIDATION_FAILED</option>
+          <option value="REPLAY_DETECTED">REPLAY_DETECTED</option>
+          <option value="ARTIFACT_BLOCKED">ARTIFACT_BLOCKED</option>
+          <option value="SIGNATURE_FAILED">SIGNATURE_FAILED</option>
+          <option value="CONSENT_DENIED">CONSENT_DENIED</option>
+        </select>
+        <button class="btn sm" data-action="loadTimeline" data-arg="1">Filter</button>
+      </div>
+    </div>
+    <ul class="timeline" id="timeline-list" style="padding:0 16px"></ul>
+    <div class="pagination" id="tl-pager"></div>
+  </div>
+</div>
+
+<!-- ═══════════════ INVESTIGATE ═══════════════ -->
+<div id="panel-investigate" class="panel">
+  <div class="two-col">
+    <div>
+      <div class="section" style="margin-bottom:16px">
+        <div class="section-header">New Investigation</div>
+        <div class="section-body" style="display:flex;flex-direction:column;gap:10px">
+          <div class="field"><label for="inv-title">Title</label><input type="text" id="inv-title" placeholder="Investigation title…" style="width:100%"></div>
+          <div class="field"><label for="inv-name">Investigator</label><input type="text" id="inv-name" placeholder="Your name…" style="width:100%"></div>
+          <div class="field"><label for="inv-artifacts">Artifact IDs (one per line)</label>
+            <textarea id="inv-artifacts" rows="5" style="width:100%;resize:vertical" placeholder="Paste artifact UUIDs, one per line…"></textarea>
+          </div>
+          <div class="field"><label for="inv-notes">Notes</label>
+            <textarea id="inv-notes" rows="4" style="width:100%;resize:vertical" placeholder="Initial investigation notes…"></textarea>
+          </div>
+          <button class="btn" data-action="createInvestigation">Create Investigation</button>
+        </div>
+      </div>
+    </div>
+    <div>
+      <div class="section">
+        <div class="section-header">Investigations <span class="badge" id="inv-list-count">0</span>
+          <button class="btn sm secondary" style="margin-left:auto" data-action="loadInvestigationList">Refresh</button>
+        </div>
+        <div id="inv-list-wrap"><div class="empty">No investigations.</div></div>
+        <div class="pagination" id="inv-pager" style="display:none"></div>
+      </div>
+    </div>
+  </div>
+  <div id="inv-detail-wrap"></div>
+</div>
+
+<!-- ═══════════════ EXPORT ═══════════════ -->
+<div id="panel-export" class="panel">
+  <div class="two-col">
+    <div class="section">
+      <div class="section-header">Export Filters</div>
+      <div class="section-body" style="display:flex;flex-direction:column;gap:10px">
+        <div class="field"><label for="ex-artifact">Artifact ID</label><input type="text" id="ex-artifact" placeholder="Filter by artifact UUID…" style="width:100%"></div>
+        <div class="field"><label for="ex-decision">Decision</label>
+          <select id="ex-decision" style="width:100%">
+            <option value="">Any</option>
+            <option value="ALLOW">ALLOW</option>
+            <option value="BLOCK">BLOCK</option>
+          </select>
+        </div>
+        <div class="field"><label for="ex-start">Start Date</label><input type="date" id="ex-start" style="width:100%"></div>
+        <div class="field"><label for="ex-end">End Date</label><input type="date" id="ex-end" style="width:100%"></div>
+        <label class="checkbox-field"><input type="checkbox" id="ex-replay"> Replay entries only</label>
+        <label class="checkbox-field"><input type="checkbox" id="ex-failed"> Failed/blocked only</label>
+      </div>
+    </div>
+    <div class="section">
+      <div class="section-header">Export Format</div>
+      <div class="section-body" style="display:flex;flex-direction:column;gap:10px">
+        <button class="format-btn" data-action="runExport" data-arg='"json"'>
+          <span class="fmt-icon">{ }</span>
+          <span>JSON</span>
+          <span class="fmt-label">Machine-readable structured export</span>
+        </button>
+        <button class="format-btn" data-action="runExport" data-arg='"csv"'>
+          <span class="fmt-icon">⊞</span>
+          <span>CSV</span>
+          <span class="fmt-label">Spreadsheet-compatible flat export</span>
+        </button>
+        <button class="format-btn" data-action="runExport" data-arg='"pdf"'>
+          <span class="fmt-icon">📄</span>
+          <span>PDF Evidence Report</span>
+          <span class="fmt-label">Formatted report for auditors &amp; regulators</span>
+        </button>
+        <div id="export-status" style="font-size:11px;color:var(--muted)"></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+</main>
+
+<!-- shared frontend infrastructure — load order matters (esc before pagination/badges/actions) -->
+<script src="/js/common/adminAuth.js" defer></script>
+<script src="/js/common/esc.js" defer></script>
+<script src="/js/common/pagination.js" defer></script>
+<script src="/js/common/badges.js" defer></script>
+<script src="/js/common/actions.js" defer></script>
+<script src="/js/audit-viewer.js" defer></script>
+</body>
+</html>

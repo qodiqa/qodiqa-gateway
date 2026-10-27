@@ -1,0 +1,30 @@
+# Monitoring reference overlay. EXAMPLE — opt-in, not applied by default.
+#
+# Bases on the default single-node topology and adds what the shipped manifests lacked:
+#   - opens the diagnostics plane (QODIQA_DIAGNOSTICS_ENABLED=true) so /metrics answers instead of 404 — it stays
+#     AUTHENTICATED: /metrics sits behind the ops stack (ops IP allow-list + ops credential), and production boot then
+#     also requires QODIQA_OPS_TOKEN (bootValidator rule secret.ops_token), supplied here from qodiqa-ops;
+#   - a ServiceMonitor (Prometheus Operator) that scrapes /metrics with a bearer credential from a Secret — use a
+#     DEDICATED per-operator API key of a viewer-role user issued for Prometheus (POST /rbac/users/{id}/api-key), never
+#     the shared QODIQA_OPS_TOKEN and never an admin key; add the Prometheus pods' source range to the ops IP
+#     allow-list (QODIQA_OPS_IP_ALLOWLIST) and to the NetworkPolicy;
+#   - a PrometheusRule whose alerts use the gateway's real metric names (src/observability/metrics.js) for the
+#     fail-closed, integrity and dependency signals the runbooks name.
+# Not provided: an unauthenticated,
+# network-restricted metrics listener or a scrape-only credential type.
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+
+resources:
+  - ../../single-node
+  - secret.yaml
+  - servicemonitor.yaml
+  - networkpolicy-prometheus.yaml   # lets Prometheus reach:3000 past the base default-deny/ingress policy
+  - prometheusrule.yaml
+  - backup-prometheusrule.yaml
+
+patches:
+  - path: statefulset-patch.yaml
+    target:
+      kind: StatefulSet
+      name: qodiqa

@@ -1,0 +1,606 @@
+# QODIQA Kubernetes StatefulSet — single-node audit-ordering topology
+#
+# this overlay is the
+# SMALL-PRODUCTION topology — exactly ONE replica, single-node ordering,
+# PostgreSQL enabled as the durable evidence store + audit mirror
+# (configmap-single-node.yaml). The base configmap stamps
+# NODE_ENV=production, and a production boot refuses to start
+# without a ready PostgreSQL (EVIDENCE_DURABILITY_VIOLATION) — so this
+# overlay enables PG rather than shipping an unbootable profile.
+# `replicas: 1` is a CORRECTNESS bound, not a capacity suggestion: more
+# than one single-node replica dual-writing the shared audit_chain is the
+# illegal topology assertNoIllegalTopology() refuses at boot. More capacity
+# is NOT available in production today: overlays/distributed/ is refused by
+# the production boot validator until.
+# 
+#
+# Why StatefulSet and not Deployment:
+#   QODIQA's audit chain is a single-writer-per-file structure (see
+#   docs/protocol/AUDIT-SCHEMA-V8.md — "Audit log
+#   — single writer per file path").  Each replica MUST own an exclusive,
+#   non-shared volume for its audit log — two pods writing the same NDJSON
+#   file produce divergent `prevHash` lineages with no shared ordering
+#   authority.  A Deployment gives every replica an identical pod template
+#   and therefore cannot hand out a distinct PersistentVolumeClaim per pod.
+#   A StatefulSet's `volumeClaimTemplates` does this natively: pod qodiqa-0
+#   always gets PVC auditlog-qodiqa-0, and the same claim reattaches to the
+#   same ordinal across restarts and rescheduling — which is exactly the
+#   durable identity a single-replica audit-owning pod needs.  (Historical
+#   note: this overlay used to run replicas: 2 with per-pod file chains and
+#   no PG; that shape cannot pass the production gate and was re-scoped
+# option C.) The key store (`qodiqa-keystore`) remains a single
+#   PVC — see base/pvc.yaml.
+#
+# (dual-topology deployment defect): this manifest and
+# overlays/distributed/deployment.yaml both used to ship in the same
+# top-level kustomization, both named "qodiqa", both matching the same
+# Service selector — `kubectl apply -k deploy/kubernetes/` created both
+# topologies simultaneously and double-served traffic across two
+# incompatible audit-ordering models. They are now split into independent
+# overlays, and every workload/Service in this overlay carries an explicit
+# `topology: single-node` label that the distributed overlay's resources do
+# not share, so the two can never be selected by the same Service even if
+# both were (incorrectly) applied to the same namespace.
+#
+# Rollout trade-off vs. a Deployment: StatefulSet RollingUpdate has
+# no `maxSurge` equivalent — it replaces existing pods in place rather than
+# creating an extra one first. With replicas: 1 (the only legal count for
+# this topology — see the note above) an update is a brief full outage
+# while the pod is replaced. A zero-downtime alternative does not exist in
+# production yet (overlays/distributed/ is refused at boot until). See
+# docs/deployment/deployment-lifecycle.md — "Rolling upgrade sequence".
+#
+# Security properties enforced:
+#   • Non-root execution (runAsUser: 1000, runAsNonRoot: true)
+#   • Read-only root filesystem (readOnlyRootFilesystem: true)
+#   • All Linux capabilities dropped (capabilities.drop: [ALL])
+#   • No privilege escalation (allowPrivilegeEscalation: false)
+#   • Secrets injected via secretKeyRef — never baked into the image
+#   • ConfigMap mounts are readOnly
+#   • TLS secret mounts are readOnly with mode 0400
+#
+# See docs/deployment/container-hardening.md and docs/deployment/filesystem-permissions.md
+# for full rationale.
+#
+apiVersion: apps/v1
+kind: StatefulSet
+metadata:
+  name: qodiqa
+  namespace: qodiqa
+  labels:
+    app.kubernetes.io/name:      qodiqa
+    app.kubernetes.io/component: gateway
+    app.kubernetes.io/version:   "1.0.0"
+    topology:                    single-node
+spec:
+  # ONE replica — a correctness bound:
+  # single-node ordering + the PG mirror is only legal with a single writer.
+  # Scaling this up trips assertNoIllegalTopology() at boot (fail-closed),
+  # provided QODIQA_REPLICA_COUNT below is kept in sync as documented.
+  replicas: 1
+
+  # Governing headless Service required by StatefulSet (see headless-service.yaml).
+  # This is independent of the regular ClusterIP Service in service.yaml, which
+  # remains the actual traffic entry point.
+  serviceName: qodiqa-headless
+
+  # Pods are independent instances (no ordering dependency between them, unlike
+  # a database primary/replica set), so start/scale them in parallel rather than
+  # waiting for each ordinal to become Ready before starting the next.
+  podManagementPolicy: Parallel
+
+  selector:
+    matchLabels:
+      app.kubernetes.io/name:      qodiqa
+      app.kubernetes.io/component: gateway
+      topology:                    single-node
+
+  updateStrategy:
+    type: RollingUpdate
+    rollingUpdate:
+      # maxUnavailable for StatefulSet requires Kubernetes 1.24+ (GA; the
+      # MaxUnavailableStatefulSet feature gate defaults on since 1.24). On
+      # older clusters this field is ignored and one pod at a time is
+      # replaced regardless — the same effective behavior as maxUnavailable: 1.
+      maxUnavailable: 1    # StatefulSet has no maxSurge; see rollout trade-off note above
+
+  # PVCs created from volumeClaimTemplates survive pod deletion and scale-down
+  # by default. This makes that retained-by-default behavior explicit (GA in
+  # Kubernetes 1.27+; clusters below 1.27 ignore this field and already retain
+  # the PVCs, which is the durability property the audit log and key store
+  # both require — see docs/deployment/persistence.md).
+  persistentVolumeClaimRetentionPolicy:
+    whenDeleted: Retain
+    whenScaled:  Retain
+
+  template:
+    metadata:
+      labels:
+        app.kubernetes.io/name:      qodiqa
+        app.kubernetes.io/component: gateway
+        app.kubernetes.io/version:   "1.0.0"
+        topology:                    single-node
+      annotations:
+        # Trigger rolling restart when the ConfigMap or Secret changes
+        # (set via: kubectl rollout restart statefulset/qodiqa -n qodiqa)
+        checksum/config: ""   # Managed by Helm or CI pipeline
+        # AppArmor profile — the node's default AppArmor policy.
+        # REQUIRES AppArmor-enabled nodes (RC-11): where AppArmor is disabled the
+        # kubelet REJECTS the pod ("Cannot enforce AppArmor: AppArmor is not enabled
+        # on the host"). The securityContext.appArmorProfile RuntimeDefault field is
+        # rejected identically. design decision
+        # / RC-11: keep as a node requirement, or move to an opt-in patch.
+        container.apparmor.security.beta.kubernetes.io/qodiqa: runtime/default
+
+    spec:
+      # ── Service account ─────────────────────────────────────────────────
+      # a dedicated, token-less ServiceAccount (base/serviceaccount.yaml) instead
+      # of the namespace `default` SA — workload-identity / IRSA annotations (examples/external-secrets) attach here.
+      serviceAccountName: qodiqa
+      automountServiceAccountToken: false
+
+      # ── Pod-level security context ───────────────────────────────────────
+      securityContext:
+        runAsNonRoot: true
+        runAsUser:    1000
+        runAsGroup:   1000
+        fsGroup:      1000          # Volume mounts group-owned by UID 1000
+        seccompProfile:
+          type: RuntimeDefault
+        # AppArmor annotation is applied per-container in the annotations block
+        # (see metadata.annotations below).  RuntimeDefault seccomp is applied
+        # here at the pod level; containers inherit it unless overridden.
+
+      # ── Init container: wait for Redis ──────────────────────────────────
+      # Ensures Redis is reachable before QODIQA starts.
+      # Do NOT remove this block while STRICT_REPLAY_PROTECTION=true (the
+      # default, and the value set in base/configmap.yaml): with strict replay
+      # protection enabled, an unreachable nonce store is fatal at startup
+      # (process.exit(1)) rather than a degraded start, so removing this
+      # init container would cause CrashLoopBackOff instead of a graceful
+      # wait. QODIQA's degraded-start behavior only applies if
+      # STRICT_REPLAY_PROTECTION is explicitly set to "false" — see
+      # docs/deployment/startup-and-probes.md ("Startup ordering in Kubernetes").
+      #
+      # the probe speaks the SAME contract as the app (base/configmap.yaml) —
+      # TLS-only port 6380 with the mTLS client certificate and ACL user REDIS_USERNAME. The former plaintext
+      # `redis-cli -a … ping` could never get PONG from a TLS-only Redis, so the pod sat in Init:0/1 forever.
+      # The password travels in REDISCLI_AUTH (environment), never on argv (`-a` was visible in /proc/<pid>/cmdline).
+      # Bounded: after ~5 min (100 × 3 s) the container exits 1, so the pod shows Init:Error/CrashLoopBackOff
+      # instead of waiting silently.
+      initContainers:
+        - name: wait-for-redis
+          # digest-pinned (redis 7.4.11; RepoDigest of the locally cached redis:7-alpine, 2026-08-18
+          # build). Bump deliberately: docker pull, then copy `docker image inspect --format '{{index .RepoDigests 0}}'`.
+          image: redis:7.4.11-alpine@sha256:ff02b58f971e7d7d156a1267e283fcbbeee91773b6aa36c49dac28ecfe28eadf
+          securityContext:
+            runAsNonRoot:             true
+            runAsUser:                1000
+            readOnlyRootFilesystem:   true
+            allowPrivilegeEscalation: false
+            capabilities:
+              drop: [ALL]
+          command:
+            - sh
+            - -c
+            - |
+              n=0
+              until REDISCLI_AUTH="$REDIS_PASSWORD" redis-cli --tls \
+                --cacert /etc/qodiqa-tls/ca.crt --cert /etc/qodiqa-tls/client.crt --key /etc/qodiqa-tls/client.key \
+                -h "$REDIS_HOST" -p "$REDIS_PORT" --user "$REDIS_USERNAME" ping 2>/dev/null | grep -q PONG; do
+                n=$((n + 1))
+                if [ "$n" -ge 100 ]; then echo "Redis at $REDIS_HOST:$REDIS_PORT not ready after $n attempts"; exit 1; fi
+                echo "waiting for Redis at $REDIS_HOST:$REDIS_PORT..."
+                sleep 3
+              done
+              echo "Redis is ready"
+          env:
+            - name: REDIS_HOST
+              value: redis-service.qodiqa.svc.cluster.local
+            - name: REDIS_PORT
+              value: "6380"
+            - name: REDIS_USERNAME
+              valueFrom: { configMapKeyRef: { name: qodiqa-config, key: REDIS_USERNAME } }
+            - name: REDIS_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: qodiqa-secrets
+                  key:  redis-password
+          volumeMounts:
+            - name: redis-tls
+              mountPath: /etc/qodiqa-tls
+              readOnly:  true
+          # init containers carry resources too (a ResourceQuota without a LimitRange rejects pods otherwise)
+          resources:
+            requests: { cpu: 10m,  memory: 16Mi }
+            limits:   { cpu: 100m, memory: 64Mi }
+
+      containers:
+        - name: qodiqa
+          image: YOUR_REGISTRY/qodiqa:1.0.0   # Pin to a digest in production
+          imagePullPolicy: Always
+
+          ports:
+            - name: http
+              containerPort: 3000
+              protocol: TCP
+
+          # keep serving for 10 s after SIGTERM is scheduled, while kube-proxy /
+          # the ingress remove this pod's endpoint — src/runtime/shutdown.js closes the listener immediately on
+          # SIGTERM, so without this delay new connections in that window are refused on every rollout.
+          # Budget: 10 s preStop + SHUTDOWN_TIMEOUT_MS 30 s < terminationGracePeriodSeconds 60.
+          lifecycle:
+            preStop:
+              exec:
+                command: ["sleep", "10"]
+
+          # ── Container-level security context ──────────────────────────
+          securityContext:
+            runAsNonRoot:             true
+            runAsUser:                1000
+            runAsGroup:               1000
+            readOnlyRootFilesystem:   true
+            allowPrivilegeEscalation: false
+            capabilities:
+              drop: [ALL]
+
+          # ── Environment: non-secret config from ConfigMap ─────────────
+          # qodiqa-config-single-node (this overlay's configmap-single-node.
+          # yaml) adds the PG mirror enablement + connection settings on top
+          # of the shared base config — option C. Listed second so its
+          # keys would win on any (deliberate) overlap.
+          envFrom:
+            - configMapRef:
+                name: qodiqa-config
+            - configMapRef:
+                name: qodiqa-config-single-node
+
+          # ── Environment: secrets from Secret ──────────────────────────
+          env:
+            # operator-declared replica count, matching spec.replicas
+            # above (kept in sync manually — Kubernetes gives a pod no
+            # built-in way to learn its own StatefulSet's replica count; see
+            # src/core/audit/multiInstanceGuard.js's assertNoIllegalTopology()
+            # and QODIQA_K8S_SINGLE_REPLICA below for the identical,
+            # already-documented gap). option C this overlay DOES
+            # enable the PG mirror (configmap-single-node.yaml), so the
+            # illegal-topology assertion is live: if an operator scales
+            # spec.replicas past 1 and honestly updates this value, the boot
+            # refuses (PG mirror + single-node ordering + >1 replica is the
+            # divergent-dual-write topology).
+            - name: QODIQA_REPLICA_COUNT
+              value: "1"
+
+            # SCAL-13: single-node ordering inside Kubernetes requires the
+            # operator to explicitly acknowledge a single-replica topology
+            # (a pod cannot learn its own spec.replicas). True here by
+            # construction — replicas: 1 is this overlay's correctness
+            # bound (see header comment). checkSingleInstance() refuses to
+            # start without this acknowledgement.
+            - name: QODIQA_K8S_SINGLE_REPLICA
+              value: "true"
+
+            # PG mirror credential — the non-secret
+            # QODIQA_PG_* settings live in configmap-single-node.yaml.
+            - name: QODIQA_PG_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: qodiqa-secrets
+                  key:  postgres-password
+
+            - name: QODIQA_KEY_ENCRYPTION_KEY
+              valueFrom:
+                secretKeyRef:
+                  name: qodiqa-secrets
+                  key:  key-encryption-key
+
+
+            - name: OPENAI_API_KEY
+              valueFrom:
+                secretKeyRef:
+                  name: qodiqa-secrets
+                  key:  openai-api-key
+
+            - name: QODIQA_CLIENT_ID
+              valueFrom:
+                secretKeyRef:
+                  name: qodiqa-secrets
+                  key:  client-id
+
+            - name: REDIS_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: qodiqa-secrets
+                  key:  redis-password
+
+            # see base/secret.yaml's postgres-retention-password
+            # comment — the startup retention privilege check fails closed
+            # without it whenever PostgreSQL is enabled (it is here,
+            # option C).
+            - name: QODIQA_PG_RETENTION_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: qodiqa-secrets
+                  key:  postgres-retention-password
+
+            # see base/secret.yaml's execution-invariant-secret
+            # comment — every /ai/chat EXECUTE throws without it.
+            - name: QODIQA_EXECUTION_INVARIANT_SECRET
+              valueFrom:
+                secretKeyRef:
+                  name: qodiqa-secrets
+                  key:  execution-invariant-secret
+
+            # the in-process alert notifier (src/alerting/notification/channels/WebhookChannel.js)
+            # reads these; before this only the backup CronJobs received them. Optional: absent keys leave the
+            # webhook channel unconfigured, exactly as before. The production target is an design decision (D17).
+            - name: ALERT_WEBHOOK_URL
+              valueFrom:
+                secretKeyRef:
+                  name: qodiqa-secrets
+                  key:  alert-webhook-url
+                  optional: true
+            - name: ALERT_WEBHOOK_SECRET
+              valueFrom:
+                secretKeyRef:
+                  name: qodiqa-secrets
+                  key:  alert-webhook-secret
+                  optional: true
+
+            # every dedicated PG role password and the
+            # DSR pepper the production boot validator requires (base/secret.yaml) — before
+            # none were passed, so every pod failed boot validation.
+            # the migration credential (postgres-mig-password) is deliberately NOT mounted
+            # here — the gateway never uses it and a production boot refuses it. Run migrations as a separate,
+            # one-shot Job/operator command that alone receives it (node src/infra/postgres/migrate.js).
+            - name: QODIQA_PG_SYSTEM_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: qodiqa-secrets
+                  key:  postgres-system-password
+            - name: QODIQA_PG_REPORTING_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: qodiqa-secrets
+                  key:  postgres-reporting-password
+            - name: QODIQA_PG_CONTROL_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: qodiqa-secrets
+                  key:  postgres-control-password
+            - name: QODIQA_DSR_PSEUDONYM_PEPPER
+              valueFrom:
+                secretKeyRef:
+                  name: qodiqa-secrets
+                  key:  dsr-pseudonym-pepper
+            # the keystore MAC keyring (pub/sub + consent-cache signing). Production
+            # never generates one per node: create it once (QODIQA_KEY_ENCRYPTION_KEY set,
+            # QODIQA_MAC_KEYS_PATH=./mac-keys.json node scripts/security/macKeyring.js init) and
+            # store it as Secret qodiqa-mac-keyring (key mac-keys.json); mounted read-only below.
+            - name: QODIQA_MAC_KEYS_PATH
+              value: /etc/qodiqa-mac/mac-keys.json
+
+          # ── Health probes ─────────────────────────────────────────────
+          # /health and /ready are UNAUTHENTICATED by default (safe: both are
+          # contractually restricted to minimal, non-sensitive output — see
+          # docs/deployment/kubernetes-probes.md "Security model"). kubelet's httpGet
+          # probes below cannot supply the QODIQA_OPS_TOKEN bearer credential
+          # that /metrics and /diagnostics require, so this is the only
+          # config that keeps probes working out of the box.
+          #
+          # To require a credential on these two endpoints as well, set
+          # QODIQA_HEALTH_PROBE_AUTH_REQUIRED=true in the ConfigMap AND add
+          # the matching header to every probe below, e.g.:
+          #   httpHeaders:
+          #     - name: X-Ops-Token
+          #       value: <value of QODIQA_OPS_TOKEN secret>
+          # (Requires templating the Secret value in via Helm/kustomize —
+          # a raw literal here would defeat the purpose of using a Secret.)
+
+          # startupProbe prevents liveness/readiness from running until the
+          # process is alive (up to 120s for startup phases 0–7).
+          startupProbe:
+            httpGet:
+              path: /health
+              port: 3000
+            initialDelaySeconds: 0
+            periodSeconds:       5
+            timeoutSeconds:      5
+            failureThreshold:    24   # 24 × 5s = 120s maximum startup window
+
+          # livenessProbe: restart the container if the process is dead/hung.
+          # Uses /health which always returns 200 while the process is alive.
+          livenessProbe:
+            httpGet:
+              path: /health
+              port: 3000
+            initialDelaySeconds: 0    # startupProbe gates this
+            periodSeconds:       15
+            timeoutSeconds:      5
+            failureThreshold:    3    # Restart after 45s of liveness failure
+
+          # readinessProbe: remove from Service when not ready to serve traffic.
+          # Uses /ready which returns 503 during startup, shutdown, and Redis failure.
+          readinessProbe:
+            httpGet:
+              path: /ready
+              port: 3000
+            initialDelaySeconds: 0
+            periodSeconds:       5
+            timeoutSeconds:      3
+            failureThreshold:    3    # Remove from LB after 15s of not-ready
+            successThreshold:    1
+
+          # ── Resource limits ───────────────────────────────────────────
+          # sized from MEASURED footprint — the gateway
+          # loads two ONNX models into an inference pool; RSS 1,537-1,612 MB in the Linux image
+          # working-set plateau ~1.66 GB / private ~2.05 GB over a 30-min soak. The
+          # former 512Mi limit OOM-killed it on boot. Rationale + re-measurement:
+          # enforced by scripts/deploy/validate-manifests.js.
+          # request 2304Mi (was 2Gi) so the scheduler reserves at least the measured ~2.2 GB working set.
+          resources:
+            requests:
+              cpu:    1000m
+              memory: 2304Mi
+            limits:
+              cpu:    4000m
+              memory: 3Gi
+
+          # ── Volume mounts ─────────────────────────────────────────────
+          volumeMounts:
+            # Writable /tmp for Node.js runtime needs
+            - name: tmp
+              mountPath: /tmp
+
+            # Persistent key store — read-write (key rotation writes here)
+            - name: keystore
+              mountPath: /opt/qodiqa/data
+
+            # Persistent audit log — read-write (append-only)
+            - name: auditlog
+              mountPath: /opt/qodiqa/logs
+
+            # Policy file from ConfigMap — read-only
+            - name: config
+              mountPath: /opt/qodiqa/config/policies.json
+              subPath:   policies.json
+              readOnly:  true
+
+            # Redis TLS certificates from Secret — read-only
+            - name: redis-tls
+              mountPath: /etc/qodiqa-tls
+              readOnly:  true
+
+            # keystore MAC keyring (Secret qodiqa-mac-keyring, provisioned once)
+            - name: mac-keyring
+              mountPath: /etc/qodiqa-mac
+              readOnly:  true
+
+            # audit witness key + public keys (Secret qodiqa-witness) and the per-pod anchor export
+            - name: witness
+              mountPath: /etc/qodiqa-witness
+              readOnly:  true
+            - name: anchors
+              mountPath: /opt/qodiqa/anchors
+
+            # optional PostgreSQL CA (Secret qodiqa-pg-tls, key ca.crt). Mounted but NOT referenced by
+            # default — to verify a private-CA / managed-DB certificate set QODIQA_PG_SSL_CA=/etc/qodiqa-pg-tls/ca.crt
+            # in configmap-single-node.yaml AFTER creating the Secret (the boot validator refuses a CA path that does
+            # not exist, so wiring it by default would break every deployment without the Secret).
+            - name: pg-tls
+              mountPath: /etc/qodiqa-pg-tls
+              readOnly:  true
+
+      # ── Volumes ──────────────────────────────────────────────────────────
+      # Note: "auditlog" is intentionally NOT listed here — it is provisioned
+      # per-pod below in volumeClaimTemplates, one exclusive PVC per replica.
+      volumes:
+        # bounded scratch (Compose caps /tmp at 64m the same way)
+        - name: tmp
+          emptyDir: { sizeLimit: 64Mi }
+
+        # optional — the pod starts without it; see the pg-tls mount comment above.
+        - name: pg-tls
+          secret:
+            secretName:  qodiqa-pg-tls
+            optional:    true
+            defaultMode: 0440
+
+        # keystore MAC keyring — created once by the operator:
+        #   kubectl -n qodiqa create secret generic qodiqa-mac-keyring --from-file=mac-keys.json
+        - name: mac-keyring
+          secret:
+            secretName:  qodiqa-mac-keyring
+            defaultMode: 0400
+
+        # audit witness — created by the operator (ideally another party), e.g.:
+        #   WITNESS_ID=qodiqa-witness-1 WITNESS_KEY_PATH=witness-key.json WITNESS_LOG_PATH=/dev/null \
+        #     node scripts/anchor/witness-cosign.js --public-key > witness-record.json   # creates the key, prints the public record
+        #   node -e "console.log(JSON.stringify([require('./witness-record.json')]))" > witness-public-keys.json
+        #   kubectl -n qodiqa create secret generic qodiqa-witness --from-file=witness-key.json --from-file=witness-public-keys.json
+        - name: witness
+          secret:
+            secretName:  qodiqa-witness
+            defaultMode: 0400
+
+        # Shared across every replica — same claim, mounted read-write by all
+        # pods simultaneously. Requires a ReadWriteMany-capable StorageClass.
+        # See base/pvc.yaml for details on why this must be shared (not per-pod).
+        - name: keystore
+          persistentVolumeClaim:
+            claimName: qodiqa-keystore
+
+        - name: config
+          configMap:
+            name:        qodiqa-config
+            defaultMode: 0440
+
+        # Redis TLS certs — private key mode 0400, certs mode 0440
+        - name: redis-tls
+          secret:
+            secretName: qodiqa-redis-tls    # Separate secret for TLS material
+            defaultMode: 0400
+            items:
+              - key:  ca.crt
+                path: ca.crt
+                mode: 0440
+              - key:  client.crt
+                path: client.crt
+                mode: 0440
+              - key:  client.key
+                path: client.key
+                mode: 0400
+
+      # ── Graceful shutdown ────────────────────────────────────────────────
+      # Must exceed SHUTDOWN_TIMEOUT_MS (default 30s) to allow clean drain.
+      # Formula: SHUTDOWN_TIMEOUT_MS / 1000 + 15 seconds buffer
+      terminationGracePeriodSeconds: 60
+
+      # ── Scheduling ───────────────────────────────────────────────────────
+      # Spread replicas across nodes for availability
+      topologySpreadConstraints:
+        - maxSkew:           1
+          topologyKey:       kubernetes.io/hostname
+          whenUnsatisfiable: DoNotSchedule
+          labelSelector:
+            matchLabels:
+              app.kubernetes.io/name:      qodiqa
+              app.kubernetes.io/component: gateway
+              topology:                    single-node
+
+  # ── Per-pod exclusive audit-log storage ─────────────────────────────────
+  # One PVC per replica, named "auditlog-qodiqa-<ordinal>", each bound
+  # ReadWriteOnce and mounted only by its own pod — this is safe because it is
+  # never shared, unlike the keystore volume above. This is the mechanism that
+  # gives every replica its own QODIQA_AUDIT_LOG file (same mount path,
+  # different backing volume) so audit chains never interleave.
+  # Standard block storage (AWS EBS, GCP PD, Azure Disk) is sufficient here —
+  # ReadWriteMany is NOT required for this volume.
+  volumeClaimTemplates:
+    - metadata:
+        name: auditlog
+        labels:
+          app.kubernetes.io/name:      qodiqa
+          app.kubernetes.io/component: auditlog
+          topology:                    single-node
+      spec:
+        accessModes:
+          - ReadWriteOnce
+        storageClassName: standard   # Replace with your cluster's storage class
+        resources:
+          requests:
+            storage: 1Gi
+    # per-pod anchor export + local witness log (copy anchors.jsonl off-cluster to customer-held storage)
+    - metadata:
+        name: anchors
+        labels:
+          app.kubernetes.io/name:      qodiqa
+          app.kubernetes.io/component: anchors
+          topology:                    single-node
+      spec:
+        accessModes:
+          - ReadWriteOnce
+        storageClassName: standard   # Replace with your cluster's storage class
+        resources:
+          requests:
+            storage: 256Mi

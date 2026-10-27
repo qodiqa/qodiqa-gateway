@@ -1,0 +1,3782 @@
+{
+ "probe": "v1-golden",
+ "policyHash": "e659d05c42597f9da49965b86b4c6c7bdc3f88ea865d3178cac9709e1c436631",
+ "rules": [
+  [
+   "POL-CONSENT",
+   "REQUIRE_CONSENT",
+   "645b8a97d22d6b8e6a5dc3b82147480bfbbe5f2105a67922486c30461b0a24b7"
+  ],
+  [
+   "POL-IP-EXACT",
+   "BLOCK_IP",
+   "0b5fab3d047e7938b4a034f817331aa4cd1cc828f612cb46771e08882afb2f2b"
+  ],
+  [
+   "POL-IP-NET",
+   "BLOCK_IP",
+   "2e4fd8745352095f5cb629993c940d1ac4c4d05c84c4b2d578815f4c8313ddcf"
+  ],
+  [
+   "POL-IP-OFF",
+   "BLOCK_IP",
+   "a3f8c324eaee200f8b36a67d165530b5d573b62952f972c6e59a81eb2989df34"
+  ],
+  [
+   "POL-HOURS",
+   "TIME_WINDOW",
+   "400ae5172ea26652b65deebe73764a42cfbe5e2973c18387538db2f64dbdb85b"
+  ],
+  [
+   "POL-RATE-USER",
+   "RATE_LIMIT",
+   "356346fd39e1d08fe732a9af5f15670388e5700bbb4aef003bfac783590e5251"
+  ],
+  [
+   "POL-RATE-IP",
+   "RATE_LIMIT",
+   "1b8dfc5729afe995038abbef035607b964f34e1cb0ce1610087903e923945975"
+  ]
+ ],
+ "count": 98,
+ "decisions": [
+  {
+   "u": "alice",
+   "ip": "198.51.100.7",
+   "ts": 1792638000,
+   "valid": true,
+   "decision": "BLOCK",
+   "reason": "OUTSIDE_TIME_WINDOW",
+   "policyId": "POL-HOURS",
+   "policyVersion": null,
+   "policyRuleHash": "400ae5172ea26652b65deebe73764a42cfbe5e2973c18387538db2f64dbdb85b",
+   "consent": null,
+   "path": [
+    [
+     "POL-CONSENT",
+     "REQUIRE_CONSENT",
+     "PASS",
+     "CONSENT_VERIFIED",
+     "645b8a97d22d6b8e6a5dc3b82147480bfbbe5f2105a67922486c30461b0a24b7"
+    ],
+    [
+     "POL-IP-EXACT",
+     "BLOCK_IP",
+     "PASS",
+     null,
+     "0b5fab3d047e7938b4a034f817331aa4cd1cc828f612cb46771e08882afb2f2b"
+    ],
+    [
+     "POL-IP-NET",
+     "BLOCK_IP",
+     "PASS",
+     null,
+     "2e4fd8745352095f5cb629993c940d1ac4c4d05c84c4b2d578815f4c8313ddcf"
+    ],
+    [
+     "POL-HOURS",
+     "TIME_WINDOW",
+     "BLOCK",
+     "OUTSIDE_TIME_WINDOW",
+     "400ae5172ea26652b65deebe73764a42cfbe5e2973c18387538db2f64dbdb85b"
+    ]
+   ]
+  },
+  {
+   "u": "alice",
+   "ip": "198.51.100.7",
+   "ts": 1792810800,
+   "valid": true,
+   "decision": "BLOCK",
+   "reason": "OUTSIDE_TIME_WINDOW",
+   "policyId": "POL-HOURS",
+   "policyVersion": null,
+   "policyRuleHash": "400ae5172ea26652b65deebe73764a42cfbe5e2973c18387538db2f64dbdb85b",
+   "consent": null,
+   "path": [
+    [
+     "POL-CONSENT",
+     "REQUIRE_CONSENT",
+     "PASS",
+     "CONSENT_VERIFIED",
+     "645b8a97d22d6b8e6a5dc3b82147480bfbbe5f2105a67922486c30461b0a24b7"
+    ],
+    [
+     "POL-IP-EXACT",
+     "BLOCK_IP",
+     "PASS",
+     null,
+     "0b5fab3d047e7938b4a034f817331aa4cd1cc828f612cb46771e08882afb2f2b"
+    ],
+    [
+     "POL-IP-NET",
+     "BLOCK_IP",
+     "PASS",
+     null,
+     "2e4fd8745352095f5cb629993c940d1ac4c4d05c84c4b2d578815f4c8313ddcf"
+    ],
+    [
+     "POL-HOURS",
+     "TIME_WINDOW",
+     "BLOCK",
+     "OUTSIDE_TIME_WINDOW",
+     "400ae5172ea26652b65deebe73764a42cfbe5e2973c18387538db2f64dbdb85b"
+    ]
+   ]
+  },
+  {
+   "u": "alice",
+   "ip": "198.51.100.7",
+   "ts": 1792659600,
+   "valid": true,
+   "decision": "EXECUTE",
+   "reason": "ALL_CHECKS_PASSED",
+   "policyId": "SYSTEM",
+   "policyVersion": null,
+   "policyRuleHash": null,
+   "consent": null,
+   "path": [
+    [
+     "POL-CONSENT",
+     "REQUIRE_CONSENT",
+     "PASS",
+     "CONSENT_VERIFIED",
+     "645b8a97d22d6b8e6a5dc3b82147480bfbbe5f2105a67922486c30461b0a24b7"
+    ],
+    [
+     "POL-IP-EXACT",
+     "BLOCK_IP",
+     "PASS",
+     null,
+     "0b5fab3d047e7938b4a034f817331aa4cd1cc828f612cb46771e08882afb2f2b"
+    ],
+    [
+     "POL-IP-NET",
+     "BLOCK_IP",
+     "PASS",
+     null,
+     "2e4fd8745352095f5cb629993c940d1ac4c4d05c84c4b2d578815f4c8313ddcf"
+    ],
+    [
+     "POL-HOURS",
+     "TIME_WINDOW",
+     "PASS",
+     null,
+     "400ae5172ea26652b65deebe73764a42cfbe5e2973c18387538db2f64dbdb85b"
+    ],
+    [
+     "POL-RATE-USER",
+     "RATE_LIMIT",
+     "PASS",
+     null,
+     "356346fd39e1d08fe732a9af5f15670388e5700bbb4aef003bfac783590e5251"
+    ],
+    [
+     "POL-RATE-IP",
+     "RATE_LIMIT",
+     "PASS",
+     null,
+     "1b8dfc5729afe995038abbef035607b964f34e1cb0ce1610087903e923945975"
+    ]
+   ]
+  },
+  {
+   "u": "alice",
+   "ip": "198.51.100.7",
+   "ts": 1792832400,
+   "valid": true,
+   "decision": "BLOCK",
+   "reason": "OUTSIDE_TIME_WINDOW",
+   "policyId": "POL-HOURS",
+   "policyVersion": null,
+   "policyRuleHash": "400ae5172ea26652b65deebe73764a42cfbe5e2973c18387538db2f64dbdb85b",
+   "consent": null,
+   "path": [
+    [
+     "POL-CONSENT",
+     "REQUIRE_CONSENT",
+     "PASS",
+     "CONSENT_VERIFIED",
+     "645b8a97d22d6b8e6a5dc3b82147480bfbbe5f2105a67922486c30461b0a24b7"
+    ],
+    [
+     "POL-IP-EXACT",
+     "BLOCK_IP",
+     "PASS",
+     null,
+     "0b5fab3d047e7938b4a034f817331aa4cd1cc828f612cb46771e08882afb2f2b"
+    ],
+    [
+     "POL-IP-NET",
+     "BLOCK_IP",
+     "PASS",
+     null,
+     "2e4fd8745352095f5cb629993c940d1ac4c4d05c84c4b2d578815f4c8313ddcf"
+    ],
+    [
+     "POL-HOURS",
+     "TIME_WINDOW",
+     "BLOCK",
+     "OUTSIDE_TIME_WINDOW",
+     "400ae5172ea26652b65deebe73764a42cfbe5e2973c18387538db2f64dbdb85b"
+    ]
+   ]
+  },
+  {
+   "u": "alice",
+   "ip": "198.51.100.7",
+   "ts": 1792674000,
+   "valid": true,
+   "decision": "EXECUTE",
+   "reason": "ALL_CHECKS_PASSED",
+   "policyId": "SYSTEM",
+   "policyVersion": null,
+   "policyRuleHash": null,
+   "consent": null,
+   "path": [
+    [
+     "POL-CONSENT",
+     "REQUIRE_CONSENT",
+     "PASS",
+     "CONSENT_VERIFIED",
+     "645b8a97d22d6b8e6a5dc3b82147480bfbbe5f2105a67922486c30461b0a24b7"
+    ],
+    [
+     "POL-IP-EXACT",
+     "BLOCK_IP",
+     "PASS",
+     null,
+     "0b5fab3d047e7938b4a034f817331aa4cd1cc828f612cb46771e08882afb2f2b"
+    ],
+    [
+     "POL-IP-NET",
+     "BLOCK_IP",
+     "PASS",
+     null,
+     "2e4fd8745352095f5cb629993c940d1ac4c4d05c84c4b2d578815f4c8313ddcf"
+    ],
+    [
+     "POL-HOURS",
+     "TIME_WINDOW",
+     "PASS",
+     null,
+     "400ae5172ea26652b65deebe73764a42cfbe5e2973c18387538db2f64dbdb85b"
+    ],
+    [
+     "POL-RATE-USER",
+     "RATE_LIMIT",
+     "PASS",
+     null,
+     "356346fd39e1d08fe732a9af5f15670388e5700bbb4aef003bfac783590e5251"
+    ],
+    [
+     "POL-RATE-IP",
+     "RATE_LIMIT",
+     "PASS",
+     null,
+     "1b8dfc5729afe995038abbef035607b964f34e1cb0ce1610087903e923945975"
+    ]
+   ]
+  },
+  {
+   "u": "alice",
+   "ip": "198.51.100.7",
+   "ts": 1792846800,
+   "valid": true,
+   "decision": "BLOCK",
+   "reason": "OUTSIDE_TIME_WINDOW",
+   "policyId": "POL-HOURS",
+   "policyVersion": null,
+   "policyRuleHash": "400ae5172ea26652b65deebe73764a42cfbe5e2973c18387538db2f64dbdb85b",
+   "consent": null,
+   "path": [
+    [
+     "POL-CONSENT",
+     "REQUIRE_CONSENT",
+     "PASS",
+     "CONSENT_VERIFIED",
+     "645b8a97d22d6b8e6a5dc3b82147480bfbbe5f2105a67922486c30461b0a24b7"
+    ],
+    [
+     "POL-IP-EXACT",
+     "BLOCK_IP",
+     "PASS",
+     null,
+     "0b5fab3d047e7938b4a034f817331aa4cd1cc828f612cb46771e08882afb2f2b"
+    ],
+    [
+     "POL-IP-NET",
+     "BLOCK_IP",
+     "PASS",
+     null,
+     "2e4fd8745352095f5cb629993c940d1ac4c4d05c84c4b2d578815f4c8313ddcf"
+    ],
+    [
+     "POL-HOURS",
+     "TIME_WINDOW",
+     "BLOCK",
+     "OUTSIDE_TIME_WINDOW",
+     "400ae5172ea26652b65deebe73764a42cfbe5e2973c18387538db2f64dbdb85b"
+    ]
+   ]
+  },
+  {
+   "u": "alice",
+   "ip": "198.51.100.7",
+   "ts": 1792706400,
+   "valid": true,
+   "decision": "BLOCK",
+   "reason": "OUTSIDE_TIME_WINDOW",
+   "policyId": "POL-HOURS",
+   "policyVersion": null,
+   "policyRuleHash": "400ae5172ea26652b65deebe73764a42cfbe5e2973c18387538db2f64dbdb85b",
+   "consent": null,
+   "path": [
+    [
+     "POL-CONSENT",
+     "REQUIRE_CONSENT",
+     "PASS",
+     "CONSENT_VERIFIED",
+     "645b8a97d22d6b8e6a5dc3b82147480bfbbe5f2105a67922486c30461b0a24b7"
+    ],
+    [
+     "POL-IP-EXACT",
+     "BLOCK_IP",
+     "PASS",
+     null,
+     "0b5fab3d047e7938b4a034f817331aa4cd1cc828f612cb46771e08882afb2f2b"
+    ],
+    [
+     "POL-IP-NET",
+     "BLOCK_IP",
+     "PASS",
+     null,
+     "2e4fd8745352095f5cb629993c940d1ac4c4d05c84c4b2d578815f4c8313ddcf"
+    ],
+    [
+     "POL-HOURS",
+     "TIME_WINDOW",
+     "BLOCK",
+     "OUTSIDE_TIME_WINDOW",
+     "400ae5172ea26652b65deebe73764a42cfbe5e2973c18387538db2f64dbdb85b"
+    ]
+   ]
+  },
+  {
+   "u": "alice",
+   "ip": "198.51.100.7",
+   "ts": 1792879200,
+   "valid": true,
+   "decision": "BLOCK",
+   "reason": "OUTSIDE_TIME_WINDOW",
+   "policyId": "POL-HOURS",
+   "policyVersion": null,
+   "policyRuleHash": "400ae5172ea26652b65deebe73764a42cfbe5e2973c18387538db2f64dbdb85b",
+   "consent": null,
+   "path": [
+    [
+     "POL-CONSENT",
+     "REQUIRE_CONSENT",
+     "PASS",
+     "CONSENT_VERIFIED",
+     "645b8a97d22d6b8e6a5dc3b82147480bfbbe5f2105a67922486c30461b0a24b7"
+    ],
+    [
+     "POL-IP-EXACT",
+     "BLOCK_IP",
+     "PASS",
+     null,
+     "0b5fab3d047e7938b4a034f817331aa4cd1cc828f612cb46771e08882afb2f2b"
+    ],
+    [
+     "POL-IP-NET",
+     "BLOCK_IP",
+     "PASS",
+     null,
+     "2e4fd8745352095f5cb629993c940d1ac4c4d05c84c4b2d578815f4c8313ddcf"
+    ],
+    [
+     "POL-HOURS",
+     "TIME_WINDOW",
+     "BLOCK",
+     "OUTSIDE_TIME_WINDOW",
+     "400ae5172ea26652b65deebe73764a42cfbe5e2973c18387538db2f64dbdb85b"
+    ]
+   ]
+  },
+  {
+   "u": "alice",
+   "ip": "10.1.2.3",
+   "ts": 1792638000,
+   "valid": true,
+   "decision": "BLOCK",
+   "reason": "IP_BLOCKED",
+   "policyId": "POL-IP-NET",
+   "policyVersion": null,
+   "policyRuleHash": "2e4fd8745352095f5cb629993c940d1ac4c4d05c84c4b2d578815f4c8313ddcf",
+   "consent": null,
+   "path": [
+    [
+     "POL-CONSENT",
+     "REQUIRE_CONSENT",
+     "PASS",
+     "CONSENT_VERIFIED",
+     "645b8a97d22d6b8e6a5dc3b82147480bfbbe5f2105a67922486c30461b0a24b7"
+    ],
+    [
+     "POL-IP-EXACT",
+     "BLOCK_IP",
+     "PASS",
+     null,
+     "0b5fab3d047e7938b4a034f817331aa4cd1cc828f612cb46771e08882afb2f2b"
+    ],
+    [
+     "POL-IP-NET",
+     "BLOCK_IP",
+     "BLOCK",
+     "IP_BLOCKED",
+     "2e4fd8745352095f5cb629993c940d1ac4c4d05c84c4b2d578815f4c8313ddcf"
+    ]
+   ]
+  },
+  {
+   "u": "alice",
+   "ip": "10.1.2.3",
+   "ts": 1792810800,
+   "valid": true,
+   "decision": "BLOCK",
+   "reason": "IP_BLOCKED",
+   "policyId": "POL-IP-NET",
+   "policyVersion": null,
+   "policyRuleHash": "2e4fd8745352095f5cb629993c940d1ac4c4d05c84c4b2d578815f4c8313ddcf",
+   "consent": null,
+   "path": [
+    [
+     "POL-CONSENT",
+     "REQUIRE_CONSENT",
+     "PASS",
+     "CONSENT_VERIFIED",
+     "645b8a97d22d6b8e6a5dc3b82147480bfbbe5f2105a67922486c30461b0a24b7"
+    ],
+    [
+     "POL-IP-EXACT",
+     "BLOCK_IP",
+     "PASS",
+     null,
+     "0b5fab3d047e7938b4a034f817331aa4cd1cc828f612cb46771e08882afb2f2b"
+    ],
+    [
+     "POL-IP-NET",
+     "BLOCK_IP",
+     "BLOCK",
+     "IP_BLOCKED",
+     "2e4fd8745352095f5cb629993c940d1ac4c4d05c84c4b2d578815f4c8313ddcf"
+    ]
+   ]
+  },
+  {
+   "u": "alice",
+   "ip": "10.1.2.3",
+   "ts": 1792659600,
+   "valid": true,
+   "decision": "BLOCK",
+   "reason": "IP_BLOCKED",
+   "policyId": "POL-IP-NET",
+   "policyVersion": null,
+   "policyRuleHash": "2e4fd8745352095f5cb629993c940d1ac4c4d05c84c4b2d578815f4c8313ddcf",
+   "consent": null,
+   "path": [
+    [
+     "POL-CONSENT",
+     "REQUIRE_CONSENT",
+     "PASS",
+     "CONSENT_VERIFIED",
+     "645b8a97d22d6b8e6a5dc3b82147480bfbbe5f2105a67922486c30461b0a24b7"
+    ],
+    [
+     "POL-IP-EXACT",
+     "BLOCK_IP",
+     "PASS",
+     null,
+     "0b5fab3d047e7938b4a034f817331aa4cd1cc828f612cb46771e08882afb2f2b"
+    ],
+    [
+     "POL-IP-NET",
+     "BLOCK_IP",
+     "BLOCK",
+     "IP_BLOCKED",
+     "2e4fd8745352095f5cb629993c940d1ac4c4d05c84c4b2d578815f4c8313ddcf"
+    ]
+   ]
+  },
+  {
+   "u": "alice",
+   "ip": "10.1.2.3",
+   "ts": 1792832400,
+   "valid": true,
+   "decision": "BLOCK",
+   "reason": "IP_BLOCKED",
+   "policyId": "POL-IP-NET",
+   "policyVersion": null,
+   "policyRuleHash": "2e4fd8745352095f5cb629993c940d1ac4c4d05c84c4b2d578815f4c8313ddcf",
+   "consent": null,
+   "path": [
+    [
+     "POL-CONSENT",
+     "REQUIRE_CONSENT",
+     "PASS",
+     "CONSENT_VERIFIED",
+     "645b8a97d22d6b8e6a5dc3b82147480bfbbe5f2105a67922486c30461b0a24b7"
+    ],
+    [
+     "POL-IP-EXACT",
+     "BLOCK_IP",
+     "PASS",
+     null,
+     "0b5fab3d047e7938b4a034f817331aa4cd1cc828f612cb46771e08882afb2f2b"
+    ],
+    [
+     "POL-IP-NET",
+     "BLOCK_IP",
+     "BLOCK",
+     "IP_BLOCKED",
+     "2e4fd8745352095f5cb629993c940d1ac4c4d05c84c4b2d578815f4c8313ddcf"
+    ]
+   ]
+  },
+  {
+   "u": "alice",
+   "ip": "10.1.2.3",
+   "ts": 1792674000,
+   "valid": true,
+   "decision": "BLOCK",
+   "reason": "IP_BLOCKED",
+   "policyId": "POL-IP-NET",
+   "policyVersion": null,
+   "policyRuleHash": "2e4fd8745352095f5cb629993c940d1ac4c4d05c84c4b2d578815f4c8313ddcf",
+   "consent": null,
+   "path": [
+    [
+     "POL-CONSENT",
+     "REQUIRE_CONSENT",
+     "PASS",
+     "CONSENT_VERIFIED",
+     "645b8a97d22d6b8e6a5dc3b82147480bfbbe5f2105a67922486c30461b0a24b7"
+    ],
+    [
+     "POL-IP-EXACT",
+     "BLOCK_IP",
+     "PASS",
+     null,
+     "0b5fab3d047e7938b4a034f817331aa4cd1cc828f612cb46771e08882afb2f2b"
+    ],
+    [
+     "POL-IP-NET",
+     "BLOCK_IP",
+     "BLOCK",
+     "IP_BLOCKED",
+     "2e4fd8745352095f5cb629993c940d1ac4c4d05c84c4b2d578815f4c8313ddcf"
+    ]
+   ]
+  },
+  {
+   "u": "alice",
+   "ip": "10.1.2.3",
+   "ts": 1792846800,
+   "valid": true,
+   "decision": "BLOCK",
+   "reason": "IP_BLOCKED",
+   "policyId": "POL-IP-NET",
+   "policyVersion": null,
+   "policyRuleHash": "2e4fd8745352095f5cb629993c940d1ac4c4d05c84c4b2d578815f4c8313ddcf",
+   "consent": null,
+   "path": [
+    [
+     "POL-CONSENT",
+     "REQUIRE_CONSENT",
+     "PASS",
+     "CONSENT_VERIFIED",
+     "645b8a97d22d6b8e6a5dc3b82147480bfbbe5f2105a67922486c30461b0a24b7"
+    ],
+    [
+     "POL-IP-EXACT",
+     "BLOCK_IP",
+     "PASS",
+     null,
+     "0b5fab3d047e7938b4a034f817331aa4cd1cc828f612cb46771e08882afb2f2b"
+    ],
+    [
+     "POL-IP-NET",
+     "BLOCK_IP",
+     "BLOCK",
+     "IP_BLOCKED",
+     "2e4fd8745352095f5cb629993c940d1ac4c4d05c84c4b2d578815f4c8313ddcf"
+    ]
+   ]
+  },
+  {
+   "u": "alice",
+   "ip": "10.1.2.3",
+   "ts": 1792706400,
+   "valid": true,
+   "decision": "BLOCK",
+   "reason": "IP_BLOCKED",
+   "policyId": "POL-IP-NET",
+   "policyVersion": null,
+   "policyRuleHash": "2e4fd8745352095f5cb629993c940d1ac4c4d05c84c4b2d578815f4c8313ddcf",
+   "consent": null,
+   "path": [
+    [
+     "POL-CONSENT",
+     "REQUIRE_CONSENT",
+     "PASS",
+     "CONSENT_VERIFIED",
+     "645b8a97d22d6b8e6a5dc3b82147480bfbbe5f2105a67922486c30461b0a24b7"
+    ],
+    [
+     "POL-IP-EXACT",
+     "BLOCK_IP",
+     "PASS",
+     null,
+     "0b5fab3d047e7938b4a034f817331aa4cd1cc828f612cb46771e08882afb2f2b"
+    ],
+    [
+     "POL-IP-NET",
+     "BLOCK_IP",
+     "BLOCK",
+     "IP_BLOCKED",
+     "2e4fd8745352095f5cb629993c940d1ac4c4d05c84c4b2d578815f4c8313ddcf"
+    ]
+   ]
+  },
+  {
+   "u": "alice",
+   "ip": "10.1.2.3",
+   "ts": 1792879200,
+   "valid": true,
+   "decision": "BLOCK",
+   "reason": "IP_BLOCKED",
+   "policyId": "POL-IP-NET",
+   "policyVersion": null,
+   "policyRuleHash": "2e4fd8745352095f5cb629993c940d1ac4c4d05c84c4b2d578815f4c8313ddcf",
+   "consent": null,
+   "path": [
+    [
+     "POL-CONSENT",
+     "REQUIRE_CONSENT",
+     "PASS",
+     "CONSENT_VERIFIED",
+     "645b8a97d22d6b8e6a5dc3b82147480bfbbe5f2105a67922486c30461b0a24b7"
+    ],
+    [
+     "POL-IP-EXACT",
+     "BLOCK_IP",
+     "PASS",
+     null,
+     "0b5fab3d047e7938b4a034f817331aa4cd1cc828f612cb46771e08882afb2f2b"
+    ],
+    [
+     "POL-IP-NET",
+     "BLOCK_IP",
+     "BLOCK",
+     "IP_BLOCKED",
+     "2e4fd8745352095f5cb629993c940d1ac4c4d05c84c4b2d578815f4c8313ddcf"
+    ]
+   ]
+  },
+  {
+   "u": "alice",
+   "ip": "192.0.2.50",
+   "ts": 1792638000,
+   "valid": true,
+   "decision": "BLOCK",
+   "reason": "IP_BLOCKED",
+   "policyId": "POL-IP-EXACT",
+   "policyVersion": null,
+   "policyRuleHash": "0b5fab3d047e7938b4a034f817331aa4cd1cc828f612cb46771e08882afb2f2b",
+   "consent": null,
+   "path": [
+    [
+     "POL-CONSENT",
+     "REQUIRE_CONSENT",
+     "PASS",
+     "CONSENT_VERIFIED",
+     "645b8a97d22d6b8e6a5dc3b82147480bfbbe5f2105a67922486c30461b0a24b7"
+    ],
+    [
+     "POL-IP-EXACT",
+     "BLOCK_IP",
+     "BLOCK",
+     "IP_BLOCKED",
+     "0b5fab3d047e7938b4a034f817331aa4cd1cc828f612cb46771e08882afb2f2b"
+    ]
+   ]
+  },
+  {
+   "u": "alice",
+   "ip": "192.0.2.50",
+   "ts": 1792810800,
+   "valid": true,
+   "decision": "BLOCK",
+   "reason": "IP_BLOCKED",
+   "policyId": "POL-IP-EXACT",
+   "policyVersion": null,
+   "policyRuleHash": "0b5fab3d047e7938b4a034f817331aa4cd1cc828f612cb46771e08882afb2f2b",
+   "consent": null,
+   "path": [
+    [
+     "POL-CONSENT",
+     "REQUIRE_CONSENT",
+     "PASS",
+     "CONSENT_VERIFIED",
+     "645b8a97d22d6b8e6a5dc3b82147480bfbbe5f2105a67922486c30461b0a24b7"
+    ],
+    [
+     "POL-IP-EXACT",
+     "BLOCK_IP",
+     "BLOCK",
+     "IP_BLOCKED",
+     "0b5fab3d047e7938b4a034f817331aa4cd1cc828f612cb46771e08882afb2f2b"
+    ]
+   ]
+  },
+  {
+   "u": "alice",
+   "ip": "192.0.2.50",
+   "ts": 1792659600,
+   "valid": true,
+   "decision": "BLOCK",
+   "reason": "IP_BLOCKED",
+   "policyId": "POL-IP-EXACT",
+   "policyVersion": null,
+   "policyRuleHash": "0b5fab3d047e7938b4a034f817331aa4cd1cc828f612cb46771e08882afb2f2b",
+   "consent": null,
+   "path": [
+    [
+     "POL-CONSENT",
+     "REQUIRE_CONSENT",
+     "PASS",
+     "CONSENT_VERIFIED",
+     "645b8a97d22d6b8e6a5dc3b82147480bfbbe5f2105a67922486c30461b0a24b7"
+    ],
+    [
+     "POL-IP-EXACT",
+     "BLOCK_IP",
+     "BLOCK",
+     "IP_BLOCKED",
+     "0b5fab3d047e7938b4a034f817331aa4cd1cc828f612cb46771e08882afb2f2b"
+    ]
+   ]
+  },
+  {
+   "u": "alice",
+   "ip": "192.0.2.50",
+   "ts": 1792832400,
+   "valid": true,
+   "decision": "BLOCK",
+   "reason": "IP_BLOCKED",
+   "policyId": "POL-IP-EXACT",
+   "policyVersion": null,
+   "policyRuleHash": "0b5fab3d047e7938b4a034f817331aa4cd1cc828f612cb46771e08882afb2f2b",
+   "consent": null,
+   "path": [
+    [
+     "POL-CONSENT",
+     "REQUIRE_CONSENT",
+     "PASS",
+     "CONSENT_VERIFIED",
+     "645b8a97d22d6b8e6a5dc3b82147480bfbbe5f2105a67922486c30461b0a24b7"
+    ],
+    [
+     "POL-IP-EXACT",
+     "BLOCK_IP",
+     "BLOCK",
+     "IP_BLOCKED",
+     "0b5fab3d047e7938b4a034f817331aa4cd1cc828f612cb46771e08882afb2f2b"
+    ]
+   ]
+  },
+  {
+   "u": "alice",
+   "ip": "192.0.2.50",
+   "ts": 1792674000,
+   "valid": true,
+   "decision": "BLOCK",
+   "reason": "IP_BLOCKED",
+   "policyId": "POL-IP-EXACT",
+   "policyVersion": null,
+   "policyRuleHash": "0b5fab3d047e7938b4a034f817331aa4cd1cc828f612cb46771e08882afb2f2b",
+   "consent": null,
+   "path": [
+    [
+     "POL-CONSENT",
+     "REQUIRE_CONSENT",
+     "PASS",
+     "CONSENT_VERIFIED",
+     "645b8a97d22d6b8e6a5dc3b82147480bfbbe5f2105a67922486c30461b0a24b7"
+    ],
+    [
+     "POL-IP-EXACT",
+     "BLOCK_IP",
+     "BLOCK",
+     "IP_BLOCKED",
+     "0b5fab3d047e7938b4a034f817331aa4cd1cc828f612cb46771e08882afb2f2b"
+    ]
+   ]
+  },
+  {
+   "u": "alice",
+   "ip": "192.0.2.50",
+   "ts": 1792846800,
+   "valid": true,
+   "decision": "BLOCK",
+   "reason": "IP_BLOCKED",
+   "policyId": "POL-IP-EXACT",
+   "policyVersion": null,
+   "policyRuleHash": "0b5fab3d047e7938b4a034f817331aa4cd1cc828f612cb46771e08882afb2f2b",
+   "consent": null,
+   "path": [
+    [
+     "POL-CONSENT",
+     "REQUIRE_CONSENT",
+     "PASS",
+     "CONSENT_VERIFIED",
+     "645b8a97d22d6b8e6a5dc3b82147480bfbbe5f2105a67922486c30461b0a24b7"
+    ],
+    [
+     "POL-IP-EXACT",
+     "BLOCK_IP",
+     "BLOCK",
+     "IP_BLOCKED",
+     "0b5fab3d047e7938b4a034f817331aa4cd1cc828f612cb46771e08882afb2f2b"
+    ]
+   ]
+  },
+  {
+   "u": "alice",
+   "ip": "192.0.2.50",
+   "ts": 1792706400,
+   "valid": true,
+   "decision": "BLOCK",
+   "reason": "IP_BLOCKED",
+   "policyId": "POL-IP-EXACT",
+   "policyVersion": null,
+   "policyRuleHash": "0b5fab3d047e7938b4a034f817331aa4cd1cc828f612cb46771e08882afb2f2b",
+   "consent": null,
+   "path": [
+    [
+     "POL-CONSENT",
+     "REQUIRE_CONSENT",
+     "PASS",
+     "CONSENT_VERIFIED",
+     "645b8a97d22d6b8e6a5dc3b82147480bfbbe5f2105a67922486c30461b0a24b7"
+    ],
+    [
+     "POL-IP-EXACT",
+     "BLOCK_IP",
+     "BLOCK",
+     "IP_BLOCKED",
+     "0b5fab3d047e7938b4a034f817331aa4cd1cc828f612cb46771e08882afb2f2b"
+    ]
+   ]
+  },
+  {
+   "u": "alice",
+   "ip": "192.0.2.50",
+   "ts": 1792879200,
+   "valid": true,
+   "decision": "BLOCK",
+   "reason": "IP_BLOCKED",
+   "policyId": "POL-IP-EXACT",
+   "policyVersion": null,
+   "policyRuleHash": "0b5fab3d047e7938b4a034f817331aa4cd1cc828f612cb46771e08882afb2f2b",
+   "consent": null,
+   "path": [
+    [
+     "POL-CONSENT",
+     "REQUIRE_CONSENT",
+     "PASS",
+     "CONSENT_VERIFIED",
+     "645b8a97d22d6b8e6a5dc3b82147480bfbbe5f2105a67922486c30461b0a24b7"
+    ],
+    [
+     "POL-IP-EXACT",
+     "BLOCK_IP",
+     "BLOCK",
+     "IP_BLOCKED",
+     "0b5fab3d047e7938b4a034f817331aa4cd1cc828f612cb46771e08882afb2f2b"
+    ]
+   ]
+  },
+  {
+   "u": "alice",
+   "ip": "203.0.113.9",
+   "ts": 1792638000,
+   "valid": true,
+   "decision": "BLOCK",
+   "reason": "OUTSIDE_TIME_WINDOW",
+   "policyId": "POL-HOURS",
+   "policyVersion": null,
+   "policyRuleHash": "400ae5172ea26652b65deebe73764a42cfbe5e2973c18387538db2f64dbdb85b",
+   "consent": null,
+   "path": [
+    [
+     "POL-CONSENT",
+     "REQUIRE_CONSENT",
+     "PASS",
+     "CONSENT_VERIFIED",
+     "645b8a97d22d6b8e6a5dc3b82147480bfbbe5f2105a67922486c30461b0a24b7"
+    ],
+    [
+     "POL-IP-EXACT",
+     "BLOCK_IP",
+     "PASS",
+     null,
+     "0b5fab3d047e7938b4a034f817331aa4cd1cc828f612cb46771e08882afb2f2b"
+    ],
+    [
+     "POL-IP-NET",
+     "BLOCK_IP",
+     "PASS",
+     null,
+     "2e4fd8745352095f5cb629993c940d1ac4c4d05c84c4b2d578815f4c8313ddcf"
+    ],
+    [
+     "POL-HOURS",
+     "TIME_WINDOW",
+     "BLOCK",
+     "OUTSIDE_TIME_WINDOW",
+     "400ae5172ea26652b65deebe73764a42cfbe5e2973c18387538db2f64dbdb85b"
+    ]
+   ]
+  },
+  {
+   "u": "alice",
+   "ip": "203.0.113.9",
+   "ts": 1792810800,
+   "valid": true,
+   "decision": "BLOCK",
+   "reason": "OUTSIDE_TIME_WINDOW",
+   "policyId": "POL-HOURS",
+   "policyVersion": null,
+   "policyRuleHash": "400ae5172ea26652b65deebe73764a42cfbe5e2973c18387538db2f64dbdb85b",
+   "consent": null,
+   "path": [
+    [
+     "POL-CONSENT",
+     "REQUIRE_CONSENT",
+     "PASS",
+     "CONSENT_VERIFIED",
+     "645b8a97d22d6b8e6a5dc3b82147480bfbbe5f2105a67922486c30461b0a24b7"
+    ],
+    [
+     "POL-IP-EXACT",
+     "BLOCK_IP",
+     "PASS",
+     null,
+     "0b5fab3d047e7938b4a034f817331aa4cd1cc828f612cb46771e08882afb2f2b"
+    ],
+    [
+     "POL-IP-NET",
+     "BLOCK_IP",
+     "PASS",
+     null,
+     "2e4fd8745352095f5cb629993c940d1ac4c4d05c84c4b2d578815f4c8313ddcf"
+    ],
+    [
+     "POL-HOURS",
+     "TIME_WINDOW",
+     "BLOCK",
+     "OUTSIDE_TIME_WINDOW",
+     "400ae5172ea26652b65deebe73764a42cfbe5e2973c18387538db2f64dbdb85b"
+    ]
+   ]
+  },
+  {
+   "u": "alice",
+   "ip": "203.0.113.9",
+   "ts": 1792659600,
+   "valid": true,
+   "decision": "EXECUTE",
+   "reason": "ALL_CHECKS_PASSED",
+   "policyId": "SYSTEM",
+   "policyVersion": null,
+   "policyRuleHash": null,
+   "consent": null,
+   "path": [
+    [
+     "POL-CONSENT",
+     "REQUIRE_CONSENT",
+     "PASS",
+     "CONSENT_VERIFIED",
+     "645b8a97d22d6b8e6a5dc3b82147480bfbbe5f2105a67922486c30461b0a24b7"
+    ],
+    [
+     "POL-IP-EXACT",
+     "BLOCK_IP",
+     "PASS",
+     null,
+     "0b5fab3d047e7938b4a034f817331aa4cd1cc828f612cb46771e08882afb2f2b"
+    ],
+    [
+     "POL-IP-NET",
+     "BLOCK_IP",
+     "PASS",
+     null,
+     "2e4fd8745352095f5cb629993c940d1ac4c4d05c84c4b2d578815f4c8313ddcf"
+    ],
+    [
+     "POL-HOURS",
+     "TIME_WINDOW",
+     "PASS",
+     null,
+     "400ae5172ea26652b65deebe73764a42cfbe5e2973c18387538db2f64dbdb85b"
+    ],
+    [
+     "POL-RATE-USER",
+     "RATE_LIMIT",
+     "PASS",
+     null,
+     "356346fd39e1d08fe732a9af5f15670388e5700bbb4aef003bfac783590e5251"
+    ],
+    [
+     "POL-RATE-IP",
+     "RATE_LIMIT",
+     "PASS",
+     null,
+     "1b8dfc5729afe995038abbef035607b964f34e1cb0ce1610087903e923945975"
+    ]
+   ]
+  },
+  {
+   "u": "alice",
+   "ip": "203.0.113.9",
+   "ts": 1792832400,
+   "valid": true,
+   "decision": "BLOCK",
+   "reason": "OUTSIDE_TIME_WINDOW",
+   "policyId": "POL-HOURS",
+   "policyVersion": null,
+   "policyRuleHash": "400ae5172ea26652b65deebe73764a42cfbe5e2973c18387538db2f64dbdb85b",
+   "consent": null,
+   "path": [
+    [
+     "POL-CONSENT",
+     "REQUIRE_CONSENT",
+     "PASS",
+     "CONSENT_VERIFIED",
+     "645b8a97d22d6b8e6a5dc3b82147480bfbbe5f2105a67922486c30461b0a24b7"
+    ],
+    [
+     "POL-IP-EXACT",
+     "BLOCK_IP",
+     "PASS",
+     null,
+     "0b5fab3d047e7938b4a034f817331aa4cd1cc828f612cb46771e08882afb2f2b"
+    ],
+    [
+     "POL-IP-NET",
+     "BLOCK_IP",
+     "PASS",
+     null,
+     "2e4fd8745352095f5cb629993c940d1ac4c4d05c84c4b2d578815f4c8313ddcf"
+    ],
+    [
+     "POL-HOURS",
+     "TIME_WINDOW",
+     "BLOCK",
+     "OUTSIDE_TIME_WINDOW",
+     "400ae5172ea26652b65deebe73764a42cfbe5e2973c18387538db2f64dbdb85b"
+    ]
+   ]
+  },
+  {
+   "u": "alice",
+   "ip": "203.0.113.9",
+   "ts": 1792674000,
+   "valid": true,
+   "decision": "EXECUTE",
+   "reason": "ALL_CHECKS_PASSED",
+   "policyId": "SYSTEM",
+   "policyVersion": null,
+   "policyRuleHash": null,
+   "consent": null,
+   "path": [
+    [
+     "POL-CONSENT",
+     "REQUIRE_CONSENT",
+     "PASS",
+     "CONSENT_VERIFIED",
+     "645b8a97d22d6b8e6a5dc3b82147480bfbbe5f2105a67922486c30461b0a24b7"
+    ],
+    [
+     "POL-IP-EXACT",
+     "BLOCK_IP",
+     "PASS",
+     null,
+     "0b5fab3d047e7938b4a034f817331aa4cd1cc828f612cb46771e08882afb2f2b"
+    ],
+    [
+     "POL-IP-NET",
+     "BLOCK_IP",
+     "PASS",
+     null,
+     "2e4fd8745352095f5cb629993c940d1ac4c4d05c84c4b2d578815f4c8313ddcf"
+    ],
+    [
+     "POL-HOURS",
+     "TIME_WINDOW",
+     "PASS",
+     null,
+     "400ae5172ea26652b65deebe73764a42cfbe5e2973c18387538db2f64dbdb85b"
+    ],
+    [
+     "POL-RATE-USER",
+     "RATE_LIMIT",
+     "PASS",
+     null,
+     "356346fd39e1d08fe732a9af5f15670388e5700bbb4aef003bfac783590e5251"
+    ],
+    [
+     "POL-RATE-IP",
+     "RATE_LIMIT",
+     "PASS",
+     null,
+     "1b8dfc5729afe995038abbef035607b964f34e1cb0ce1610087903e923945975"
+    ]
+   ]
+  },
+  {
+   "u": "alice",
+   "ip": "203.0.113.9",
+   "ts": 1792846800,
+   "valid": true,
+   "decision": "BLOCK",
+   "reason": "OUTSIDE_TIME_WINDOW",
+   "policyId": "POL-HOURS",
+   "policyVersion": null,
+   "policyRuleHash": "400ae5172ea26652b65deebe73764a42cfbe5e2973c18387538db2f64dbdb85b",
+   "consent": null,
+   "path": [
+    [
+     "POL-CONSENT",
+     "REQUIRE_CONSENT",
+     "PASS",
+     "CONSENT_VERIFIED",
+     "645b8a97d22d6b8e6a5dc3b82147480bfbbe5f2105a67922486c30461b0a24b7"
+    ],
+    [
+     "POL-IP-EXACT",
+     "BLOCK_IP",
+     "PASS",
+     null,
+     "0b5fab3d047e7938b4a034f817331aa4cd1cc828f612cb46771e08882afb2f2b"
+    ],
+    [
+     "POL-IP-NET",
+     "BLOCK_IP",
+     "PASS",
+     null,
+     "2e4fd8745352095f5cb629993c940d1ac4c4d05c84c4b2d578815f4c8313ddcf"
+    ],
+    [
+     "POL-HOURS",
+     "TIME_WINDOW",
+     "BLOCK",
+     "OUTSIDE_TIME_WINDOW",
+     "400ae5172ea26652b65deebe73764a42cfbe5e2973c18387538db2f64dbdb85b"
+    ]
+   ]
+  },
+  {
+   "u": "alice",
+   "ip": "203.0.113.9",
+   "ts": 1792706400,
+   "valid": true,
+   "decision": "BLOCK",
+   "reason": "OUTSIDE_TIME_WINDOW",
+   "policyId": "POL-HOURS",
+   "policyVersion": null,
+   "policyRuleHash": "400ae5172ea26652b65deebe73764a42cfbe5e2973c18387538db2f64dbdb85b",
+   "consent": null,
+   "path": [
+    [
+     "POL-CONSENT",
+     "REQUIRE_CONSENT",
+     "PASS",
+     "CONSENT_VERIFIED",
+     "645b8a97d22d6b8e6a5dc3b82147480bfbbe5f2105a67922486c30461b0a24b7"
+    ],
+    [
+     "POL-IP-EXACT",
+     "BLOCK_IP",
+     "PASS",
+     null,
+     "0b5fab3d047e7938b4a034f817331aa4cd1cc828f612cb46771e08882afb2f2b"
+    ],
+    [
+     "POL-IP-NET",
+     "BLOCK_IP",
+     "PASS",
+     null,
+     "2e4fd8745352095f5cb629993c940d1ac4c4d05c84c4b2d578815f4c8313ddcf"
+    ],
+    [
+     "POL-HOURS",
+     "TIME_WINDOW",
+     "BLOCK",
+     "OUTSIDE_TIME_WINDOW",
+     "400ae5172ea26652b65deebe73764a42cfbe5e2973c18387538db2f64dbdb85b"
+    ]
+   ]
+  },
+  {
+   "u": "alice",
+   "ip": "203.0.113.9",
+   "ts": 1792879200,
+   "valid": true,
+   "decision": "BLOCK",
+   "reason": "OUTSIDE_TIME_WINDOW",
+   "policyId": "POL-HOURS",
+   "policyVersion": null,
+   "policyRuleHash": "400ae5172ea26652b65deebe73764a42cfbe5e2973c18387538db2f64dbdb85b",
+   "consent": null,
+   "path": [
+    [
+     "POL-CONSENT",
+     "REQUIRE_CONSENT",
+     "PASS",
+     "CONSENT_VERIFIED",
+     "645b8a97d22d6b8e6a5dc3b82147480bfbbe5f2105a67922486c30461b0a24b7"
+    ],
+    [
+     "POL-IP-EXACT",
+     "BLOCK_IP",
+     "PASS",
+     null,
+     "0b5fab3d047e7938b4a034f817331aa4cd1cc828f612cb46771e08882afb2f2b"
+    ],
+    [
+     "POL-IP-NET",
+     "BLOCK_IP",
+     "PASS",
+     null,
+     "2e4fd8745352095f5cb629993c940d1ac4c4d05c84c4b2d578815f4c8313ddcf"
+    ],
+    [
+     "POL-HOURS",
+     "TIME_WINDOW",
+     "BLOCK",
+     "OUTSIDE_TIME_WINDOW",
+     "400ae5172ea26652b65deebe73764a42cfbe5e2973c18387538db2f64dbdb85b"
+    ]
+   ]
+  },
+  {
+   "u": "bob-noconsent",
+   "ip": "198.51.100.7",
+   "ts": 1792638000,
+   "valid": true,
+   "decision": "BLOCK",
+   "reason": "OUTSIDE_TIME_WINDOW",
+   "policyId": "POL-HOURS",
+   "policyVersion": null,
+   "policyRuleHash": "400ae5172ea26652b65deebe73764a42cfbe5e2973c18387538db2f64dbdb85b",
+   "consent": null,
+   "path": [
+    [
+     "POL-CONSENT",
+     "REQUIRE_CONSENT",
+     "PASS",
+     "CONSENT_VERIFIED",
+     "645b8a97d22d6b8e6a5dc3b82147480bfbbe5f2105a67922486c30461b0a24b7"
+    ],
+    [
+     "POL-IP-EXACT",
+     "BLOCK_IP",
+     "PASS",
+     null,
+     "0b5fab3d047e7938b4a034f817331aa4cd1cc828f612cb46771e08882afb2f2b"
+    ],
+    [
+     "POL-IP-NET",
+     "BLOCK_IP",
+     "PASS",
+     null,
+     "2e4fd8745352095f5cb629993c940d1ac4c4d05c84c4b2d578815f4c8313ddcf"
+    ],
+    [
+     "POL-HOURS",
+     "TIME_WINDOW",
+     "BLOCK",
+     "OUTSIDE_TIME_WINDOW",
+     "400ae5172ea26652b65deebe73764a42cfbe5e2973c18387538db2f64dbdb85b"
+    ]
+   ]
+  },
+  {
+   "u": "bob-noconsent",
+   "ip": "198.51.100.7",
+   "ts": 1792810800,
+   "valid": true,
+   "decision": "BLOCK",
+   "reason": "OUTSIDE_TIME_WINDOW",
+   "policyId": "POL-HOURS",
+   "policyVersion": null,
+   "policyRuleHash": "400ae5172ea26652b65deebe73764a42cfbe5e2973c18387538db2f64dbdb85b",
+   "consent": null,
+   "path": [
+    [
+     "POL-CONSENT",
+     "REQUIRE_CONSENT",
+     "PASS",
+     "CONSENT_VERIFIED",
+     "645b8a97d22d6b8e6a5dc3b82147480bfbbe5f2105a67922486c30461b0a24b7"
+    ],
+    [
+     "POL-IP-EXACT",
+     "BLOCK_IP",
+     "PASS",
+     null,
+     "0b5fab3d047e7938b4a034f817331aa4cd1cc828f612cb46771e08882afb2f2b"
+    ],
+    [
+     "POL-IP-NET",
+     "BLOCK_IP",
+     "PASS",
+     null,
+     "2e4fd8745352095f5cb629993c940d1ac4c4d05c84c4b2d578815f4c8313ddcf"
+    ],
+    [
+     "POL-HOURS",
+     "TIME_WINDOW",
+     "BLOCK",
+     "OUTSIDE_TIME_WINDOW",
+     "400ae5172ea26652b65deebe73764a42cfbe5e2973c18387538db2f64dbdb85b"
+    ]
+   ]
+  },
+  {
+   "u": "bob-noconsent",
+   "ip": "198.51.100.7",
+   "ts": 1792659600,
+   "valid": true,
+   "decision": "EXECUTE",
+   "reason": "ALL_CHECKS_PASSED",
+   "policyId": "SYSTEM",
+   "policyVersion": null,
+   "policyRuleHash": null,
+   "consent": null,
+   "path": [
+    [
+     "POL-CONSENT",
+     "REQUIRE_CONSENT",
+     "PASS",
+     "CONSENT_VERIFIED",
+     "645b8a97d22d6b8e6a5dc3b82147480bfbbe5f2105a67922486c30461b0a24b7"
+    ],
+    [
+     "POL-IP-EXACT",
+     "BLOCK_IP",
+     "PASS",
+     null,
+     "0b5fab3d047e7938b4a034f817331aa4cd1cc828f612cb46771e08882afb2f2b"
+    ],
+    [
+     "POL-IP-NET",
+     "BLOCK_IP",
+     "PASS",
+     null,
+     "2e4fd8745352095f5cb629993c940d1ac4c4d05c84c4b2d578815f4c8313ddcf"
+    ],
+    [
+     "POL-HOURS",
+     "TIME_WINDOW",
+     "PASS",
+     null,
+     "400ae5172ea26652b65deebe73764a42cfbe5e2973c18387538db2f64dbdb85b"
+    ],
+    [
+     "POL-RATE-USER",
+     "RATE_LIMIT",
+     "PASS",
+     null,
+     "356346fd39e1d08fe732a9af5f15670388e5700bbb4aef003bfac783590e5251"
+    ],
+    [
+     "POL-RATE-IP",
+     "RATE_LIMIT",
+     "PASS",
+     null,
+     "1b8dfc5729afe995038abbef035607b964f34e1cb0ce1610087903e923945975"
+    ]
+   ]
+  },
+  {
+   "u": "bob-noconsent",
+   "ip": "198.51.100.7",
+   "ts": 1792832400,
+   "valid": true,
+   "decision": "BLOCK",
+   "reason": "OUTSIDE_TIME_WINDOW",
+   "policyId": "POL-HOURS",
+   "policyVersion": null,
+   "policyRuleHash": "400ae5172ea26652b65deebe73764a42cfbe5e2973c18387538db2f64dbdb85b",
+   "consent": null,
+   "path": [
+    [
+     "POL-CONSENT",
+     "REQUIRE_CONSENT",
+     "PASS",
+     "CONSENT_VERIFIED",
+     "645b8a97d22d6b8e6a5dc3b82147480bfbbe5f2105a67922486c30461b0a24b7"
+    ],
+    [
+     "POL-IP-EXACT",
+     "BLOCK_IP",
+     "PASS",
+     null,
+     "0b5fab3d047e7938b4a034f817331aa4cd1cc828f612cb46771e08882afb2f2b"
+    ],
+    [
+     "POL-IP-NET",
+     "BLOCK_IP",
+     "PASS",
+     null,
+     "2e4fd8745352095f5cb629993c940d1ac4c4d05c84c4b2d578815f4c8313ddcf"
+    ],
+    [
+     "POL-HOURS",
+     "TIME_WINDOW",
+     "BLOCK",
+     "OUTSIDE_TIME_WINDOW",
+     "400ae5172ea26652b65deebe73764a42cfbe5e2973c18387538db2f64dbdb85b"
+    ]
+   ]
+  },
+  {
+   "u": "bob-noconsent",
+   "ip": "198.51.100.7",
+   "ts": 1792674000,
+   "valid": true,
+   "decision": "EXECUTE",
+   "reason": "ALL_CHECKS_PASSED",
+   "policyId": "SYSTEM",
+   "policyVersion": null,
+   "policyRuleHash": null,
+   "consent": null,
+   "path": [
+    [
+     "POL-CONSENT",
+     "REQUIRE_CONSENT",
+     "PASS",
+     "CONSENT_VERIFIED",
+     "645b8a97d22d6b8e6a5dc3b82147480bfbbe5f2105a67922486c30461b0a24b7"
+    ],
+    [
+     "POL-IP-EXACT",
+     "BLOCK_IP",
+     "PASS",
+     null,
+     "0b5fab3d047e7938b4a034f817331aa4cd1cc828f612cb46771e08882afb2f2b"
+    ],
+    [
+     "POL-IP-NET",
+     "BLOCK_IP",
+     "PASS",
+     null,
+     "2e4fd8745352095f5cb629993c940d1ac4c4d05c84c4b2d578815f4c8313ddcf"
+    ],
+    [
+     "POL-HOURS",
+     "TIME_WINDOW",
+     "PASS",
+     null,
+     "400ae5172ea26652b65deebe73764a42cfbe5e2973c18387538db2f64dbdb85b"
+    ],
+    [
+     "POL-RATE-USER",
+     "RATE_LIMIT",
+     "PASS",
+     null,
+     "356346fd39e1d08fe732a9af5f15670388e5700bbb4aef003bfac783590e5251"
+    ],
+    [
+     "POL-RATE-IP",
+     "RATE_LIMIT",
+     "PASS",
+     null,
+     "1b8dfc5729afe995038abbef035607b964f34e1cb0ce1610087903e923945975"
+    ]
+   ]
+  },
+  {
+   "u": "bob-noconsent",
+   "ip": "198.51.100.7",
+   "ts": 1792846800,
+   "valid": true,
+   "decision": "BLOCK",
+   "reason": "OUTSIDE_TIME_WINDOW",
+   "policyId": "POL-HOURS",
+   "policyVersion": null,
+   "policyRuleHash": "400ae5172ea26652b65deebe73764a42cfbe5e2973c18387538db2f64dbdb85b",
+   "consent": null,
+   "path": [
+    [
+     "POL-CONSENT",
+     "REQUIRE_CONSENT",
+     "PASS",
+     "CONSENT_VERIFIED",
+     "645b8a97d22d6b8e6a5dc3b82147480bfbbe5f2105a67922486c30461b0a24b7"
+    ],
+    [
+     "POL-IP-EXACT",
+     "BLOCK_IP",
+     "PASS",
+     null,
+     "0b5fab3d047e7938b4a034f817331aa4cd1cc828f612cb46771e08882afb2f2b"
+    ],
+    [
+     "POL-IP-NET",
+     "BLOCK_IP",
+     "PASS",
+     null,
+     "2e4fd8745352095f5cb629993c940d1ac4c4d05c84c4b2d578815f4c8313ddcf"
+    ],
+    [
+     "POL-HOURS",
+     "TIME_WINDOW",
+     "BLOCK",
+     "OUTSIDE_TIME_WINDOW",
+     "400ae5172ea26652b65deebe73764a42cfbe5e2973c18387538db2f64dbdb85b"
+    ]
+   ]
+  },
+  {
+   "u": "bob-noconsent",
+   "ip": "198.51.100.7",
+   "ts": 1792706400,
+   "valid": true,
+   "decision": "BLOCK",
+   "reason": "OUTSIDE_TIME_WINDOW",
+   "policyId": "POL-HOURS",
+   "policyVersion": null,
+   "policyRuleHash": "400ae5172ea26652b65deebe73764a42cfbe5e2973c18387538db2f64dbdb85b",
+   "consent": null,
+   "path": [
+    [
+     "POL-CONSENT",
+     "REQUIRE_CONSENT",
+     "PASS",
+     "CONSENT_VERIFIED",
+     "645b8a97d22d6b8e6a5dc3b82147480bfbbe5f2105a67922486c30461b0a24b7"
+    ],
+    [
+     "POL-IP-EXACT",
+     "BLOCK_IP",
+     "PASS",
+     null,
+     "0b5fab3d047e7938b4a034f817331aa4cd1cc828f612cb46771e08882afb2f2b"
+    ],
+    [
+     "POL-IP-NET",
+     "BLOCK_IP",
+     "PASS",
+     null,
+     "2e4fd8745352095f5cb629993c940d1ac4c4d05c84c4b2d578815f4c8313ddcf"
+    ],
+    [
+     "POL-HOURS",
+     "TIME_WINDOW",
+     "BLOCK",
+     "OUTSIDE_TIME_WINDOW",
+     "400ae5172ea26652b65deebe73764a42cfbe5e2973c18387538db2f64dbdb85b"
+    ]
+   ]
+  },
+  {
+   "u": "bob-noconsent",
+   "ip": "198.51.100.7",
+   "ts": 1792879200,
+   "valid": true,
+   "decision": "BLOCK",
+   "reason": "OUTSIDE_TIME_WINDOW",
+   "policyId": "POL-HOURS",
+   "policyVersion": null,
+   "policyRuleHash": "400ae5172ea26652b65deebe73764a42cfbe5e2973c18387538db2f64dbdb85b",
+   "consent": null,
+   "path": [
+    [
+     "POL-CONSENT",
+     "REQUIRE_CONSENT",
+     "PASS",
+     "CONSENT_VERIFIED",
+     "645b8a97d22d6b8e6a5dc3b82147480bfbbe5f2105a67922486c30461b0a24b7"
+    ],
+    [
+     "POL-IP-EXACT",
+     "BLOCK_IP",
+     "PASS",
+     null,
+     "0b5fab3d047e7938b4a034f817331aa4cd1cc828f612cb46771e08882afb2f2b"
+    ],
+    [
+     "POL-IP-NET",
+     "BLOCK_IP",
+     "PASS",
+     null,
+     "2e4fd8745352095f5cb629993c940d1ac4c4d05c84c4b2d578815f4c8313ddcf"
+    ],
+    [
+     "POL-HOURS",
+     "TIME_WINDOW",
+     "BLOCK",
+     "OUTSIDE_TIME_WINDOW",
+     "400ae5172ea26652b65deebe73764a42cfbe5e2973c18387538db2f64dbdb85b"
+    ]
+   ]
+  },
+  {
+   "u": "bob-noconsent",
+   "ip": "10.1.2.3",
+   "ts": 1792638000,
+   "valid": true,
+   "decision": "BLOCK",
+   "reason": "IP_BLOCKED",
+   "policyId": "POL-IP-NET",
+   "policyVersion": null,
+   "policyRuleHash": "2e4fd8745352095f5cb629993c940d1ac4c4d05c84c4b2d578815f4c8313ddcf",
+   "consent": null,
+   "path": [
+    [
+     "POL-CONSENT",
+     "REQUIRE_CONSENT",
+     "PASS",
+     "CONSENT_VERIFIED",
+     "645b8a97d22d6b8e6a5dc3b82147480bfbbe5f2105a67922486c30461b0a24b7"
+    ],
+    [
+     "POL-IP-EXACT",
+     "BLOCK_IP",
+     "PASS",
+     null,
+     "0b5fab3d047e7938b4a034f817331aa4cd1cc828f612cb46771e08882afb2f2b"
+    ],
+    [
+     "POL-IP-NET",
+     "BLOCK_IP",
+     "BLOCK",
+     "IP_BLOCKED",
+     "2e4fd8745352095f5cb629993c940d1ac4c4d05c84c4b2d578815f4c8313ddcf"
+    ]
+   ]
+  },
+  {
+   "u": "bob-noconsent",
+   "ip": "10.1.2.3",
+   "ts": 1792810800,
+   "valid": true,
+   "decision": "BLOCK",
+   "reason": "IP_BLOCKED",
+   "policyId": "POL-IP-NET",
+   "policyVersion": null,
+   "policyRuleHash": "2e4fd8745352095f5cb629993c940d1ac4c4d05c84c4b2d578815f4c8313ddcf",
+   "consent": null,
+   "path": [
+    [
+     "POL-CONSENT",
+     "REQUIRE_CONSENT",
+     "PASS",
+     "CONSENT_VERIFIED",
+     "645b8a97d22d6b8e6a5dc3b82147480bfbbe5f2105a67922486c30461b0a24b7"
+    ],
+    [
+     "POL-IP-EXACT",
+     "BLOCK_IP",
+     "PASS",
+     null,
+     "0b5fab3d047e7938b4a034f817331aa4cd1cc828f612cb46771e08882afb2f2b"
+    ],
+    [
+     "POL-IP-NET",
+     "BLOCK_IP",
+     "BLOCK",
+     "IP_BLOCKED",
+     "2e4fd8745352095f5cb629993c940d1ac4c4d05c84c4b2d578815f4c8313ddcf"
+    ]
+   ]
+  },
+  {
+   "u": "bob-noconsent",
+   "ip": "10.1.2.3",
+   "ts": 1792659600,
+   "valid": true,
+   "decision": "BLOCK",
+   "reason": "IP_BLOCKED",
+   "policyId": "POL-IP-NET",
+   "policyVersion": null,
+   "policyRuleHash": "2e4fd8745352095f5cb629993c940d1ac4c4d05c84c4b2d578815f4c8313ddcf",
+   "consent": null,
+   "path": [
+    [
+     "POL-CONSENT",
+     "REQUIRE_CONSENT",
+     "PASS",
+     "CONSENT_VERIFIED",
+     "645b8a97d22d6b8e6a5dc3b82147480bfbbe5f2105a67922486c30461b0a24b7"
+    ],
+    [
+     "POL-IP-EXACT",
+     "BLOCK_IP",
+     "PASS",
+     null,
+     "0b5fab3d047e7938b4a034f817331aa4cd1cc828f612cb46771e08882afb2f2b"
+    ],
+    [
+     "POL-IP-NET",
+     "BLOCK_IP",
+     "BLOCK",
+     "IP_BLOCKED",
+     "2e4fd8745352095f5cb629993c940d1ac4c4d05c84c4b2d578815f4c8313ddcf"
+    ]
+   ]
+  },
+  {
+   "u": "bob-noconsent",
+   "ip": "10.1.2.3",
+   "ts": 1792832400,
+   "valid": true,
+   "decision": "BLOCK",
+   "reason": "IP_BLOCKED",
+   "policyId": "POL-IP-NET",
+   "policyVersion": null,
+   "policyRuleHash": "2e4fd8745352095f5cb629993c940d1ac4c4d05c84c4b2d578815f4c8313ddcf",
+   "consent": null,
+   "path": [
+    [
+     "POL-CONSENT",
+     "REQUIRE_CONSENT",
+     "PASS",
+     "CONSENT_VERIFIED",
+     "645b8a97d22d6b8e6a5dc3b82147480bfbbe5f2105a67922486c30461b0a24b7"
+    ],
+    [
+     "POL-IP-EXACT",
+     "BLOCK_IP",
+     "PASS",
+     null,
+     "0b5fab3d047e7938b4a034f817331aa4cd1cc828f612cb46771e08882afb2f2b"
+    ],
+    [
+     "POL-IP-NET",
+     "BLOCK_IP",
+     "BLOCK",
+     "IP_BLOCKED",
+     "2e4fd8745352095f5cb629993c940d1ac4c4d05c84c4b2d578815f4c8313ddcf"
+    ]
+   ]
+  },
+  {
+   "u": "bob-noconsent",
+   "ip": "10.1.2.3",
+   "ts": 1792674000,
+   "valid": true,
+   "decision": "BLOCK",
+   "reason": "IP_BLOCKED",
+   "policyId": "POL-IP-NET",
+   "policyVersion": null,
+   "policyRuleHash": "2e4fd8745352095f5cb629993c940d1ac4c4d05c84c4b2d578815f4c8313ddcf",
+   "consent": null,
+   "path": [
+    [
+     "POL-CONSENT",
+     "REQUIRE_CONSENT",
+     "PASS",
+     "CONSENT_VERIFIED",
+     "645b8a97d22d6b8e6a5dc3b82147480bfbbe5f2105a67922486c30461b0a24b7"
+    ],
+    [
+     "POL-IP-EXACT",
+     "BLOCK_IP",
+     "PASS",
+     null,
+     "0b5fab3d047e7938b4a034f817331aa4cd1cc828f612cb46771e08882afb2f2b"
+    ],
+    [
+     "POL-IP-NET",
+     "BLOCK_IP",
+     "BLOCK",
+     "IP_BLOCKED",
+     "2e4fd8745352095f5cb629993c940d1ac4c4d05c84c4b2d578815f4c8313ddcf"
+    ]
+   ]
+  },
+  {
+   "u": "bob-noconsent",
+   "ip": "10.1.2.3",
+   "ts": 1792846800,
+   "valid": true,
+   "decision": "BLOCK",
+   "reason": "IP_BLOCKED",
+   "policyId": "POL-IP-NET",
+   "policyVersion": null,
+   "policyRuleHash": "2e4fd8745352095f5cb629993c940d1ac4c4d05c84c4b2d578815f4c8313ddcf",
+   "consent": null,
+   "path": [
+    [
+     "POL-CONSENT",
+     "REQUIRE_CONSENT",
+     "PASS",
+     "CONSENT_VERIFIED",
+     "645b8a97d22d6b8e6a5dc3b82147480bfbbe5f2105a67922486c30461b0a24b7"
+    ],
+    [
+     "POL-IP-EXACT",
+     "BLOCK_IP",
+     "PASS",
+     null,
+     "0b5fab3d047e7938b4a034f817331aa4cd1cc828f612cb46771e08882afb2f2b"
+    ],
+    [
+     "POL-IP-NET",
+     "BLOCK_IP",
+     "BLOCK",
+     "IP_BLOCKED",
+     "2e4fd8745352095f5cb629993c940d1ac4c4d05c84c4b2d578815f4c8313ddcf"
+    ]
+   ]
+  },
+  {
+   "u": "bob-noconsent",
+   "ip": "10.1.2.3",
+   "ts": 1792706400,
+   "valid": true,
+   "decision": "BLOCK",
+   "reason": "IP_BLOCKED",
+   "policyId": "POL-IP-NET",
+   "policyVersion": null,
+   "policyRuleHash": "2e4fd8745352095f5cb629993c940d1ac4c4d05c84c4b2d578815f4c8313ddcf",
+   "consent": null,
+   "path": [
+    [
+     "POL-CONSENT",
+     "REQUIRE_CONSENT",
+     "PASS",
+     "CONSENT_VERIFIED",
+     "645b8a97d22d6b8e6a5dc3b82147480bfbbe5f2105a67922486c30461b0a24b7"
+    ],
+    [
+     "POL-IP-EXACT",
+     "BLOCK_IP",
+     "PASS",
+     null,
+     "0b5fab3d047e7938b4a034f817331aa4cd1cc828f612cb46771e08882afb2f2b"
+    ],
+    [
+     "POL-IP-NET",
+     "BLOCK_IP",
+     "BLOCK",
+     "IP_BLOCKED",
+     "2e4fd8745352095f5cb629993c940d1ac4c4d05c84c4b2d578815f4c8313ddcf"
+    ]
+   ]
+  },
+  {
+   "u": "bob-noconsent",
+   "ip": "10.1.2.3",
+   "ts": 1792879200,
+   "valid": true,
+   "decision": "BLOCK",
+   "reason": "IP_BLOCKED",
+   "policyId": "POL-IP-NET",
+   "policyVersion": null,
+   "policyRuleHash": "2e4fd8745352095f5cb629993c940d1ac4c4d05c84c4b2d578815f4c8313ddcf",
+   "consent": null,
+   "path": [
+    [
+     "POL-CONSENT",
+     "REQUIRE_CONSENT",
+     "PASS",
+     "CONSENT_VERIFIED",
+     "645b8a97d22d6b8e6a5dc3b82147480bfbbe5f2105a67922486c30461b0a24b7"
+    ],
+    [
+     "POL-IP-EXACT",
+     "BLOCK_IP",
+     "PASS",
+     null,
+     "0b5fab3d047e7938b4a034f817331aa4cd1cc828f612cb46771e08882afb2f2b"
+    ],
+    [
+     "POL-IP-NET",
+     "BLOCK_IP",
+     "BLOCK",
+     "IP_BLOCKED",
+     "2e4fd8745352095f5cb629993c940d1ac4c4d05c84c4b2d578815f4c8313ddcf"
+    ]
+   ]
+  },
+  {
+   "u": "bob-noconsent",
+   "ip": "192.0.2.50",
+   "ts": 1792638000,
+   "valid": true,
+   "decision": "BLOCK",
+   "reason": "IP_BLOCKED",
+   "policyId": "POL-IP-EXACT",
+   "policyVersion": null,
+   "policyRuleHash": "0b5fab3d047e7938b4a034f817331aa4cd1cc828f612cb46771e08882afb2f2b",
+   "consent": null,
+   "path": [
+    [
+     "POL-CONSENT",
+     "REQUIRE_CONSENT",
+     "PASS",
+     "CONSENT_VERIFIED",
+     "645b8a97d22d6b8e6a5dc3b82147480bfbbe5f2105a67922486c30461b0a24b7"
+    ],
+    [
+     "POL-IP-EXACT",
+     "BLOCK_IP",
+     "BLOCK",
+     "IP_BLOCKED",
+     "0b5fab3d047e7938b4a034f817331aa4cd1cc828f612cb46771e08882afb2f2b"
+    ]
+   ]
+  },
+  {
+   "u": "bob-noconsent",
+   "ip": "192.0.2.50",
+   "ts": 1792810800,
+   "valid": true,
+   "decision": "BLOCK",
+   "reason": "IP_BLOCKED",
+   "policyId": "POL-IP-EXACT",
+   "policyVersion": null,
+   "policyRuleHash": "0b5fab3d047e7938b4a034f817331aa4cd1cc828f612cb46771e08882afb2f2b",
+   "consent": null,
+   "path": [
+    [
+     "POL-CONSENT",
+     "REQUIRE_CONSENT",
+     "PASS",
+     "CONSENT_VERIFIED",
+     "645b8a97d22d6b8e6a5dc3b82147480bfbbe5f2105a67922486c30461b0a24b7"
+    ],
+    [
+     "POL-IP-EXACT",
+     "BLOCK_IP",
+     "BLOCK",
+     "IP_BLOCKED",
+     "0b5fab3d047e7938b4a034f817331aa4cd1cc828f612cb46771e08882afb2f2b"
+    ]
+   ]
+  },
+  {
+   "u": "bob-noconsent",
+   "ip": "192.0.2.50",
+   "ts": 1792659600,
+   "valid": true,
+   "decision": "BLOCK",
+   "reason": "IP_BLOCKED",
+   "policyId": "POL-IP-EXACT",
+   "policyVersion": null,
+   "policyRuleHash": "0b5fab3d047e7938b4a034f817331aa4cd1cc828f612cb46771e08882afb2f2b",
+   "consent": null,
+   "path": [
+    [
+     "POL-CONSENT",
+     "REQUIRE_CONSENT",
+     "PASS",
+     "CONSENT_VERIFIED",
+     "645b8a97d22d6b8e6a5dc3b82147480bfbbe5f2105a67922486c30461b0a24b7"
+    ],
+    [
+     "POL-IP-EXACT",
+     "BLOCK_IP",
+     "BLOCK",
+     "IP_BLOCKED",
+     "0b5fab3d047e7938b4a034f817331aa4cd1cc828f612cb46771e08882afb2f2b"
+    ]
+   ]
+  },
+  {
+   "u": "bob-noconsent",
+   "ip": "192.0.2.50",
+   "ts": 1792832400,
+   "valid": true,
+   "decision": "BLOCK",
+   "reason": "IP_BLOCKED",
+   "policyId": "POL-IP-EXACT",
+   "policyVersion": null,
+   "policyRuleHash": "0b5fab3d047e7938b4a034f817331aa4cd1cc828f612cb46771e08882afb2f2b",
+   "consent": null,
+   "path": [
+    [
+     "POL-CONSENT",
+     "REQUIRE_CONSENT",
+     "PASS",
+     "CONSENT_VERIFIED",
+     "645b8a97d22d6b8e6a5dc3b82147480bfbbe5f2105a67922486c30461b0a24b7"
+    ],
+    [
+     "POL-IP-EXACT",
+     "BLOCK_IP",
+     "BLOCK",
+     "IP_BLOCKED",
+     "0b5fab3d047e7938b4a034f817331aa4cd1cc828f612cb46771e08882afb2f2b"
+    ]
+   ]
+  },
+  {
+   "u": "bob-noconsent",
+   "ip": "192.0.2.50",
+   "ts": 1792674000,
+   "valid": true,
+   "decision": "BLOCK",
+   "reason": "IP_BLOCKED",
+   "policyId": "POL-IP-EXACT",
+   "policyVersion": null,
+   "policyRuleHash": "0b5fab3d047e7938b4a034f817331aa4cd1cc828f612cb46771e08882afb2f2b",
+   "consent": null,
+   "path": [
+    [
+     "POL-CONSENT",
+     "REQUIRE_CONSENT",
+     "PASS",
+     "CONSENT_VERIFIED",
+     "645b8a97d22d6b8e6a5dc3b82147480bfbbe5f2105a67922486c30461b0a24b7"
+    ],
+    [
+     "POL-IP-EXACT",
+     "BLOCK_IP",
+     "BLOCK",
+     "IP_BLOCKED",
+     "0b5fab3d047e7938b4a034f817331aa4cd1cc828f612cb46771e08882afb2f2b"
+    ]
+   ]
+  },
+  {
+   "u": "bob-noconsent",
+   "ip": "192.0.2.50",
+   "ts": 1792846800,
+   "valid": true,
+   "decision": "BLOCK",
+   "reason": "IP_BLOCKED",
+   "policyId": "POL-IP-EXACT",
+   "policyVersion": null,
+   "policyRuleHash": "0b5fab3d047e7938b4a034f817331aa4cd1cc828f612cb46771e08882afb2f2b",
+   "consent": null,
+   "path": [
+    [
+     "POL-CONSENT",
+     "REQUIRE_CONSENT",
+     "PASS",
+     "CONSENT_VERIFIED",
+     "645b8a97d22d6b8e6a5dc3b82147480bfbbe5f2105a67922486c30461b0a24b7"
+    ],
+    [
+     "POL-IP-EXACT",
+     "BLOCK_IP",
+     "BLOCK",
+     "IP_BLOCKED",
+     "0b5fab3d047e7938b4a034f817331aa4cd1cc828f612cb46771e08882afb2f2b"
+    ]
+   ]
+  },
+  {
+   "u": "bob-noconsent",
+   "ip": "192.0.2.50",
+   "ts": 1792706400,
+   "valid": true,
+   "decision": "BLOCK",
+   "reason": "IP_BLOCKED",
+   "policyId": "POL-IP-EXACT",
+   "policyVersion": null,
+   "policyRuleHash": "0b5fab3d047e7938b4a034f817331aa4cd1cc828f612cb46771e08882afb2f2b",
+   "consent": null,
+   "path": [
+    [
+     "POL-CONSENT",
+     "REQUIRE_CONSENT",
+     "PASS",
+     "CONSENT_VERIFIED",
+     "645b8a97d22d6b8e6a5dc3b82147480bfbbe5f2105a67922486c30461b0a24b7"
+    ],
+    [
+     "POL-IP-EXACT",
+     "BLOCK_IP",
+     "BLOCK",
+     "IP_BLOCKED",
+     "0b5fab3d047e7938b4a034f817331aa4cd1cc828f612cb46771e08882afb2f2b"
+    ]
+   ]
+  },
+  {
+   "u": "bob-noconsent",
+   "ip": "192.0.2.50",
+   "ts": 1792879200,
+   "valid": true,
+   "decision": "BLOCK",
+   "reason": "IP_BLOCKED",
+   "policyId": "POL-IP-EXACT",
+   "policyVersion": null,
+   "policyRuleHash": "0b5fab3d047e7938b4a034f817331aa4cd1cc828f612cb46771e08882afb2f2b",
+   "consent": null,
+   "path": [
+    [
+     "POL-CONSENT",
+     "REQUIRE_CONSENT",
+     "PASS",
+     "CONSENT_VERIFIED",
+     "645b8a97d22d6b8e6a5dc3b82147480bfbbe5f2105a67922486c30461b0a24b7"
+    ],
+    [
+     "POL-IP-EXACT",
+     "BLOCK_IP",
+     "BLOCK",
+     "IP_BLOCKED",
+     "0b5fab3d047e7938b4a034f817331aa4cd1cc828f612cb46771e08882afb2f2b"
+    ]
+   ]
+  },
+  {
+   "u": "bob-noconsent",
+   "ip": "203.0.113.9",
+   "ts": 1792638000,
+   "valid": true,
+   "decision": "BLOCK",
+   "reason": "OUTSIDE_TIME_WINDOW",
+   "policyId": "POL-HOURS",
+   "policyVersion": null,
+   "policyRuleHash": "400ae5172ea26652b65deebe73764a42cfbe5e2973c18387538db2f64dbdb85b",
+   "consent": null,
+   "path": [
+    [
+     "POL-CONSENT",
+     "REQUIRE_CONSENT",
+     "PASS",
+     "CONSENT_VERIFIED",
+     "645b8a97d22d6b8e6a5dc3b82147480bfbbe5f2105a67922486c30461b0a24b7"
+    ],
+    [
+     "POL-IP-EXACT",
+     "BLOCK_IP",
+     "PASS",
+     null,
+     "0b5fab3d047e7938b4a034f817331aa4cd1cc828f612cb46771e08882afb2f2b"
+    ],
+    [
+     "POL-IP-NET",
+     "BLOCK_IP",
+     "PASS",
+     null,
+     "2e4fd8745352095f5cb629993c940d1ac4c4d05c84c4b2d578815f4c8313ddcf"
+    ],
+    [
+     "POL-HOURS",
+     "TIME_WINDOW",
+     "BLOCK",
+     "OUTSIDE_TIME_WINDOW",
+     "400ae5172ea26652b65deebe73764a42cfbe5e2973c18387538db2f64dbdb85b"
+    ]
+   ]
+  },
+  {
+   "u": "bob-noconsent",
+   "ip": "203.0.113.9",
+   "ts": 1792810800,
+   "valid": true,
+   "decision": "BLOCK",
+   "reason": "OUTSIDE_TIME_WINDOW",
+   "policyId": "POL-HOURS",
+   "policyVersion": null,
+   "policyRuleHash": "400ae5172ea26652b65deebe73764a42cfbe5e2973c18387538db2f64dbdb85b",
+   "consent": null,
+   "path": [
+    [
+     "POL-CONSENT",
+     "REQUIRE_CONSENT",
+     "PASS",
+     "CONSENT_VERIFIED",
+     "645b8a97d22d6b8e6a5dc3b82147480bfbbe5f2105a67922486c30461b0a24b7"
+    ],
+    [
+     "POL-IP-EXACT",
+     "BLOCK_IP",
+     "PASS",
+     null,
+     "0b5fab3d047e7938b4a034f817331aa4cd1cc828f612cb46771e08882afb2f2b"
+    ],
+    [
+     "POL-IP-NET",
+     "BLOCK_IP",
+     "PASS",
+     null,
+     "2e4fd8745352095f5cb629993c940d1ac4c4d05c84c4b2d578815f4c8313ddcf"
+    ],
+    [
+     "POL-HOURS",
+     "TIME_WINDOW",
+     "BLOCK",
+     "OUTSIDE_TIME_WINDOW",
+     "400ae5172ea26652b65deebe73764a42cfbe5e2973c18387538db2f64dbdb85b"
+    ]
+   ]
+  },
+  {
+   "u": "bob-noconsent",
+   "ip": "203.0.113.9",
+   "ts": 1792659600,
+   "valid": true,
+   "decision": "EXECUTE",
+   "reason": "ALL_CHECKS_PASSED",
+   "policyId": "SYSTEM",
+   "policyVersion": null,
+   "policyRuleHash": null,
+   "consent": null,
+   "path": [
+    [
+     "POL-CONSENT",
+     "REQUIRE_CONSENT",
+     "PASS",
+     "CONSENT_VERIFIED",
+     "645b8a97d22d6b8e6a5dc3b82147480bfbbe5f2105a67922486c30461b0a24b7"
+    ],
+    [
+     "POL-IP-EXACT",
+     "BLOCK_IP",
+     "PASS",
+     null,
+     "0b5fab3d047e7938b4a034f817331aa4cd1cc828f612cb46771e08882afb2f2b"
+    ],
+    [
+     "POL-IP-NET",
+     "BLOCK_IP",
+     "PASS",
+     null,
+     "2e4fd8745352095f5cb629993c940d1ac4c4d05c84c4b2d578815f4c8313ddcf"
+    ],
+    [
+     "POL-HOURS",
+     "TIME_WINDOW",
+     "PASS",
+     null,
+     "400ae5172ea26652b65deebe73764a42cfbe5e2973c18387538db2f64dbdb85b"
+    ],
+    [
+     "POL-RATE-USER",
+     "RATE_LIMIT",
+     "PASS",
+     null,
+     "356346fd39e1d08fe732a9af5f15670388e5700bbb4aef003bfac783590e5251"
+    ],
+    [
+     "POL-RATE-IP",
+     "RATE_LIMIT",
+     "PASS",
+     null,
+     "1b8dfc5729afe995038abbef035607b964f34e1cb0ce1610087903e923945975"
+    ]
+   ]
+  },
+  {
+   "u": "bob-noconsent",
+   "ip": "203.0.113.9",
+   "ts": 1792832400,
+   "valid": true,
+   "decision": "BLOCK",
+   "reason": "OUTSIDE_TIME_WINDOW",
+   "policyId": "POL-HOURS",
+   "policyVersion": null,
+   "policyRuleHash": "400ae5172ea26652b65deebe73764a42cfbe5e2973c18387538db2f64dbdb85b",
+   "consent": null,
+   "path": [
+    [
+     "POL-CONSENT",
+     "REQUIRE_CONSENT",
+     "PASS",
+     "CONSENT_VERIFIED",
+     "645b8a97d22d6b8e6a5dc3b82147480bfbbe5f2105a67922486c30461b0a24b7"
+    ],
+    [
+     "POL-IP-EXACT",
+     "BLOCK_IP",
+     "PASS",
+     null,
+     "0b5fab3d047e7938b4a034f817331aa4cd1cc828f612cb46771e08882afb2f2b"
+    ],
+    [
+     "POL-IP-NET",
+     "BLOCK_IP",
+     "PASS",
+     null,
+     "2e4fd8745352095f5cb629993c940d1ac4c4d05c84c4b2d578815f4c8313ddcf"
+    ],
+    [
+     "POL-HOURS",
+     "TIME_WINDOW",
+     "BLOCK",
+     "OUTSIDE_TIME_WINDOW",
+     "400ae5172ea26652b65deebe73764a42cfbe5e2973c18387538db2f64dbdb85b"
+    ]
+   ]
+  },
+  {
+   "u": "bob-noconsent",
+   "ip": "203.0.113.9",
+   "ts": 1792674000,
+   "valid": true,
+   "decision": "EXECUTE",
+   "reason": "ALL_CHECKS_PASSED",
+   "policyId": "SYSTEM",
+   "policyVersion": null,
+   "policyRuleHash": null,
+   "consent": null,
+   "path": [
+    [
+     "POL-CONSENT",
+     "REQUIRE_CONSENT",
+     "PASS",
+     "CONSENT_VERIFIED",
+     "645b8a97d22d6b8e6a5dc3b82147480bfbbe5f2105a67922486c30461b0a24b7"
+    ],
+    [
+     "POL-IP-EXACT",
+     "BLOCK_IP",
+     "PASS",
+     null,
+     "0b5fab3d047e7938b4a034f817331aa4cd1cc828f612cb46771e08882afb2f2b"
+    ],
+    [
+     "POL-IP-NET",
+     "BLOCK_IP",
+     "PASS",
+     null,
+     "2e4fd8745352095f5cb629993c940d1ac4c4d05c84c4b2d578815f4c8313ddcf"
+    ],
+    [
+     "POL-HOURS",
+     "TIME_WINDOW",
+     "PASS",
+     null,
+     "400ae5172ea26652b65deebe73764a42cfbe5e2973c18387538db2f64dbdb85b"
+    ],
+    [
+     "POL-RATE-USER",
+     "RATE_LIMIT",
+     "PASS",
+     null,
+     "356346fd39e1d08fe732a9af5f15670388e5700bbb4aef003bfac783590e5251"
+    ],
+    [
+     "POL-RATE-IP",
+     "RATE_LIMIT",
+     "PASS",
+     null,
+     "1b8dfc5729afe995038abbef035607b964f34e1cb0ce1610087903e923945975"
+    ]
+   ]
+  },
+  {
+   "u": "bob-noconsent",
+   "ip": "203.0.113.9",
+   "ts": 1792846800,
+   "valid": true,
+   "decision": "BLOCK",
+   "reason": "OUTSIDE_TIME_WINDOW",
+   "policyId": "POL-HOURS",
+   "policyVersion": null,
+   "policyRuleHash": "400ae5172ea26652b65deebe73764a42cfbe5e2973c18387538db2f64dbdb85b",
+   "consent": null,
+   "path": [
+    [
+     "POL-CONSENT",
+     "REQUIRE_CONSENT",
+     "PASS",
+     "CONSENT_VERIFIED",
+     "645b8a97d22d6b8e6a5dc3b82147480bfbbe5f2105a67922486c30461b0a24b7"
+    ],
+    [
+     "POL-IP-EXACT",
+     "BLOCK_IP",
+     "PASS",
+     null,
+     "0b5fab3d047e7938b4a034f817331aa4cd1cc828f612cb46771e08882afb2f2b"
+    ],
+    [
+     "POL-IP-NET",
+     "BLOCK_IP",
+     "PASS",
+     null,
+     "2e4fd8745352095f5cb629993c940d1ac4c4d05c84c4b2d578815f4c8313ddcf"
+    ],
+    [
+     "POL-HOURS",
+     "TIME_WINDOW",
+     "BLOCK",
+     "OUTSIDE_TIME_WINDOW",
+     "400ae5172ea26652b65deebe73764a42cfbe5e2973c18387538db2f64dbdb85b"
+    ]
+   ]
+  },
+  {
+   "u": "bob-noconsent",
+   "ip": "203.0.113.9",
+   "ts": 1792706400,
+   "valid": true,
+   "decision": "BLOCK",
+   "reason": "OUTSIDE_TIME_WINDOW",
+   "policyId": "POL-HOURS",
+   "policyVersion": null,
+   "policyRuleHash": "400ae5172ea26652b65deebe73764a42cfbe5e2973c18387538db2f64dbdb85b",
+   "consent": null,
+   "path": [
+    [
+     "POL-CONSENT",
+     "REQUIRE_CONSENT",
+     "PASS",
+     "CONSENT_VERIFIED",
+     "645b8a97d22d6b8e6a5dc3b82147480bfbbe5f2105a67922486c30461b0a24b7"
+    ],
+    [
+     "POL-IP-EXACT",
+     "BLOCK_IP",
+     "PASS",
+     null,
+     "0b5fab3d047e7938b4a034f817331aa4cd1cc828f612cb46771e08882afb2f2b"
+    ],
+    [
+     "POL-IP-NET",
+     "BLOCK_IP",
+     "PASS",
+     null,
+     "2e4fd8745352095f5cb629993c940d1ac4c4d05c84c4b2d578815f4c8313ddcf"
+    ],
+    [
+     "POL-HOURS",
+     "TIME_WINDOW",
+     "BLOCK",
+     "OUTSIDE_TIME_WINDOW",
+     "400ae5172ea26652b65deebe73764a42cfbe5e2973c18387538db2f64dbdb85b"
+    ]
+   ]
+  },
+  {
+   "u": "bob-noconsent",
+   "ip": "203.0.113.9",
+   "ts": 1792879200,
+   "valid": true,
+   "decision": "BLOCK",
+   "reason": "OUTSIDE_TIME_WINDOW",
+   "policyId": "POL-HOURS",
+   "policyVersion": null,
+   "policyRuleHash": "400ae5172ea26652b65deebe73764a42cfbe5e2973c18387538db2f64dbdb85b",
+   "consent": null,
+   "path": [
+    [
+     "POL-CONSENT",
+     "REQUIRE_CONSENT",
+     "PASS",
+     "CONSENT_VERIFIED",
+     "645b8a97d22d6b8e6a5dc3b82147480bfbbe5f2105a67922486c30461b0a24b7"
+    ],
+    [
+     "POL-IP-EXACT",
+     "BLOCK_IP",
+     "PASS",
+     null,
+     "0b5fab3d047e7938b4a034f817331aa4cd1cc828f612cb46771e08882afb2f2b"
+    ],
+    [
+     "POL-IP-NET",
+     "BLOCK_IP",
+     "PASS",
+     null,
+     "2e4fd8745352095f5cb629993c940d1ac4c4d05c84c4b2d578815f4c8313ddcf"
+    ],
+    [
+     "POL-HOURS",
+     "TIME_WINDOW",
+     "BLOCK",
+     "OUTSIDE_TIME_WINDOW",
+     "400ae5172ea26652b65deebe73764a42cfbe5e2973c18387538db2f64dbdb85b"
+    ]
+   ]
+  },
+  {
+   "u": "carol",
+   "ip": "198.51.100.7",
+   "ts": 1792638000,
+   "valid": true,
+   "decision": "BLOCK",
+   "reason": "OUTSIDE_TIME_WINDOW",
+   "policyId": "POL-HOURS",
+   "policyVersion": null,
+   "policyRuleHash": "400ae5172ea26652b65deebe73764a42cfbe5e2973c18387538db2f64dbdb85b",
+   "consent": null,
+   "path": [
+    [
+     "POL-CONSENT",
+     "REQUIRE_CONSENT",
+     "PASS",
+     "CONSENT_VERIFIED",
+     "645b8a97d22d6b8e6a5dc3b82147480bfbbe5f2105a67922486c30461b0a24b7"
+    ],
+    [
+     "POL-IP-EXACT",
+     "BLOCK_IP",
+     "PASS",
+     null,
+     "0b5fab3d047e7938b4a034f817331aa4cd1cc828f612cb46771e08882afb2f2b"
+    ],
+    [
+     "POL-IP-NET",
+     "BLOCK_IP",
+     "PASS",
+     null,
+     "2e4fd8745352095f5cb629993c940d1ac4c4d05c84c4b2d578815f4c8313ddcf"
+    ],
+    [
+     "POL-HOURS",
+     "TIME_WINDOW",
+     "BLOCK",
+     "OUTSIDE_TIME_WINDOW",
+     "400ae5172ea26652b65deebe73764a42cfbe5e2973c18387538db2f64dbdb85b"
+    ]
+   ]
+  },
+  {
+   "u": "carol",
+   "ip": "198.51.100.7",
+   "ts": 1792810800,
+   "valid": true,
+   "decision": "BLOCK",
+   "reason": "OUTSIDE_TIME_WINDOW",
+   "policyId": "POL-HOURS",
+   "policyVersion": null,
+   "policyRuleHash": "400ae5172ea26652b65deebe73764a42cfbe5e2973c18387538db2f64dbdb85b",
+   "consent": null,
+   "path": [
+    [
+     "POL-CONSENT",
+     "REQUIRE_CONSENT",
+     "PASS",
+     "CONSENT_VERIFIED",
+     "645b8a97d22d6b8e6a5dc3b82147480bfbbe5f2105a67922486c30461b0a24b7"
+    ],
+    [
+     "POL-IP-EXACT",
+     "BLOCK_IP",
+     "PASS",
+     null,
+     "0b5fab3d047e7938b4a034f817331aa4cd1cc828f612cb46771e08882afb2f2b"
+    ],
+    [
+     "POL-IP-NET",
+     "BLOCK_IP",
+     "PASS",
+     null,
+     "2e4fd8745352095f5cb629993c940d1ac4c4d05c84c4b2d578815f4c8313ddcf"
+    ],
+    [
+     "POL-HOURS",
+     "TIME_WINDOW",
+     "BLOCK",
+     "OUTSIDE_TIME_WINDOW",
+     "400ae5172ea26652b65deebe73764a42cfbe5e2973c18387538db2f64dbdb85b"
+    ]
+   ]
+  },
+  {
+   "u": "carol",
+   "ip": "198.51.100.7",
+   "ts": 1792659600,
+   "valid": true,
+   "decision": "EXECUTE",
+   "reason": "ALL_CHECKS_PASSED",
+   "policyId": "SYSTEM",
+   "policyVersion": null,
+   "policyRuleHash": null,
+   "consent": null,
+   "path": [
+    [
+     "POL-CONSENT",
+     "REQUIRE_CONSENT",
+     "PASS",
+     "CONSENT_VERIFIED",
+     "645b8a97d22d6b8e6a5dc3b82147480bfbbe5f2105a67922486c30461b0a24b7"
+    ],
+    [
+     "POL-IP-EXACT",
+     "BLOCK_IP",
+     "PASS",
+     null,
+     "0b5fab3d047e7938b4a034f817331aa4cd1cc828f612cb46771e08882afb2f2b"
+    ],
+    [
+     "POL-IP-NET",
+     "BLOCK_IP",
+     "PASS",
+     null,
+     "2e4fd8745352095f5cb629993c940d1ac4c4d05c84c4b2d578815f4c8313ddcf"
+    ],
+    [
+     "POL-HOURS",
+     "TIME_WINDOW",
+     "PASS",
+     null,
+     "400ae5172ea26652b65deebe73764a42cfbe5e2973c18387538db2f64dbdb85b"
+    ],
+    [
+     "POL-RATE-USER",
+     "RATE_LIMIT",
+     "PASS",
+     null,
+     "356346fd39e1d08fe732a9af5f15670388e5700bbb4aef003bfac783590e5251"
+    ],
+    [
+     "POL-RATE-IP",
+     "RATE_LIMIT",
+     "PASS",
+     null,
+     "1b8dfc5729afe995038abbef035607b964f34e1cb0ce1610087903e923945975"
+    ]
+   ]
+  },
+  {
+   "u": "carol",
+   "ip": "198.51.100.7",
+   "ts": 1792832400,
+   "valid": true,
+   "decision": "BLOCK",
+   "reason": "OUTSIDE_TIME_WINDOW",
+   "policyId": "POL-HOURS",
+   "policyVersion": null,
+   "policyRuleHash": "400ae5172ea26652b65deebe73764a42cfbe5e2973c18387538db2f64dbdb85b",
+   "consent": null,
+   "path": [
+    [
+     "POL-CONSENT",
+     "REQUIRE_CONSENT",
+     "PASS",
+     "CONSENT_VERIFIED",
+     "645b8a97d22d6b8e6a5dc3b82147480bfbbe5f2105a67922486c30461b0a24b7"
+    ],
+    [
+     "POL-IP-EXACT",
+     "BLOCK_IP",
+     "PASS",
+     null,
+     "0b5fab3d047e7938b4a034f817331aa4cd1cc828f612cb46771e08882afb2f2b"
+    ],
+    [
+     "POL-IP-NET",
+     "BLOCK_IP",
+     "PASS",
+     null,
+     "2e4fd8745352095f5cb629993c940d1ac4c4d05c84c4b2d578815f4c8313ddcf"
+    ],
+    [
+     "POL-HOURS",
+     "TIME_WINDOW",
+     "BLOCK",
+     "OUTSIDE_TIME_WINDOW",
+     "400ae5172ea26652b65deebe73764a42cfbe5e2973c18387538db2f64dbdb85b"
+    ]
+   ]
+  },
+  {
+   "u": "carol",
+   "ip": "198.51.100.7",
+   "ts": 1792674000,
+   "valid": true,
+   "decision": "BLOCK",
+   "reason": "RATE_LIMIT_EXCEEDED",
+   "policyId": "POL-RATE-IP",
+   "policyVersion": null,
+   "policyRuleHash": "1b8dfc5729afe995038abbef035607b964f34e1cb0ce1610087903e923945975",
+   "consent": null,
+   "path": [
+    [
+     "POL-CONSENT",
+     "REQUIRE_CONSENT",
+     "PASS",
+     "CONSENT_VERIFIED",
+     "645b8a97d22d6b8e6a5dc3b82147480bfbbe5f2105a67922486c30461b0a24b7"
+    ],
+    [
+     "POL-IP-EXACT",
+     "BLOCK_IP",
+     "PASS",
+     null,
+     "0b5fab3d047e7938b4a034f817331aa4cd1cc828f612cb46771e08882afb2f2b"
+    ],
+    [
+     "POL-IP-NET",
+     "BLOCK_IP",
+     "PASS",
+     null,
+     "2e4fd8745352095f5cb629993c940d1ac4c4d05c84c4b2d578815f4c8313ddcf"
+    ],
+    [
+     "POL-HOURS",
+     "TIME_WINDOW",
+     "PASS",
+     null,
+     "400ae5172ea26652b65deebe73764a42cfbe5e2973c18387538db2f64dbdb85b"
+    ],
+    [
+     "POL-RATE-USER",
+     "RATE_LIMIT",
+     "PASS",
+     null,
+     "356346fd39e1d08fe732a9af5f15670388e5700bbb4aef003bfac783590e5251"
+    ],
+    [
+     "POL-RATE-IP",
+     "RATE_LIMIT",
+     "BLOCK",
+     "RATE_LIMIT_EXCEEDED",
+     "1b8dfc5729afe995038abbef035607b964f34e1cb0ce1610087903e923945975"
+    ]
+   ]
+  },
+  {
+   "u": "carol",
+   "ip": "198.51.100.7",
+   "ts": 1792846800,
+   "valid": true,
+   "decision": "BLOCK",
+   "reason": "OUTSIDE_TIME_WINDOW",
+   "policyId": "POL-HOURS",
+   "policyVersion": null,
+   "policyRuleHash": "400ae5172ea26652b65deebe73764a42cfbe5e2973c18387538db2f64dbdb85b",
+   "consent": null,
+   "path": [
+    [
+     "POL-CONSENT",
+     "REQUIRE_CONSENT",
+     "PASS",
+     "CONSENT_VERIFIED",
+     "645b8a97d22d6b8e6a5dc3b82147480bfbbe5f2105a67922486c30461b0a24b7"
+    ],
+    [
+     "POL-IP-EXACT",
+     "BLOCK_IP",
+     "PASS",
+     null,
+     "0b5fab3d047e7938b4a034f817331aa4cd1cc828f612cb46771e08882afb2f2b"
+    ],
+    [
+     "POL-IP-NET",
+     "BLOCK_IP",
+     "PASS",
+     null,
+     "2e4fd8745352095f5cb629993c940d1ac4c4d05c84c4b2d578815f4c8313ddcf"
+    ],
+    [
+     "POL-HOURS",
+     "TIME_WINDOW",
+     "BLOCK",
+     "OUTSIDE_TIME_WINDOW",
+     "400ae5172ea26652b65deebe73764a42cfbe5e2973c18387538db2f64dbdb85b"
+    ]
+   ]
+  },
+  {
+   "u": "carol",
+   "ip": "198.51.100.7",
+   "ts": 1792706400,
+   "valid": true,
+   "decision": "BLOCK",
+   "reason": "OUTSIDE_TIME_WINDOW",
+   "policyId": "POL-HOURS",
+   "policyVersion": null,
+   "policyRuleHash": "400ae5172ea26652b65deebe73764a42cfbe5e2973c18387538db2f64dbdb85b",
+   "consent": null,
+   "path": [
+    [
+     "POL-CONSENT",
+     "REQUIRE_CONSENT",
+     "PASS",
+     "CONSENT_VERIFIED",
+     "645b8a97d22d6b8e6a5dc3b82147480bfbbe5f2105a67922486c30461b0a24b7"
+    ],
+    [
+     "POL-IP-EXACT",
+     "BLOCK_IP",
+     "PASS",
+     null,
+     "0b5fab3d047e7938b4a034f817331aa4cd1cc828f612cb46771e08882afb2f2b"
+    ],
+    [
+     "POL-IP-NET",
+     "BLOCK_IP",
+     "PASS",
+     null,
+     "2e4fd8745352095f5cb629993c940d1ac4c4d05c84c4b2d578815f4c8313ddcf"
+    ],
+    [
+     "POL-HOURS",
+     "TIME_WINDOW",
+     "BLOCK",
+     "OUTSIDE_TIME_WINDOW",
+     "400ae5172ea26652b65deebe73764a42cfbe5e2973c18387538db2f64dbdb85b"
+    ]
+   ]
+  },
+  {
+   "u": "carol",
+   "ip": "198.51.100.7",
+   "ts": 1792879200,
+   "valid": true,
+   "decision": "BLOCK",
+   "reason": "OUTSIDE_TIME_WINDOW",
+   "policyId": "POL-HOURS",
+   "policyVersion": null,
+   "policyRuleHash": "400ae5172ea26652b65deebe73764a42cfbe5e2973c18387538db2f64dbdb85b",
+   "consent": null,
+   "path": [
+    [
+     "POL-CONSENT",
+     "REQUIRE_CONSENT",
+     "PASS",
+     "CONSENT_VERIFIED",
+     "645b8a97d22d6b8e6a5dc3b82147480bfbbe5f2105a67922486c30461b0a24b7"
+    ],
+    [
+     "POL-IP-EXACT",
+     "BLOCK_IP",
+     "PASS",
+     null,
+     "0b5fab3d047e7938b4a034f817331aa4cd1cc828f612cb46771e08882afb2f2b"
+    ],
+    [
+     "POL-IP-NET",
+     "BLOCK_IP",
+     "PASS",
+     null,
+     "2e4fd8745352095f5cb629993c940d1ac4c4d05c84c4b2d578815f4c8313ddcf"
+    ],
+    [
+     "POL-HOURS",
+     "TIME_WINDOW",
+     "BLOCK",
+     "OUTSIDE_TIME_WINDOW",
+     "400ae5172ea26652b65deebe73764a42cfbe5e2973c18387538db2f64dbdb85b"
+    ]
+   ]
+  },
+  {
+   "u": "carol",
+   "ip": "10.1.2.3",
+   "ts": 1792638000,
+   "valid": true,
+   "decision": "BLOCK",
+   "reason": "IP_BLOCKED",
+   "policyId": "POL-IP-NET",
+   "policyVersion": null,
+   "policyRuleHash": "2e4fd8745352095f5cb629993c940d1ac4c4d05c84c4b2d578815f4c8313ddcf",
+   "consent": null,
+   "path": [
+    [
+     "POL-CONSENT",
+     "REQUIRE_CONSENT",
+     "PASS",
+     "CONSENT_VERIFIED",
+     "645b8a97d22d6b8e6a5dc3b82147480bfbbe5f2105a67922486c30461b0a24b7"
+    ],
+    [
+     "POL-IP-EXACT",
+     "BLOCK_IP",
+     "PASS",
+     null,
+     "0b5fab3d047e7938b4a034f817331aa4cd1cc828f612cb46771e08882afb2f2b"
+    ],
+    [
+     "POL-IP-NET",
+     "BLOCK_IP",
+     "BLOCK",
+     "IP_BLOCKED",
+     "2e4fd8745352095f5cb629993c940d1ac4c4d05c84c4b2d578815f4c8313ddcf"
+    ]
+   ]
+  },
+  {
+   "u": "carol",
+   "ip": "10.1.2.3",
+   "ts": 1792810800,
+   "valid": true,
+   "decision": "BLOCK",
+   "reason": "IP_BLOCKED",
+   "policyId": "POL-IP-NET",
+   "policyVersion": null,
+   "policyRuleHash": "2e4fd8745352095f5cb629993c940d1ac4c4d05c84c4b2d578815f4c8313ddcf",
+   "consent": null,
+   "path": [
+    [
+     "POL-CONSENT",
+     "REQUIRE_CONSENT",
+     "PASS",
+     "CONSENT_VERIFIED",
+     "645b8a97d22d6b8e6a5dc3b82147480bfbbe5f2105a67922486c30461b0a24b7"
+    ],
+    [
+     "POL-IP-EXACT",
+     "BLOCK_IP",
+     "PASS",
+     null,
+     "0b5fab3d047e7938b4a034f817331aa4cd1cc828f612cb46771e08882afb2f2b"
+    ],
+    [
+     "POL-IP-NET",
+     "BLOCK_IP",
+     "BLOCK",
+     "IP_BLOCKED",
+     "2e4fd8745352095f5cb629993c940d1ac4c4d05c84c4b2d578815f4c8313ddcf"
+    ]
+   ]
+  },
+  {
+   "u": "carol",
+   "ip": "10.1.2.3",
+   "ts": 1792659600,
+   "valid": true,
+   "decision": "BLOCK",
+   "reason": "IP_BLOCKED",
+   "policyId": "POL-IP-NET",
+   "policyVersion": null,
+   "policyRuleHash": "2e4fd8745352095f5cb629993c940d1ac4c4d05c84c4b2d578815f4c8313ddcf",
+   "consent": null,
+   "path": [
+    [
+     "POL-CONSENT",
+     "REQUIRE_CONSENT",
+     "PASS",
+     "CONSENT_VERIFIED",
+     "645b8a97d22d6b8e6a5dc3b82147480bfbbe5f2105a67922486c30461b0a24b7"
+    ],
+    [
+     "POL-IP-EXACT",
+     "BLOCK_IP",
+     "PASS",
+     null,
+     "0b5fab3d047e7938b4a034f817331aa4cd1cc828f612cb46771e08882afb2f2b"
+    ],
+    [
+     "POL-IP-NET",
+     "BLOCK_IP",
+     "BLOCK",
+     "IP_BLOCKED",
+     "2e4fd8745352095f5cb629993c940d1ac4c4d05c84c4b2d578815f4c8313ddcf"
+    ]
+   ]
+  },
+  {
+   "u": "carol",
+   "ip": "10.1.2.3",
+   "ts": 1792832400,
+   "valid": true,
+   "decision": "BLOCK",
+   "reason": "IP_BLOCKED",
+   "policyId": "POL-IP-NET",
+   "policyVersion": null,
+   "policyRuleHash": "2e4fd8745352095f5cb629993c940d1ac4c4d05c84c4b2d578815f4c8313ddcf",
+   "consent": null,
+   "path": [
+    [
+     "POL-CONSENT",
+     "REQUIRE_CONSENT",
+     "PASS",
+     "CONSENT_VERIFIED",
+     "645b8a97d22d6b8e6a5dc3b82147480bfbbe5f2105a67922486c30461b0a24b7"
+    ],
+    [
+     "POL-IP-EXACT",
+     "BLOCK_IP",
+     "PASS",
+     null,
+     "0b5fab3d047e7938b4a034f817331aa4cd1cc828f612cb46771e08882afb2f2b"
+    ],
+    [
+     "POL-IP-NET",
+     "BLOCK_IP",
+     "BLOCK",
+     "IP_BLOCKED",
+     "2e4fd8745352095f5cb629993c940d1ac4c4d05c84c4b2d578815f4c8313ddcf"
+    ]
+   ]
+  },
+  {
+   "u": "carol",
+   "ip": "10.1.2.3",
+   "ts": 1792674000,
+   "valid": true,
+   "decision": "BLOCK",
+   "reason": "IP_BLOCKED",
+   "policyId": "POL-IP-NET",
+   "policyVersion": null,
+   "policyRuleHash": "2e4fd8745352095f5cb629993c940d1ac4c4d05c84c4b2d578815f4c8313ddcf",
+   "consent": null,
+   "path": [
+    [
+     "POL-CONSENT",
+     "REQUIRE_CONSENT",
+     "PASS",
+     "CONSENT_VERIFIED",
+     "645b8a97d22d6b8e6a5dc3b82147480bfbbe5f2105a67922486c30461b0a24b7"
+    ],
+    [
+     "POL-IP-EXACT",
+     "BLOCK_IP",
+     "PASS",
+     null,
+     "0b5fab3d047e7938b4a034f817331aa4cd1cc828f612cb46771e08882afb2f2b"
+    ],
+    [
+     "POL-IP-NET",
+     "BLOCK_IP",
+     "BLOCK",
+     "IP_BLOCKED",
+     "2e4fd8745352095f5cb629993c940d1ac4c4d05c84c4b2d578815f4c8313ddcf"
+    ]
+   ]
+  },
+  {
+   "u": "carol",
+   "ip": "10.1.2.3",
+   "ts": 1792846800,
+   "valid": true,
+   "decision": "BLOCK",
+   "reason": "IP_BLOCKED",
+   "policyId": "POL-IP-NET",
+   "policyVersion": null,
+   "policyRuleHash": "2e4fd8745352095f5cb629993c940d1ac4c4d05c84c4b2d578815f4c8313ddcf",
+   "consent": null,
+   "path": [
+    [
+     "POL-CONSENT",
+     "REQUIRE_CONSENT",
+     "PASS",
+     "CONSENT_VERIFIED",
+     "645b8a97d22d6b8e6a5dc3b82147480bfbbe5f2105a67922486c30461b0a24b7"
+    ],
+    [
+     "POL-IP-EXACT",
+     "BLOCK_IP",
+     "PASS",
+     null,
+     "0b5fab3d047e7938b4a034f817331aa4cd1cc828f612cb46771e08882afb2f2b"
+    ],
+    [
+     "POL-IP-NET",
+     "BLOCK_IP",
+     "BLOCK",
+     "IP_BLOCKED",
+     "2e4fd8745352095f5cb629993c940d1ac4c4d05c84c4b2d578815f4c8313ddcf"
+    ]
+   ]
+  },
+  {
+   "u": "carol",
+   "ip": "10.1.2.3",
+   "ts": 1792706400,
+   "valid": true,
+   "decision": "BLOCK",
+   "reason": "IP_BLOCKED",
+   "policyId": "POL-IP-NET",
+   "policyVersion": null,
+   "policyRuleHash": "2e4fd8745352095f5cb629993c940d1ac4c4d05c84c4b2d578815f4c8313ddcf",
+   "consent": null,
+   "path": [
+    [
+     "POL-CONSENT",
+     "REQUIRE_CONSENT",
+     "PASS",
+     "CONSENT_VERIFIED",
+     "645b8a97d22d6b8e6a5dc3b82147480bfbbe5f2105a67922486c30461b0a24b7"
+    ],
+    [
+     "POL-IP-EXACT",
+     "BLOCK_IP",
+     "PASS",
+     null,
+     "0b5fab3d047e7938b4a034f817331aa4cd1cc828f612cb46771e08882afb2f2b"
+    ],
+    [
+     "POL-IP-NET",
+     "BLOCK_IP",
+     "BLOCK",
+     "IP_BLOCKED",
+     "2e4fd8745352095f5cb629993c940d1ac4c4d05c84c4b2d578815f4c8313ddcf"
+    ]
+   ]
+  },
+  {
+   "u": "carol",
+   "ip": "10.1.2.3",
+   "ts": 1792879200,
+   "valid": true,
+   "decision": "BLOCK",
+   "reason": "IP_BLOCKED",
+   "policyId": "POL-IP-NET",
+   "policyVersion": null,
+   "policyRuleHash": "2e4fd8745352095f5cb629993c940d1ac4c4d05c84c4b2d578815f4c8313ddcf",
+   "consent": null,
+   "path": [
+    [
+     "POL-CONSENT",
+     "REQUIRE_CONSENT",
+     "PASS",
+     "CONSENT_VERIFIED",
+     "645b8a97d22d6b8e6a5dc3b82147480bfbbe5f2105a67922486c30461b0a24b7"
+    ],
+    [
+     "POL-IP-EXACT",
+     "BLOCK_IP",
+     "PASS",
+     null,
+     "0b5fab3d047e7938b4a034f817331aa4cd1cc828f612cb46771e08882afb2f2b"
+    ],
+    [
+     "POL-IP-NET",
+     "BLOCK_IP",
+     "BLOCK",
+     "IP_BLOCKED",
+     "2e4fd8745352095f5cb629993c940d1ac4c4d05c84c4b2d578815f4c8313ddcf"
+    ]
+   ]
+  },
+  {
+   "u": "carol",
+   "ip": "192.0.2.50",
+   "ts": 1792638000,
+   "valid": true,
+   "decision": "BLOCK",
+   "reason": "IP_BLOCKED",
+   "policyId": "POL-IP-EXACT",
+   "policyVersion": null,
+   "policyRuleHash": "0b5fab3d047e7938b4a034f817331aa4cd1cc828f612cb46771e08882afb2f2b",
+   "consent": null,
+   "path": [
+    [
+     "POL-CONSENT",
+     "REQUIRE_CONSENT",
+     "PASS",
+     "CONSENT_VERIFIED",
+     "645b8a97d22d6b8e6a5dc3b82147480bfbbe5f2105a67922486c30461b0a24b7"
+    ],
+    [
+     "POL-IP-EXACT",
+     "BLOCK_IP",
+     "BLOCK",
+     "IP_BLOCKED",
+     "0b5fab3d047e7938b4a034f817331aa4cd1cc828f612cb46771e08882afb2f2b"
+    ]
+   ]
+  },
+  {
+   "u": "carol",
+   "ip": "192.0.2.50",
+   "ts": 1792810800,
+   "valid": true,
+   "decision": "BLOCK",
+   "reason": "IP_BLOCKED",
+   "policyId": "POL-IP-EXACT",
+   "policyVersion": null,
+   "policyRuleHash": "0b5fab3d047e7938b4a034f817331aa4cd1cc828f612cb46771e08882afb2f2b",
+   "consent": null,
+   "path": [
+    [
+     "POL-CONSENT",
+     "REQUIRE_CONSENT",
+     "PASS",
+     "CONSENT_VERIFIED",
+     "645b8a97d22d6b8e6a5dc3b82147480bfbbe5f2105a67922486c30461b0a24b7"
+    ],
+    [
+     "POL-IP-EXACT",
+     "BLOCK_IP",
+     "BLOCK",
+     "IP_BLOCKED",
+     "0b5fab3d047e7938b4a034f817331aa4cd1cc828f612cb46771e08882afb2f2b"
+    ]
+   ]
+  },
+  {
+   "u": "carol",
+   "ip": "192.0.2.50",
+   "ts": 1792659600,
+   "valid": true,
+   "decision": "BLOCK",
+   "reason": "IP_BLOCKED",
+   "policyId": "POL-IP-EXACT",
+   "policyVersion": null,
+   "policyRuleHash": "0b5fab3d047e7938b4a034f817331aa4cd1cc828f612cb46771e08882afb2f2b",
+   "consent": null,
+   "path": [
+    [
+     "POL-CONSENT",
+     "REQUIRE_CONSENT",
+     "PASS",
+     "CONSENT_VERIFIED",
+     "645b8a97d22d6b8e6a5dc3b82147480bfbbe5f2105a67922486c30461b0a24b7"
+    ],
+    [
+     "POL-IP-EXACT",
+     "BLOCK_IP",
+     "BLOCK",
+     "IP_BLOCKED",
+     "0b5fab3d047e7938b4a034f817331aa4cd1cc828f612cb46771e08882afb2f2b"
+    ]
+   ]
+  },
+  {
+   "u": "carol",
+   "ip": "192.0.2.50",
+   "ts": 1792832400,
+   "valid": true,
+   "decision": "BLOCK",
+   "reason": "IP_BLOCKED",
+   "policyId": "POL-IP-EXACT",
+   "policyVersion": null,
+   "policyRuleHash": "0b5fab3d047e7938b4a034f817331aa4cd1cc828f612cb46771e08882afb2f2b",
+   "consent": null,
+   "path": [
+    [
+     "POL-CONSENT",
+     "REQUIRE_CONSENT",
+     "PASS",
+     "CONSENT_VERIFIED",
+     "645b8a97d22d6b8e6a5dc3b82147480bfbbe5f2105a67922486c30461b0a24b7"
+    ],
+    [
+     "POL-IP-EXACT",
+     "BLOCK_IP",
+     "BLOCK",
+     "IP_BLOCKED",
+     "0b5fab3d047e7938b4a034f817331aa4cd1cc828f612cb46771e08882afb2f2b"
+    ]
+   ]
+  },
+  {
+   "u": "carol",
+   "ip": "192.0.2.50",
+   "ts": 1792674000,
+   "valid": true,
+   "decision": "BLOCK",
+   "reason": "IP_BLOCKED",
+   "policyId": "POL-IP-EXACT",
+   "policyVersion": null,
+   "policyRuleHash": "0b5fab3d047e7938b4a034f817331aa4cd1cc828f612cb46771e08882afb2f2b",
+   "consent": null,
+   "path": [
+    [
+     "POL-CONSENT",
+     "REQUIRE_CONSENT",
+     "PASS",
+     "CONSENT_VERIFIED",
+     "645b8a97d22d6b8e6a5dc3b82147480bfbbe5f2105a67922486c30461b0a24b7"
+    ],
+    [
+     "POL-IP-EXACT",
+     "BLOCK_IP",
+     "BLOCK",
+     "IP_BLOCKED",
+     "0b5fab3d047e7938b4a034f817331aa4cd1cc828f612cb46771e08882afb2f2b"
+    ]
+   ]
+  },
+  {
+   "u": "carol",
+   "ip": "192.0.2.50",
+   "ts": 1792846800,
+   "valid": true,
+   "decision": "BLOCK",
+   "reason": "IP_BLOCKED",
+   "policyId": "POL-IP-EXACT",
+   "policyVersion": null,
+   "policyRuleHash": "0b5fab3d047e7938b4a034f817331aa4cd1cc828f612cb46771e08882afb2f2b",
+   "consent": null,
+   "path": [
+    [
+     "POL-CONSENT",
+     "REQUIRE_CONSENT",
+     "PASS",
+     "CONSENT_VERIFIED",
+     "645b8a97d22d6b8e6a5dc3b82147480bfbbe5f2105a67922486c30461b0a24b7"
+    ],
+    [
+     "POL-IP-EXACT",
+     "BLOCK_IP",
+     "BLOCK",
+     "IP_BLOCKED",
+     "0b5fab3d047e7938b4a034f817331aa4cd1cc828f612cb46771e08882afb2f2b"
+    ]
+   ]
+  },
+  {
+   "u": "carol",
+   "ip": "192.0.2.50",
+   "ts": 1792706400,
+   "valid": true,
+   "decision": "BLOCK",
+   "reason": "IP_BLOCKED",
+   "policyId": "POL-IP-EXACT",
+   "policyVersion": null,
+   "policyRuleHash": "0b5fab3d047e7938b4a034f817331aa4cd1cc828f612cb46771e08882afb2f2b",
+   "consent": null,
+   "path": [
+    [
+     "POL-CONSENT",
+     "REQUIRE_CONSENT",
+     "PASS",
+     "CONSENT_VERIFIED",
+     "645b8a97d22d6b8e6a5dc3b82147480bfbbe5f2105a67922486c30461b0a24b7"
+    ],
+    [
+     "POL-IP-EXACT",
+     "BLOCK_IP",
+     "BLOCK",
+     "IP_BLOCKED",
+     "0b5fab3d047e7938b4a034f817331aa4cd1cc828f612cb46771e08882afb2f2b"
+    ]
+   ]
+  },
+  {
+   "u": "carol",
+   "ip": "192.0.2.50",
+   "ts": 1792879200,
+   "valid": true,
+   "decision": "BLOCK",
+   "reason": "IP_BLOCKED",
+   "policyId": "POL-IP-EXACT",
+   "policyVersion": null,
+   "policyRuleHash": "0b5fab3d047e7938b4a034f817331aa4cd1cc828f612cb46771e08882afb2f2b",
+   "consent": null,
+   "path": [
+    [
+     "POL-CONSENT",
+     "REQUIRE_CONSENT",
+     "PASS",
+     "CONSENT_VERIFIED",
+     "645b8a97d22d6b8e6a5dc3b82147480bfbbe5f2105a67922486c30461b0a24b7"
+    ],
+    [
+     "POL-IP-EXACT",
+     "BLOCK_IP",
+     "BLOCK",
+     "IP_BLOCKED",
+     "0b5fab3d047e7938b4a034f817331aa4cd1cc828f612cb46771e08882afb2f2b"
+    ]
+   ]
+  },
+  {
+   "u": "carol",
+   "ip": "203.0.113.9",
+   "ts": 1792638000,
+   "valid": true,
+   "decision": "BLOCK",
+   "reason": "OUTSIDE_TIME_WINDOW",
+   "policyId": "POL-HOURS",
+   "policyVersion": null,
+   "policyRuleHash": "400ae5172ea26652b65deebe73764a42cfbe5e2973c18387538db2f64dbdb85b",
+   "consent": null,
+   "path": [
+    [
+     "POL-CONSENT",
+     "REQUIRE_CONSENT",
+     "PASS",
+     "CONSENT_VERIFIED",
+     "645b8a97d22d6b8e6a5dc3b82147480bfbbe5f2105a67922486c30461b0a24b7"
+    ],
+    [
+     "POL-IP-EXACT",
+     "BLOCK_IP",
+     "PASS",
+     null,
+     "0b5fab3d047e7938b4a034f817331aa4cd1cc828f612cb46771e08882afb2f2b"
+    ],
+    [
+     "POL-IP-NET",
+     "BLOCK_IP",
+     "PASS",
+     null,
+     "2e4fd8745352095f5cb629993c940d1ac4c4d05c84c4b2d578815f4c8313ddcf"
+    ],
+    [
+     "POL-HOURS",
+     "TIME_WINDOW",
+     "BLOCK",
+     "OUTSIDE_TIME_WINDOW",
+     "400ae5172ea26652b65deebe73764a42cfbe5e2973c18387538db2f64dbdb85b"
+    ]
+   ]
+  },
+  {
+   "u": "carol",
+   "ip": "203.0.113.9",
+   "ts": 1792810800,
+   "valid": true,
+   "decision": "BLOCK",
+   "reason": "OUTSIDE_TIME_WINDOW",
+   "policyId": "POL-HOURS",
+   "policyVersion": null,
+   "policyRuleHash": "400ae5172ea26652b65deebe73764a42cfbe5e2973c18387538db2f64dbdb85b",
+   "consent": null,
+   "path": [
+    [
+     "POL-CONSENT",
+     "REQUIRE_CONSENT",
+     "PASS",
+     "CONSENT_VERIFIED",
+     "645b8a97d22d6b8e6a5dc3b82147480bfbbe5f2105a67922486c30461b0a24b7"
+    ],
+    [
+     "POL-IP-EXACT",
+     "BLOCK_IP",
+     "PASS",
+     null,
+     "0b5fab3d047e7938b4a034f817331aa4cd1cc828f612cb46771e08882afb2f2b"
+    ],
+    [
+     "POL-IP-NET",
+     "BLOCK_IP",
+     "PASS",
+     null,
+     "2e4fd8745352095f5cb629993c940d1ac4c4d05c84c4b2d578815f4c8313ddcf"
+    ],
+    [
+     "POL-HOURS",
+     "TIME_WINDOW",
+     "BLOCK",
+     "OUTSIDE_TIME_WINDOW",
+     "400ae5172ea26652b65deebe73764a42cfbe5e2973c18387538db2f64dbdb85b"
+    ]
+   ]
+  },
+  {
+   "u": "carol",
+   "ip": "203.0.113.9",
+   "ts": 1792659600,
+   "valid": true,
+   "decision": "EXECUTE",
+   "reason": "ALL_CHECKS_PASSED",
+   "policyId": "SYSTEM",
+   "policyVersion": null,
+   "policyRuleHash": null,
+   "consent": null,
+   "path": [
+    [
+     "POL-CONSENT",
+     "REQUIRE_CONSENT",
+     "PASS",
+     "CONSENT_VERIFIED",
+     "645b8a97d22d6b8e6a5dc3b82147480bfbbe5f2105a67922486c30461b0a24b7"
+    ],
+    [
+     "POL-IP-EXACT",
+     "BLOCK_IP",
+     "PASS",
+     null,
+     "0b5fab3d047e7938b4a034f817331aa4cd1cc828f612cb46771e08882afb2f2b"
+    ],
+    [
+     "POL-IP-NET",
+     "BLOCK_IP",
+     "PASS",
+     null,
+     "2e4fd8745352095f5cb629993c940d1ac4c4d05c84c4b2d578815f4c8313ddcf"
+    ],
+    [
+     "POL-HOURS",
+     "TIME_WINDOW",
+     "PASS",
+     null,
+     "400ae5172ea26652b65deebe73764a42cfbe5e2973c18387538db2f64dbdb85b"
+    ],
+    [
+     "POL-RATE-USER",
+     "RATE_LIMIT",
+     "PASS",
+     null,
+     "356346fd39e1d08fe732a9af5f15670388e5700bbb4aef003bfac783590e5251"
+    ],
+    [
+     "POL-RATE-IP",
+     "RATE_LIMIT",
+     "PASS",
+     null,
+     "1b8dfc5729afe995038abbef035607b964f34e1cb0ce1610087903e923945975"
+    ]
+   ]
+  },
+  {
+   "u": "carol",
+   "ip": "203.0.113.9",
+   "ts": 1792832400,
+   "valid": true,
+   "decision": "BLOCK",
+   "reason": "OUTSIDE_TIME_WINDOW",
+   "policyId": "POL-HOURS",
+   "policyVersion": null,
+   "policyRuleHash": "400ae5172ea26652b65deebe73764a42cfbe5e2973c18387538db2f64dbdb85b",
+   "consent": null,
+   "path": [
+    [
+     "POL-CONSENT",
+     "REQUIRE_CONSENT",
+     "PASS",
+     "CONSENT_VERIFIED",
+     "645b8a97d22d6b8e6a5dc3b82147480bfbbe5f2105a67922486c30461b0a24b7"
+    ],
+    [
+     "POL-IP-EXACT",
+     "BLOCK_IP",
+     "PASS",
+     null,
+     "0b5fab3d047e7938b4a034f817331aa4cd1cc828f612cb46771e08882afb2f2b"
+    ],
+    [
+     "POL-IP-NET",
+     "BLOCK_IP",
+     "PASS",
+     null,
+     "2e4fd8745352095f5cb629993c940d1ac4c4d05c84c4b2d578815f4c8313ddcf"
+    ],
+    [
+     "POL-HOURS",
+     "TIME_WINDOW",
+     "BLOCK",
+     "OUTSIDE_TIME_WINDOW",
+     "400ae5172ea26652b65deebe73764a42cfbe5e2973c18387538db2f64dbdb85b"
+    ]
+   ]
+  },
+  {
+   "u": "carol",
+   "ip": "203.0.113.9",
+   "ts": 1792674000,
+   "valid": true,
+   "decision": "BLOCK",
+   "reason": "RATE_LIMIT_EXCEEDED",
+   "policyId": "POL-RATE-IP",
+   "policyVersion": null,
+   "policyRuleHash": "1b8dfc5729afe995038abbef035607b964f34e1cb0ce1610087903e923945975",
+   "consent": null,
+   "path": [
+    [
+     "POL-CONSENT",
+     "REQUIRE_CONSENT",
+     "PASS",
+     "CONSENT_VERIFIED",
+     "645b8a97d22d6b8e6a5dc3b82147480bfbbe5f2105a67922486c30461b0a24b7"
+    ],
+    [
+     "POL-IP-EXACT",
+     "BLOCK_IP",
+     "PASS",
+     null,
+     "0b5fab3d047e7938b4a034f817331aa4cd1cc828f612cb46771e08882afb2f2b"
+    ],
+    [
+     "POL-IP-NET",
+     "BLOCK_IP",
+     "PASS",
+     null,
+     "2e4fd8745352095f5cb629993c940d1ac4c4d05c84c4b2d578815f4c8313ddcf"
+    ],
+    [
+     "POL-HOURS",
+     "TIME_WINDOW",
+     "PASS",
+     null,
+     "400ae5172ea26652b65deebe73764a42cfbe5e2973c18387538db2f64dbdb85b"
+    ],
+    [
+     "POL-RATE-USER",
+     "RATE_LIMIT",
+     "PASS",
+     null,
+     "356346fd39e1d08fe732a9af5f15670388e5700bbb4aef003bfac783590e5251"
+    ],
+    [
+     "POL-RATE-IP",
+     "RATE_LIMIT",
+     "BLOCK",
+     "RATE_LIMIT_EXCEEDED",
+     "1b8dfc5729afe995038abbef035607b964f34e1cb0ce1610087903e923945975"
+    ]
+   ]
+  },
+  {
+   "u": "carol",
+   "ip": "203.0.113.9",
+   "ts": 1792846800,
+   "valid": true,
+   "decision": "BLOCK",
+   "reason": "OUTSIDE_TIME_WINDOW",
+   "policyId": "POL-HOURS",
+   "policyVersion": null,
+   "policyRuleHash": "400ae5172ea26652b65deebe73764a42cfbe5e2973c18387538db2f64dbdb85b",
+   "consent": null,
+   "path": [
+    [
+     "POL-CONSENT",
+     "REQUIRE_CONSENT",
+     "PASS",
+     "CONSENT_VERIFIED",
+     "645b8a97d22d6b8e6a5dc3b82147480bfbbe5f2105a67922486c30461b0a24b7"
+    ],
+    [
+     "POL-IP-EXACT",
+     "BLOCK_IP",
+     "PASS",
+     null,
+     "0b5fab3d047e7938b4a034f817331aa4cd1cc828f612cb46771e08882afb2f2b"
+    ],
+    [
+     "POL-IP-NET",
+     "BLOCK_IP",
+     "PASS",
+     null,
+     "2e4fd8745352095f5cb629993c940d1ac4c4d05c84c4b2d578815f4c8313ddcf"
+    ],
+    [
+     "POL-HOURS",
+     "TIME_WINDOW",
+     "BLOCK",
+     "OUTSIDE_TIME_WINDOW",
+     "400ae5172ea26652b65deebe73764a42cfbe5e2973c18387538db2f64dbdb85b"
+    ]
+   ]
+  },
+  {
+   "u": "carol",
+   "ip": "203.0.113.9",
+   "ts": 1792706400,
+   "valid": true,
+   "decision": "BLOCK",
+   "reason": "OUTSIDE_TIME_WINDOW",
+   "policyId": "POL-HOURS",
+   "policyVersion": null,
+   "policyRuleHash": "400ae5172ea26652b65deebe73764a42cfbe5e2973c18387538db2f64dbdb85b",
+   "consent": null,
+   "path": [
+    [
+     "POL-CONSENT",
+     "REQUIRE_CONSENT",
+     "PASS",
+     "CONSENT_VERIFIED",
+     "645b8a97d22d6b8e6a5dc3b82147480bfbbe5f2105a67922486c30461b0a24b7"
+    ],
+    [
+     "POL-IP-EXACT",
+     "BLOCK_IP",
+     "PASS",
+     null,
+     "0b5fab3d047e7938b4a034f817331aa4cd1cc828f612cb46771e08882afb2f2b"
+    ],
+    [
+     "POL-IP-NET",
+     "BLOCK_IP",
+     "PASS",
+     null,
+     "2e4fd8745352095f5cb629993c940d1ac4c4d05c84c4b2d578815f4c8313ddcf"
+    ],
+    [
+     "POL-HOURS",
+     "TIME_WINDOW",
+     "BLOCK",
+     "OUTSIDE_TIME_WINDOW",
+     "400ae5172ea26652b65deebe73764a42cfbe5e2973c18387538db2f64dbdb85b"
+    ]
+   ]
+  },
+  {
+   "u": "carol",
+   "ip": "203.0.113.9",
+   "ts": 1792879200,
+   "valid": true,
+   "decision": "BLOCK",
+   "reason": "OUTSIDE_TIME_WINDOW",
+   "policyId": "POL-HOURS",
+   "policyVersion": null,
+   "policyRuleHash": "400ae5172ea26652b65deebe73764a42cfbe5e2973c18387538db2f64dbdb85b",
+   "consent": null,
+   "path": [
+    [
+     "POL-CONSENT",
+     "REQUIRE_CONSENT",
+     "PASS",
+     "CONSENT_VERIFIED",
+     "645b8a97d22d6b8e6a5dc3b82147480bfbbe5f2105a67922486c30461b0a24b7"
+    ],
+    [
+     "POL-IP-EXACT",
+     "BLOCK_IP",
+     "PASS",
+     null,
+     "0b5fab3d047e7938b4a034f817331aa4cd1cc828f612cb46771e08882afb2f2b"
+    ],
+    [
+     "POL-IP-NET",
+     "BLOCK_IP",
+     "PASS",
+     null,
+     "2e4fd8745352095f5cb629993c940d1ac4c4d05c84c4b2d578815f4c8313ddcf"
+    ],
+    [
+     "POL-HOURS",
+     "TIME_WINDOW",
+     "BLOCK",
+     "OUTSIDE_TIME_WINDOW",
+     "400ae5172ea26652b65deebe73764a42cfbe5e2973c18387538db2f64dbdb85b"
+    ]
+   ]
+  },
+  {
+   "u": "alice",
+   "ip": "198.51.100.7",
+   "ts": 1792659600,
+   "valid": false,
+   "decision": "BLOCK",
+   "reason": "CONSENT_MISSING",
+   "policyId": "POL-CONSENT",
+   "policyVersion": null,
+   "policyRuleHash": "645b8a97d22d6b8e6a5dc3b82147480bfbbe5f2105a67922486c30461b0a24b7",
+   "consent": null,
+   "path": [
+    [
+     "POL-CONSENT",
+     "REQUIRE_CONSENT",
+     "BLOCK",
+     "CONSENT_MISSING",
+     "645b8a97d22d6b8e6a5dc3b82147480bfbbe5f2105a67922486c30461b0a24b7"
+    ]
+   ]
+  },
+  {
+   "u": null,
+   "ip": "198.51.100.7",
+   "ts": 1792659600,
+   "valid": true,
+   "decision": "BLOCK",
+   "reason": "CONSENT_CONTEXT_INCOMPLETE",
+   "policyId": "POL-CONSENT",
+   "policyVersion": null,
+   "policyRuleHash": "645b8a97d22d6b8e6a5dc3b82147480bfbbe5f2105a67922486c30461b0a24b7",
+   "consent": null,
+   "path": [
+    [
+     "POL-CONSENT",
+     "REQUIRE_CONSENT",
+     "BLOCK",
+     "CONSENT_CONTEXT_INCOMPLETE",
+     "645b8a97d22d6b8e6a5dc3b82147480bfbbe5f2105a67922486c30461b0a24b7"
+    ]
+   ]
+  }
+ ]
+}

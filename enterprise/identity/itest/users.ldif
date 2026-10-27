@@ -1,0 +1,19 @@
+dn: ou=people,dc=example,dc=org
+objectClass: organizationalUnit
+ou: people
+
+dn: uid=alice,ou=people,dc=example,dc=org
+objectClass: inetOrgPerson
+uid: alice
+cn: Alice Test
+sn: Test
+userPassword: alice-test-password
+employeeType: cn=ops,ou=groups,dc=example,dc=org
+
+dn: uid=bob,ou=people,dc=example,dc=org
+objectClass: inetOrgPerson
+uid: bob
+cn: Bob Test
+sn: Test
+userPassword: bob-test-password
+employeeType: cn=guests,ou=groups,dc=example,dc=org

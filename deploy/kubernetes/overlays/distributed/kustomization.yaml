@@ -1,0 +1,29 @@
+# Distributed audit-ordering topology overlay.
+#
+# Deploys the Deployment-based QODIQA topology only — see deployment.yaml
+# for the full rationale (PostgreSQL row-lock ordering authority, no
+# per-pod exclusive storage). Independently deployable:
+#
+#   kubectl kustomize deploy/kubernetes/overlays/distributed/
+#   kubectl apply -k deploy/kubernetes/overlays/distributed/
+#
+# Never apply this overlay AND overlays/single-node/ into the same
+# namespace — see the root deploy/kubernetes/kustomization.yaml header
+# comment for why.
+#
+# Prerequisites (see deployment.yaml's header comment):
+#   - PostgreSQL migration 026 applied (node src/infra/postgres/migrate.js)
+#   - scripts/seed-audit-chain-head.js run if migrating existing file-only data
+#   - A reachable `postgres-service` in this namespace, or an adjusted
+#     networkpolicy-postgres.yaml (see that file's header comment)
+#
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+
+resources:
+  - ../../base
+  - deployment.yaml
+  - configmap-distributed.yaml
+  - service.yaml
+  - networkpolicy-postgres.yaml
+  - pdb.yaml   #

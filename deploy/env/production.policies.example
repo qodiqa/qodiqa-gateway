@@ -1,0 +1,50 @@
+{
+  "_README": "This is a TEMPLATE, not a ready-to-deploy policy set. Copy this file to a path outside the repository (e.g. /opt/qodiqa/config/policies.json), review every policy below against your own deployment's actual requirements, then point POLICY_FILE at your copy. See docs/configuration/reference.md section 'Policy Configuration' for the full contract, the policy schema, and what each field means. This _README field is inert — the policy engine ignores any key other than 'policies' at the document root — but delete it once you have reviewed and customized this file for your deployment.",
+  "policies": [
+    {
+      "id": "REQUIRE_CONSENT_BASELINE",
+      "type": "REQUIRE_CONSENT",
+      "priority": 10,
+      "enabled": true,
+      "config": {
+        "requireValidArtifact": true
+      }
+    },
+    {
+      "id": "BLOCK_IP_DENYLIST",
+      "type": "BLOCK_IP",
+      "priority": 20,
+      "enabled": false,
+      "config": {
+        "blocklist": [],
+        "cidrs": []
+      }
+    },
+    {
+      "id": "PER_USER_RATE_LIMIT",
+      "type": "RATE_LIMIT",
+      "priority": 40,
+      "enabled": true,
+      "config": {
+        "windowSeconds": 60,
+        "maxRequests": 100,
+        "keyBy": "userId"
+      }
+    },
+    {
+      "id": "BUSINESS_HOURS_WINDOW",
+      "type": "TIME_WINDOW",
+      "priority": 30,
+      "enabled": false,
+      "config": {
+        "allowedWindows": [
+          {
+            "days": ["MON", "TUE", "WED", "THU", "FRI"],
+            "start": "00:00",
+            "end": "23:59"
+          }
+        ]
+      }
+    }
+  ]
+}

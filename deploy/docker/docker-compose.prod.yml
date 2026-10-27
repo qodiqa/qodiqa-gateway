@@ -1,0 +1,487 @@
+# QODIQA Production Docker Compose
+#
+# Topology: this is the single-container reference deployment for standalone
+# (non-Kubernetes) environments — QODIQA + Redis + PostgreSQL on one host.
+# It is intentionally NOT a clustered or highly-available topology: there is
+# one instance of each service, and horizontal scaling is unavailable here
+# by design — use deploy/kubernetes/ if you need clustering (see its
+# overlays/ for multi-replica).: this topology runs
+# QODIQA_DEPLOYMENT_MODE=single-node with the PostgreSQL mirror and witness-cosigned
+# audit anchoring — production REFUSES the distributed mode until its chain has
+# signed checkpoints and anchors; see docs/security/audit-anchoring.md.
+#
+# Usage:
+#   1. Copy deploy/env/production.env.example to .env.prod and fill in real values.
+#   2. Generate TLS certificates and place them in ./tls/
+#      (see docs/deployment/redis-tls.md for certificate setup)
+#   3. docker compose -f deploy/docker/docker-compose.prod.yml --env-file .env.prod up -d
+#
+# Requirements:
+#   .env.prod    — production secret values (never commit this file)
+#   ./tls/       — TLS certificates:
+#                    ca.crt        Redis CA certificate
+#                    client.crt    QODIQA client certificate (mTLS)
+#                    client.key    QODIQA client private key (mTLS)
+#                    server.crt    Redis server certificate
+#                    server.key    Redis server private key
+#
+# Volumes:
+#   qodiqa-data   — encrypted key store (data/keys.json) — MUST be persistent
+#   qodiqa-logs   — cryptographically chained audit log   — MUST be persistent
+#   redis-data    — Redis AOF persistence                 — MUST be persistent
+#   postgres-data — PostgreSQL data directory              — MUST be persistent
+#
+# Security notes:
+#   • qodiqa runs as uid:gid 1000:1000 (non-root)
+#   • read-only root filesystem with writable /tmp and named volumes
+#   • all capabilities dropped
+#   • no-new-privileges enforced
+#   • Redis port not exposed on the host — internal network only
+#   • PostgreSQL port not exposed on the host — internal network only
+#   • QODIQA port bound to 127.0.0.1 — terminate TLS at a reverse proxy
+
+services:
+
+  # ── Redis ─────────────────────────────────────────────────────────────────
+  redis:
+    # digest-pinned (redis 7.4.11 — RepoDigest of the locally cached redis:7-alpine,
+    # 2026-08-18 build). Bump deliberately: docker pull, then copy `docker image inspect --format '{{index .RepoDigests 0}}'`.
+    image: redis:7.4.11-alpine@sha256:ff02b58f971e7d7d156a1267e283fcbbeee91773b6aa36c49dac28ecfe28eadf
+    restart: unless-stopped
+    # same privilege floor as the qodiqa service. The image's entrypoint starts as
+    # root only to chown /data and drop to the `redis` user (su-exec) — exactly the capabilities granted back here.
+    # Exercised in throwaway containers of this pinned image (fix-deploy.md re-run with read_only by PL13-11).
+    cap_drop:
+      - ALL
+    cap_add:
+      - CHOWN
+      - DAC_OVERRIDE
+      - FOWNER
+      - SETGID
+      - SETUID
+    security_opt:
+      - no-new-privileges:true
+    # PL13-11: read-only root filesystem — Redis writes only to /data (the volume). Exercised
+    # with this exact image, flags and TLS command:
+    # healthy, AOF write, restart over the existing /data, rootfs writes refused.
+    read_only: true
+    # the healthcheck reads the password from this environment (REDISCLI_AUTH) instead of argv.
+    # (redis-server rewrites its own process title at start: ps and /proc/1/cmdline show `redis-server *:6380`, not
+    # the --requirepass value — measured in the same evidence file. The value stays visible to `docker inspect`, like
+    # this environment variable; see the design decision record in DEPLOY-BACKUP.md.)
+    # (--requirepass below still carries it on redis-server's own command line — moving it to a read-only ACL file
+    # is an decision)
+    environment:
+      REDIS_PASSWORD: "${REDIS_PASSWORD}"
+    command: >
+      redis-server
+        --tls-port 6380
+        --port 0
+        --tls-cert-file  /etc/redis-tls/server.crt
+        --tls-key-file   /etc/redis-tls/server.key
+        --tls-ca-cert-file /etc/redis-tls/ca.crt
+        --tls-auth-clients yes
+        --requirepass "${REDIS_PASSWORD}"
+        --appendonly yes
+        --appendfsync everysec
+        --save ""
+    volumes:
+      - redis-data:/data
+      - ../../tls:/etc/redis-tls:ro
+    networks:
+      - backend
+    # Redis port intentionally NOT published to the host
+    healthcheck:
+      # password via REDISCLI_AUTH ($$ = the container's own environment), never `-a` on argv; healthy
+      # only on an actual PONG (an auth error reply no longer counts).
+      test: ["CMD-SHELL", "REDISCLI_AUTH=\"$$REDIS_PASSWORD\" redis-cli --tls --cacert /etc/redis-tls/ca.crt --cert /etc/redis-tls/client.crt --key /etc/redis-tls/client.key -p 6380 ping | grep -q PONG"]
+      interval: 10s
+      timeout:  5s
+      retries:  5
+      start_period: 10s
+
+  # ── PostgreSQL ────────────────────────────────────────────────────────────
+  # Backs the Runtime Consent Registry plus the audit-chain distributed
+  # ordering authority, transparency log, evidence chain, compliance,
+  # certification, and attestation subsystems (see deploy/env/production.env.example's
+  # PostgreSQL section). Single container only — no replication/clustering
+  # here; see deploy/kubernetes/overlays/distributed/ if you need that.
+  postgres:
+    # digest-pinned (PostgreSQL 16.15 — RepoDigest of the locally cached
+    # postgres:16-alpine, 2026-09-17 build). The major is unchanged (a major bump needs pg_upgrade — decision).
+    image: postgres:16.15-alpine@sha256:3c5c8892d184f738f4fe282d14ddaa613a38f00f4189d2d94725ebe6f2909ddb
+    restart: unless-stopped
+    # privilege floor. Root is needed only for the `install -o postgres` key copy
+    # below and the entrypoint's chown + gosu drop to `postgres` — exactly the capabilities granted back here.
+    # Exercised in throwaway containers of this pinned image (fix-deploy.md re-run with read_only by PL13-11).
+    cap_drop:
+      - ALL
+    cap_add:
+      - CHOWN
+      - DAC_OVERRIDE
+      - FOWNER
+      - SETGID
+      - SETUID
+    security_opt:
+      - no-new-privileges:true
+    # PL13-11: read-only root filesystem. PostgreSQL writes PGDATA (the volume), its socket/lock
+    # directory and temp files (tmpfs below); the TLS key copy moved from /var/lib/postgresql (image rootfs) to a
+    # private tmpfs. Exercised with this exact image and flags: healthy, ssl=on, restart over the existing PGDATA,
+    # rootfs writes refused.
+    read_only: true
+    tmpfs:
+      - /var/run/postgresql:rw,nosuid,nodev,size=8m
+      - /tmp:rw,nosuid,nodev,noexec,size=64m
+      - /run/pg-tls:rw,nosuid,nodev,noexec,size=1m,mode=0700,uid=70,gid=70
+    environment:
+      # (K7-D1 /): the cluster bootstrap superuser is a SEPARATE identity. It used to be
+      # ${QODIQA_PG_USER}, which made the gateway's own role the cluster superuser. qodiqa_app stays the
+      # least-privilege role created by migration 002.
+      POSTGRES_USER:     "${QODIQA_PG_BOOTSTRAP_USER:-postgres}"
+      POSTGRES_PASSWORD: "${QODIQA_PG_BOOTSTRAP_PASSWORD:?QODIQA_PG_BOOTSTRAP_PASSWORD must be set (cluster superuser, never the app role)}"
+      POSTGRES_DB:       "${QODIQA_PG_DATABASE:-qodiqa}"
+      PGDATA:            /var/lib/postgresql/data/pgdata
+    # production refuses plaintext PostgreSQL
+    # (boot rule tls.pg) and this file used to set QODIQA_PG_SSL=false, so the
+    # documented single-host path could never boot. PostgreSQL now serves
+    # TLS with an operator-provided server certificate (tls/postgres/server.crt +
+    # server.key, issued by the CA in tls/pg-ca.crt — see the TLS notes in
+    # docs/operations/deployment-runbook.md). PostgreSQL refuses a key file it does not
+    # own with mode 0600, so the read-only mount is copied in place before startup (PL13-11: into the private
+    # /run/pg-tls tmpfs, since the root filesystem is read-only).
+    command:
+      - sh
+      - -c
+      - |
+        install -m 0600 -o postgres -g postgres /etc/pg-tls-src/server.key /run/pg-tls/server.key &&
+        install -m 0644 -o postgres -g postgres /etc/pg-tls-src/server.crt /run/pg-tls/server.crt &&
+        exec docker-entrypoint.sh postgres -c ssl=on \
+          -c ssl_cert_file=/run/pg-tls/server.crt -c ssl_key_file=/run/pg-tls/server.key
+    volumes:
+      - postgres-data:/var/lib/postgresql/data
+      - ../../tls/postgres:/etc/pg-tls-src:ro
+    networks:
+      - backend
+    # PostgreSQL port intentionally NOT published to the host
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U \"$$POSTGRES_USER\" -d \"$$POSTGRES_DB\""]
+      interval: 10s
+      timeout:  5s
+      retries:  5
+      start_period: 20s
+
+  # ── QODIQA ────────────────────────────────────────────────────────────────
+  qodiqa:
+    image: qodiqa:1.0.0    # Replace with your registry/qodiqa:<digest> in production
+    restart: unless-stopped
+    read_only: true
+    user: "1000:1000"
+    cap_drop:
+      - ALL
+    security_opt:
+      - no-new-privileges:true
+      - seccomp:../../deploy/docker/seccomp.json
+    tmpfs:
+      - /tmp:rw,noexec,nosuid,size=64m
+    environment:
+      NODE_ENV:                 production
+      PORT:                     "3000"
+      STRICT_REPLAY_PROTECTION: "true"
+      REDIS_URL:                "rediss://redis:6380"
+      REDIS_TLS:                "true"
+      REDIS_TLS_CA:             /etc/qodiqa-tls/ca.crt
+      REDIS_TLS_CERT:           /etc/qodiqa-tls/client.crt
+      REDIS_TLS_KEY:            /etc/qodiqa-tls/client.key
+      # the Redis service above authenticates with `requirepass` only (no ACL users), so leave
+      # REDIS_USERNAME EMPTY (or "default") for this topology — any other username makes AUTH <user> <pw> fail.
+      REDIS_USERNAME:           "${REDIS_USERNAME:-}"
+      REDIS_PASSWORD:           "${REDIS_PASSWORD}"
+      # QODIQA_DEPLOYMENT_MODE is the single authoritative deployment switch
+      # — it resolves PostgreSQL enablement, distributed audit-chain
+      # ordering, the PG audit backend, and migration verification
+      # automatically. No QODIQA_PG_ENABLED / QODIQA_AUDIT_ORDERING_MODE is
+      # needed alongside it (legacy vars would be overridden if set). See
+      # src/infra/config/deploymentMode.js and docs/protocol/AUDIT-SCHEMA-V8.md.
+      # single-node ordering (file chain, PostgreSQL mirror) — the only topology production
+      # accepts until the distributed chain gains signed checkpoints and anchors.
+      QODIQA_DEPLOYMENT_MODE:   single-node
+      QODIQA_PG_ENABLED:        "true"
+      # audit anchoring is REQUIRED in production. Provision the witness ONCE into ./witness (ideally by a
+      # party other than this host's operators), exactly as docs/security/audit-anchoring.md describes:
+      #   WITNESS_ID=qodiqa-witness-1 WITNESS_KEY_PATH=witness/witness-key.json WITNESS_LOG_PATH=/dev/null       #     node scripts/anchor/witness-cosign.js --public-key > witness/witness-record.json
+      #   node -e "console.log(JSON.stringify([require('./witness/witness-record.json')]))" > witness/witness-public-keys.json
+      # and copy /opt/qodiqa/anchors/anchors.jsonl off the host to customer-held storage regularly.
+      QODIQA_WITNESS_MODE:        local
+      QODIQA_WITNESS_ID:          qodiqa-witness-1
+      QODIQA_WITNESS_KEY_PATH:    /etc/qodiqa-witness/witness-key.json
+      QODIQA_WITNESS_PUBLIC_KEYS: /etc/qodiqa-witness/witness-public-keys.json
+      QODIQA_WITNESS_LOG_PATH:    /opt/qodiqa/anchors/witness-log.jsonl
+      QODIQA_ANCHOR_EXPORT_PATH:  /opt/qodiqa/anchors/anchors.jsonl
+      # QODIQA_PG_AUTO_MIGRATE is consulted only in
+      # distributed mode; this single-node topology does NOT migrate at startup.
+      # Run `node src/infra/postgres/migrate.js` (as a CREATEROLE identity for the
+      # role migrations) before the first `up` and before every upgrade.
+      QODIQA_PG_AUTO_MIGRATE:   "true"
+      QODIQA_PG_HOST:           postgres
+      QODIQA_PG_PORT:           "5432"
+      QODIQA_PG_DATABASE:       "${QODIQA_PG_DATABASE:-qodiqa}"
+      QODIQA_PG_USER:           "${QODIQA_PG_USER}"
+      QODIQA_PG_PASSWORD:       "${QODIQA_PG_PASSWORD}"
+      # (K7-D4): forwarded so the documented operator flow and /metrics can be enabled from the env
+      # file; both planes stay OFF unless set (production requires QODIQA_OPS_TOKEN >= 32 chars when on).
+      QODIQA_ADMIN_ENABLED:       "${QODIQA_ADMIN_ENABLED:-false}"
+      QODIQA_DIAGNOSTICS_ENABLED: "${QODIQA_DIAGNOSTICS_ENABLED:-false}"
+      QODIQA_OPS_TOKEN:           "${QODIQA_OPS_TOKEN:-}"
+      # the documented one-boot recovery for a failed checkpoint/anchor boot check
+      # (docs/security/audit-anchoring.md) — EMPTY by default. In production `true` is honoured only together with an
+      # _ACK bound to the live chain head (the refusal message names the exact value); remove both after that one boot.
+      QODIQA_AUDIT_CHECKPOINT_BOOTSTRAP:     "${QODIQA_AUDIT_CHECKPOINT_BOOTSTRAP:-}"
+      QODIQA_AUDIT_CHECKPOINT_BOOTSTRAP_ACK: "${QODIQA_AUDIT_CHECKPOINT_BOOTSTRAP_ACK:-}"
+      # finding: migration 038 (retention_dedicated_role) provisions a
+      # SEPARATE `qodiqa_retention` role with a placeholder password
+      # ('REPLACE_WITH_VAULT_SECRET_RETENTION') that MUST be rotated via
+      # `ALTER ROLE qodiqa_retention PASSWORD ...` before first boot — see
+      # docs/operations/database-role-management.md. Without this,
+      # src/infra/postgres/retentionPool.js's own privilege probe fails
+      # closed at startup with AUDIT_RETENTION_PRIVILEGE_CHECK_FAILED
+      # (SASL: client password must be a string) on every boot.
+      QODIQA_PG_RETENTION_PASSWORD: "${QODIQA_PG_RETENTION_PASSWORD}"
+      # TLS to PostgreSQL, verified against the CA that issued the postgres
+      # service's certificate (see the postgres service above). Formerly "false",
+      # which production refuses.
+      QODIQA_PG_SSL:            "true"
+      QODIQA_PG_SSL_CA:         /etc/qodiqa-tls/pg-ca.crt
+      # every dedicated PG role password + the DSR pepper the production
+      # boot validator requires. Set each on its role
+      # first: scripts/db/role-credentials.js --rotate.
+      # the MIGRATION credential (QODIQA_PG_MIG_USER/PASSWORD) is deliberately NOT
+      # passed to the gateway — the running service never uses it, and a production boot refuses it.
+      # Migrations run as a separate one-shot job that receives it explicitly, e.g.
+      #   docker compose run --rm --no-deps -e QODIQA_PG_MIG_USER -e QODIQA_PG_MIG_PASSWORD qodiqa node src/infra/postgres/migrate.js
+      # (the -e values come from the operator's shell, never from this service's environment).
+      QODIQA_PG_SYSTEM_PASSWORD:    "${QODIQA_PG_SYSTEM_PASSWORD}"
+      QODIQA_PG_REPORTING_PASSWORD: "${QODIQA_PG_REPORTING_PASSWORD}"
+      QODIQA_PG_CONTROL_PASSWORD:   "${QODIQA_PG_CONTROL_PASSWORD}"
+      QODIQA_DSR_PSEUDONYM_PEPPER:  "${QODIQA_DSR_PSEUDONYM_PEPPER}"
+      # the keystore MAC keyring lives on the persistent data volume next to
+      # keys.json; provision it ONCE before first start:
+      #   docker compose run --rm qodiqa node scripts/security/macKeyring.js init
+      QODIQA_MAC_KEYS_PATH:     /opt/qodiqa/data/mac-keys.json
+      QODIQA_KEY_ENCRYPTION_KEY: "${QODIQA_KEY_ENCRYPTION_KEY}"
+      # finding: deploy/env/production.env.example, README.md and
+      # docs/deployment/deployment-lifecycle.md all list this as required, but this
+      # service never passed it through (Compose forwards only the keys named
+      # here). It is not startup-gated, so the container booted healthy while
+      # every POST /ai/chat EXECUTE threw inside
+      # services/secrets/secretsProvider.js getExecutionInvariantSecret() and
+      # was recorded as a PROVIDER_EXECUTION / PROVIDER_ERROR BLOCK --
+      # reproduced live, and confirmed as the cause by supplying it and
+      # re-running the same chain. 64 hex characters, a DIFFERENT value from
+      # QODIQA_KEY_ENCRYPTION_KEY.
+      QODIQA_EXECUTION_INVARIANT_SECRET: "${QODIQA_EXECUTION_INVARIANT_SECRET}"
+      OPENAI_API_KEY:           "${OPENAI_API_KEY}"
+      QODIQA_CLIENT_ID:         "${QODIQA_CLIENT_ID}"
+      QODIQA_KEYS_PATH:         /opt/qodiqa/data/keys.json
+      # finding: without this, the transparency keystore
+      # (src/core/transparency/transparencyKeyStore.js) falls back to its
+      # relative default `data/transparency-keys.json`, which resolves
+      # under /app — the read-only root filesystem this same file's user
+      # (line 108) mandates — and startup fails closed with
+      # TRANSPARENCY_SIGNER_STARTUP_FAILED / ENOENT on every boot. Point it
+      # at the same writable, persistent volume as QODIQA_KEYS_PATH above.
+      QODIQA_TRANSPARENCY_KEYS_PATH: /opt/qodiqa/data/transparency-keys.json
+      # finding: same class of bug as QODIQA_TRANSPARENCY_KEYS_PATH
+      # above — src/core/policy/store.js's writable import-cache path
+      # (QODIQA_POLICY_STORE, distinct from the read-only POLICY_FILE
+      # below) defaults under /app and crashes the process with an
+      # UNCAUGHT_EXCEPTION at boot (_importFromPoliciesJson ->
+      # _ensureDataDir -> mkdirSync('/app/data') ENOENT) without it.
+      QODIQA_POLICY_STORE:      /opt/qodiqa/data/policy-store.json
+      # finding: src/core/rbac/store.js and customRoleStore.js default
+      # to the same relative data/ path; without these the bootstrap-admin
+      # RBAC user can never be persisted (RBAC_BOOTSTRAP_FAILED at every
+      # boot, non-fatal but leaves RBAC permanently unprovisioned).
+      QODIQA_RBAC_STORE_PATH:   /opt/qodiqa/data/rbac-users.json
+      QODIQA_RBAC_CUSTOM_ROLE_STORE_PATH: /opt/qodiqa/data/rbac-custom-roles.json
+      QODIQA_AUDIT_LOG:         /opt/qodiqa/logs/audit.log
+      # finding: same class of bug as QODIQA_TRANSPARENCY_KEYS_PATH/
+      # QODIQA_POLICY_STORE above -- src/core/persistenceRecovery/
+      # journal.js defaults QODIQA_PRQ_JOURNAL_DIR to a relative path under
+      # /app, the read-only root filesystem. Without this, the
+      # persistence-recovery journal worker (persistenceRecovery/
+      # journalWorker.js, criticality: "critical") fails every single
+      # scheduled tick with ENOENT ("no such file or directory, mkdir
+      # '/app/data'") -- reproduced directly against this exact topology,
+      # with no visible health-check signal (container still reports
+      # healthy). docker-build's own CI job (test.yml) already sets this
+      # correctly for its own boot check; this reference topology had not.
+      QODIQA_PRQ_JOURNAL_DIR:   /opt/qodiqa/data/prq-journal
+      # finding: same class of bug as QODIQA_TRANSPARENCY_KEYS_PATH/
+      # QODIQA_POLICY_STORE/QODIQA_RBAC_STORE_PATH and
+      # QODIQA_PRQ_JOURNAL_DIR -- src/core/signing/
+      # signingIdentityStore.js defaults QODIQA_SIGNING_STORE_PATH to
+      # path.join(process.cwd(), 'data', 'signing-identities.json'), which
+      # resolves to /app/data/signing-identities.json inside this container
+      # (process.cwd() is /app, the read-only root filesystem). Without
+      # this, POST /sign's entire individually-issued-signing-identity
+      # authentication path (the one README.md documents as the real
+      # replacement for the removed shared QODIQA_SIGN_TOKEN) is
+      # non-functional: a signing identity provisioned via
+      # scripts/provision-signing-identity.js from a provisioning host
+      # writes to that host's own disk, never reaching this container's
+      # persistent volume at all, and if the write were ever attempted
+      # inside this container directly it would fail against the
+      # read-only rootfs regardless. Reproduced directly: a provisioned
+      # identity's API key was rejected with a generic 401 UNAUTHORIZED /
+      # BLOCK by a real running container, with no diagnostic pointing at
+      # the real cause -- confirmed via QODIQA_SIGNING_STORE_PATH being
+      # unset in the container's own environment and process.cwd()
+      # resolving to /app.
+      QODIQA_SIGNING_STORE_PATH: /opt/qodiqa/data/signing-identities.json
+      # finding (Compose/Kubernetes parity gap): deploy/kubernetes/base/
+      # configmap.yaml already sets TENANT_STORE_PATH (added under the
+      # finding), but this Compose topology never did -- an asymmetry, not a
+      # deliberate difference. src/core/tenancy/tenantRegistry.js defaults
+      # TENANT_STORE_PATH to a path relative to its own module location,
+      # resolving under /app, the read-only root filesystem. Without this,
+      # any tenantId registered via POST /v1/admin/tenants (or registerTenant()
+      # directly) while the container is running still persists correctly at
+      # /app/data/tenants.json's default fallback (best-effort, catches its own
+      # write failure) -- but on the NEXT boot, the in-memory tenant registry
+      # (loaded once at require-time from this same unwritable default path)
+      # starts empty again, so every previously-registered tenant is silently
+      # lost. Because validateBoundRequest() BLOCKs with TENANT_UNKNOWN for any
+      # tenantId with no active registry entry, and every signing identity
+      # provisioned via scripts/provision-signing-identity.js is scoped to a
+      # tenantId, this makes the persistent-across-restart half of tenant
+      # provisioning silently non-functional in this topology specifically --
+      # reproduced directly. Point it at the same writable, persistent volume
+      # as the other per-tenant stores above.
+      TENANT_STORE_PATH:        /opt/qodiqa/data/tenants.json
+      POLICY_FILE:              /opt/qodiqa/config/policies.json
+      SHUTDOWN_TIMEOUT_MS:      "30000"
+      AI_CHAT_TIMEOUT_MS:       "30000"
+      OPENAI_TIMEOUT_MS:        "30000"
+      VERIFY_TIMEOUT_MS:        "5000"
+      AUDIT_TIMEOUT_MS:         "10000"
+    volumes:
+      - qodiqa-data:/opt/qodiqa/data
+      - qodiqa-logs:/opt/qodiqa/logs
+      - ../../policies.json:/opt/qodiqa/config/policies.json:ro
+      - ../../tls:/etc/qodiqa-tls:ro
+      # witness key + trusted public keys (read-only) and the anchor export / witness log
+      - ../../witness:/etc/qodiqa-witness:ro
+      - qodiqa-anchors:/opt/qodiqa/anchors
+    # sized from the measured footprint (two ONNX
+    # models in an inference pool; RSS ~1.6 GB in the Linux image, ~2.05 GB private at the
+    # soak plateau) —
+    deploy:
+      resources:
+        limits:
+          memory: 3g
+          cpus: "4"
+        reservations:
+          memory: 2g
+    ports:
+      # Bind to loopback only — place a reverse proxy (nginx/caddy) in front
+      - "127.0.0.1:3000:3000"
+    networks:
+      # fix: `backend` (below) is `internal: true` by design, to keep
+      # Postgres/Redis unreachable from outside this Compose stack — but a
+      # container whose ONLY network is internal can never have its own
+      # published port actually bind on the host either, because Docker's
+      # NAT/port-publish path depends on the same outward gateway an
+      # internal network deliberately lacks (confirmed empirically: with
+      # `backend` as qodiqa's only network, `docker inspect
+      # .NetworkSettings.Ports` for this service is `{}` and a real `curl`
+      # to 127.0.0.1:3000 gets connection-refused, despite
+      # `HostConfig.PortBindings` showing the mapping was requested —
+      # reconfirmed). `frontend` (below) is a second, NON-internal
+      # network that ONLY this service joins — it exists solely to give
+      # qodiqa's own container a gateway so its own port-publish works;
+      # Postgres and Redis are never added to it, so they remain exactly as
+      # unreachable from outside as `backend: internal: true` always made
+      # them. qodiqa keeps `backend` too, unchanged, to keep reaching
+      # Postgres/Redis over the same internal-only path as before.
+      - backend
+      - frontend
+    depends_on:
+      redis:
+        condition: service_healthy
+      postgres:
+        condition: service_healthy
+    # /health requires no credential by default — required for this bare
+    # check to keep working (Compose's healthcheck has no mechanism for
+    # injecting a bearer token). See docs/deployment/kubernetes-probes.md "Security
+    # model". This check always runs as an in-container exec (loopback), so
+    # QODIQA_HEALTH_REQUIRE_LOOPBACK=true is a safe, optional hardening for
+    # Compose-only deployments if desired.
+    # finding: this used `wget`, which the Dockerfile's own HEALTHCHECK
+    # comment already documents as absent from the node:22-slim final
+    # stage — confirmed here too (`docker exec ... wget` -> "executable file
+    # not found in $PATH"). Every boot of this compose file reported the
+    # container Docker-level-unhealthy regardless of actual application
+    # health. Mirrors the Dockerfile's own already-fixed node-http check.
+    healthcheck:
+      test: ["CMD", "node", "-e", "require('http').get('http://localhost:3000/health',(r)=>process.exit(r.statusCode===200?0:1)).on('error',()=>process.exit(1))"]
+      interval: 15s
+      timeout:  5s
+      retries:  3
+      start_period: 30s
+    stop_grace_period: 60s    # Must exceed SHUTDOWN_TIMEOUT_MS (30s) + buffer
+    # 1024 descriptors was low for a gateway holding client + Redis + PostgreSQL sockets at once.
+    ulimits:
+      nofile:
+        soft: 65536
+        hard: 65536
+
+# ── Named volumes ─────────────────────────────────────────────────────────────
+# All four volumes must be backed by durable storage.
+# On a single host, this means a directory on a RAID array or attached EBS volume.
+# On a cluster, use a distributed volume plugin.
+volumes:
+  qodiqa-data:
+    driver: local
+    # Override with an explicit host path for predictable backup:
+    # driver_opts:
+    #   type: none
+    #   o: bind
+    #   device: /opt/qodiqa/data
+
+  qodiqa-logs:
+    driver: local
+
+  # anchor export + local witness log (copy anchors.jsonl off-host to customer-held storage)
+  qodiqa-anchors:
+    driver: local
+
+  redis-data:
+    driver: local
+
+  postgres-data:
+    driver: local
+    # Override with an explicit host path for predictable backup:
+    # driver_opts:
+    #   type: none
+    #   o: bind
+    #   device: /opt/qodiqa/postgres
+
+# ── Networks ────────────────────────────────────────────────────────────────
+# split into two networks (was one, `backend`, joined by all three
+# services including qodiqa's own published port — see the qodiqa service's
+# own `networks:` comment above for the full finding and evidence).
+#
+#   backend  — internal: true, unchanged from before. Postgres and Redis are
+#              on this network ONLY. Isolated from the default bridge network
+#              and from any outward route — Redis and PostgreSQL remain NOT
+#              reachable from outside this Compose stack, exactly as before.
+#   frontend — NOT internal. Joined ONLY by qodiqa, solely so that service's
+#              own `ports:` mapping (127.0.0.1:3000, loopback-only) can
+#              actually bind on the host. Postgres and Redis are never added
+#              to this network.
+networks:
+  backend:
+    driver: bridge
+    internal: true
+  frontend:
+    driver: bridge

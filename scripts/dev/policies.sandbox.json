@@ -1,0 +1,31 @@
+{
+  "policies": [
+    {
+      "id": "SANDBOX-REQUIRE-CONSENT",
+      "type": "REQUIRE_CONSENT",
+      "priority": 5,
+      "enabled": true,
+      "config": { "requireValidArtifact": true }
+    },
+    {
+      "id": "SANDBOX-BLOCK-IP",
+      "type": "BLOCK_IP",
+      "priority": 10,
+      "enabled": true,
+      "config": { "blocklist": [], "cidrs": [] }
+    },
+    {
+      "id": "SANDBOX-DEMO-CONTENT-RULE",
+      "type": "CONTENT_RULE",
+      "priority": 20,
+      "enabled": true,
+      "config": {
+        "contentFormat": 1,
+        "direction": "input",
+        "action": "BLOCK",
+        "items": [{ "id": "demo-phrase", "kind": "phrase", "value": "sandbox-block-me" }],
+        "threshold": 1
+      }
+    }
+  ]
+}

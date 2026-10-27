@@ -1,0 +1,211 @@
+# QODIQA Network Policies — shared across both topology overlays.
+#
+# These policies implement a default-deny posture:
+#   - default-deny-all: every pod in the namespace — gateway, backup/DR CronJobs, and any Redis /
+#     PostgreSQL the operator runs here — starts with NO ingress and NO egress; the policies below add back
+#     exactly what each needs (Kubernetes unions the allow rules of every policy selecting a pod).
+#   - QODIQA pods accept inbound only from the ingress/load balancer namespace.
+#   - QODIQA pods send outbound only to Redis (in-cluster), DNS and public HTTPS (the LLM provider API).
+#   - Redis pods accept inbound only from QODIQA pods.
+#   - Backup/DR CronJob pods (component: backup) send outbound only to PostgreSQL, DNS and public HTTPS (the
+#     optional alert webhook) and accept no inbound connection at all (they hold the BYPASSRLS backup
+#     role password and the backup encryption/HMAC keys and were previously unrestricted).
+#   - An in-namespace PostgreSQL (app.kubernetes.io/name: postgres) accepts inbound only from the gateway and
+#     the backup jobs.
+#
+# Adjust namespace selectors to match your actual ingress controller namespace.
+# If your PostgreSQL is external/managed (RDS, Cloud SQL, …), replace the `podSelector` PostgreSQL destination in
+# qodiqa-backup-egress (and in each overlay's networkpolicy-postgres.yaml) with an `ipBlock` for the database's
+# CIDR — never 0.0.0.0/0. Same for an operator-run Redis/PostgreSQL that needs other peers (replication, exporters):
+# add an explicit allow policy for it; default-deny-all applies to it too.
+#
+# The podSelectors below match on app.kubernetes.io/name + component only
+# (not on the topology label), so they apply identically to whichever
+# overlay is deployed — single-node's StatefulSet pods and distributed's
+# Deployment pods both carry app.kubernetes.io/component: gateway.
+#
+# Gateway PostgreSQL egress is NOT defined here — each overlay ships its own,
+# topology-scoped rule (overlays/single-node/networkpolicy-postgres.yaml since
+# option C enabled PostgreSQL there too, and
+# overlays/distributed/networkpolicy-postgres.yaml).
+#
+---
+# namespace-wide default deny. The header above always CLAIMED a default-deny
+# posture, but no `podSelector: {}` policy existed in any render, so unselected pods (every backup CronJob) had
+# unrestricted ingress and egress.
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: default-deny-all
+  namespace: qodiqa
+spec:
+  podSelector: {}
+  policyTypes:
+    - Ingress
+    - Egress
+
+---
+# backup / DR CronJob egress — PostgreSQL, DNS, and public HTTPS for the optional alert webhook.
+# No ingress rule: nothing ever connects to a backup pod.
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: qodiqa-backup-egress
+  namespace: qodiqa
+spec:
+  podSelector:
+    matchLabels:
+      app.kubernetes.io/name:      qodiqa
+      app.kubernetes.io/component: backup
+  policyTypes:
+    - Egress
+  egress:
+    # PostgreSQL (in-cluster; replace with an ipBlock for an external/managed database — see header)
+    - to:
+        - podSelector:
+            matchLabels:
+              app.kubernetes.io/name: postgres
+      ports:
+        - protocol: TCP
+          port:     5432
+    # DNS resolution (kube-dns / CoreDNS)
+    - to:
+        - namespaceSelector:
+            matchLabels:
+              kubernetes.io/metadata.name: kube-system
+          podSelector:
+            matchLabels:
+              k8s-app: kube-dns
+      ports:
+        - protocol: UDP
+          port:     53
+        - protocol: TCP
+          port:     53
+    # Optional alert webhook (ALERT_WEBHOOK_URL) — public HTTPS only
+    - to:
+        - ipBlock:
+            cidr: 0.0.0.0/0
+            except:
+              - 10.0.0.0/8
+              - 172.16.0.0/12
+              - 192.168.0.0/16
+      ports:
+        - protocol: TCP
+          port:     443
+
+---
+# an in-namespace PostgreSQL (if the operator runs one here) accepts connections only from the gateway
+# and the backup jobs. Selects nothing — and so changes nothing — when PostgreSQL is external.
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: postgres-ingress-qodiqa-only
+  namespace: qodiqa
+spec:
+  podSelector:
+    matchLabels:
+      app.kubernetes.io/name: postgres
+  policyTypes:
+    - Ingress
+  ingress:
+    - from:
+        - podSelector:
+            matchLabels:
+              app.kubernetes.io/name:      qodiqa
+              app.kubernetes.io/component: gateway
+        - podSelector:
+            matchLabels:
+              app.kubernetes.io/name:      qodiqa
+              app.kubernetes.io/component: backup
+      ports:
+        - protocol: TCP
+          port:     5432
+
+---
+# Allow inbound HTTP to QODIQA from the ingress namespace only
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: qodiqa-ingress
+  namespace: qodiqa
+spec:
+  podSelector:
+    matchLabels:
+      app.kubernetes.io/name:      qodiqa
+      app.kubernetes.io/component: gateway
+  policyTypes:
+    - Ingress
+  ingress:
+    - from:
+        - namespaceSelector:
+            matchLabels:
+              kubernetes.io/metadata.name: ingress-nginx   # adjust to your ingress namespace
+      ports:
+        - protocol: TCP
+          port:     3000
+
+---
+# Allow QODIQA outbound to Redis (port 6380) within the cluster
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: qodiqa-egress-redis
+  namespace: qodiqa
+spec:
+  podSelector:
+    matchLabels:
+      app.kubernetes.io/name:      qodiqa
+      app.kubernetes.io/component: gateway
+  policyTypes:
+    - Egress
+  egress:
+    # Redis (in-cluster)
+    - to:
+        - podSelector:
+            matchLabels:
+              app.kubernetes.io/name: redis
+      ports:
+        - protocol: TCP
+          port:     6380
+    # OpenAI API (external HTTPS — requires egress to kube-dns and 0.0.0.0/0:443)
+    - to:
+        - ipBlock:
+            cidr: 0.0.0.0/0
+            except:
+              - 10.0.0.0/8
+              - 172.16.0.0/12
+              - 192.168.0.0/16
+      ports:
+        - protocol: TCP
+          port:     443
+    # DNS resolution
+    - to:
+        - namespaceSelector: {}
+      ports:
+        - protocol: UDP
+          port:     53
+        - protocol: TCP
+          port:     53
+
+---
+# Allow Redis inbound only from QODIQA pods
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: redis-ingress-qodiqa-only
+  namespace: qodiqa
+spec:
+  podSelector:
+    matchLabels:
+      app.kubernetes.io/name: redis
+  policyTypes:
+    - Ingress
+  ingress:
+    - from:
+        - podSelector:
+            matchLabels:
+              app.kubernetes.io/name:      qodiqa
+              app.kubernetes.io/component: gateway
+      ports:
+        - protocol: TCP
+          port:     6380

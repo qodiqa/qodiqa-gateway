@@ -1,0 +1,3493 @@
+{
+  "openapi": "3.1.0",
+  "info": {
+    "title": "QODIQA API — Public API",
+    "version": "1.0.0",
+    "description": "Public developer subset of the QODIQA HTTP contract, generated from docs/api/openapi.json and deploy/public-api/public-operations.json by scripts/openapi/public-subset.js. Administrative, operational and unversioned routes are not part of the public API.",
+    "contact": {
+      "name": "QODIQA",
+      "url": "https://github.com/qodiqa/qodiqa-gateway",
+      "email": "contact@qodiqa.com"
+    },
+    "license": {
+      "name": "Apache-2.0",
+      "url": "https://github.com/qodiqa/qodiqa-gateway/blob/main/LICENSE"
+    }
+  },
+  "servers": [
+    {
+      "url": "http://localhost:3000",
+      "description": "Local development server"
+    },
+    {
+      "url": "https://gateway.example.com",
+      "description": "Example of a hosted gateway"
+    }
+  ],
+  "security": [],
+  "paths": {
+    "/.well-known/qodiqa/checkpoint-keys": {
+      "get": {
+        "operationId": "wellKnownCheckpointKeys",
+        "summary": "Well-known audit-checkpoint public keys",
+        "tags": [
+          "Well-Known"
+        ],
+        "security": [],
+        "responses": {
+          "200": {
+            "description": "Audit-checkpoint public key set",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "status": {
+                      "type": "string",
+                      "enum": [
+                        "success"
+                      ],
+                      "example": "success"
+                    },
+                    "timestamp": {
+                      "type": "string",
+                      "format": "date-time",
+                      "description": "ISO 8601 timestamp",
+                      "example": "2025-06-30T12:00:00.000Z"
+                    },
+                    "requestId": {
+                      "oneOf": [
+                        {
+                          "type": "string",
+                          "format": "uuid",
+                          "pattern": "^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$",
+                          "description": "UUID v4 identifier",
+                          "example": "550e8400-e29b-41d4-a716-446655440000"
+                        },
+                        {
+                          "type": "null"
+                        }
+                      ]
+                    },
+                    "data": {
+                      "type": "object",
+                      "properties": {},
+                      "additionalProperties": true
+                    }
+                  },
+                  "required": [
+                    "status",
+                    "timestamp",
+                    "data"
+                  ]
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/BadRequest"
+          },
+          "500": {
+            "$ref": "#/components/responses/InternalError"
+          },
+          "503": {
+            "$ref": "#/components/responses/ServiceShuttingDown"
+          }
+        },
+        "description": "the public keys of the audit-checkpoint signing key store (a separate trust domain from the artifact and transparency keys), for independent verification of signed audit-chain checkpoints and of audit.log.base.json."
+      }
+    },
+    "/.well-known/qodiqa/checkpoint-keys/{keyId}": {
+      "get": {
+        "operationId": "wellKnownCheckpointKey",
+        "summary": "Well-known audit-checkpoint key by ID",
+        "tags": [
+          "Well-Known"
+        ],
+        "security": [],
+        "responses": {
+          "200": {
+            "description": "Specific audit-checkpoint public key",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "status": {
+                      "type": "string",
+                      "enum": [
+                        "success"
+                      ],
+                      "example": "success"
+                    },
+                    "timestamp": {
+                      "type": "string",
+                      "format": "date-time",
+                      "description": "ISO 8601 timestamp",
+                      "example": "2025-06-30T12:00:00.000Z"
+                    },
+                    "requestId": {
+                      "oneOf": [
+                        {
+                          "type": "string",
+                          "format": "uuid",
+                          "pattern": "^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$",
+                          "description": "UUID v4 identifier",
+                          "example": "550e8400-e29b-41d4-a716-446655440000"
+                        },
+                        {
+                          "type": "null"
+                        }
+                      ]
+                    },
+                    "data": {
+                      "type": "object",
+                      "properties": {},
+                      "additionalProperties": true
+                    }
+                  },
+                  "required": [
+                    "status",
+                    "timestamp",
+                    "data"
+                  ]
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/BadRequest"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          },
+          "500": {
+            "$ref": "#/components/responses/InternalError"
+          },
+          "503": {
+            "$ref": "#/components/responses/ServiceShuttingDown"
+          }
+        },
+        "parameters": [
+          {
+            "name": "keyId",
+            "in": "path",
+            "schema": {
+              "type": "string"
+            },
+            "description": "Key identifier",
+            "required": true
+          }
+        ]
+      }
+    },
+    "/.well-known/qodiqa/keys": {
+      "get": {
+        "operationId": "wellKnownKeys",
+        "summary": "Well-known public keys",
+        "tags": [
+          "Well-Known"
+        ],
+        "security": [],
+        "responses": {
+          "200": {
+            "description": "Public key set (JWK format)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "status": {
+                      "type": "string",
+                      "enum": [
+                        "success"
+                      ],
+                      "example": "success"
+                    },
+                    "timestamp": {
+                      "type": "string",
+                      "format": "date-time",
+                      "description": "ISO 8601 timestamp",
+                      "example": "2025-06-30T12:00:00.000Z"
+                    },
+                    "requestId": {
+                      "oneOf": [
+                        {
+                          "type": "string",
+                          "format": "uuid",
+                          "pattern": "^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$",
+                          "description": "UUID v4 identifier",
+                          "example": "550e8400-e29b-41d4-a716-446655440000"
+                        },
+                        {
+                          "type": "null"
+                        }
+                      ]
+                    },
+                    "data": {
+                      "type": "object",
+                      "properties": {},
+                      "additionalProperties": true
+                    }
+                  },
+                  "required": [
+                    "status",
+                    "timestamp",
+                    "data"
+                  ]
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/BadRequest"
+          },
+          "500": {
+            "$ref": "#/components/responses/InternalError"
+          },
+          "503": {
+            "$ref": "#/components/responses/ServiceShuttingDown"
+          }
+        },
+        "description": "IANA well-known endpoint for public key discovery (JWKS format)."
+      }
+    },
+    "/.well-known/qodiqa/keys/archived": {
+      "get": {
+        "operationId": "wellKnownArchivedKeys",
+        "summary": "Well-known archived (purged) public keys",
+        "tags": [
+          "Well-Known"
+        ],
+        "security": [],
+        "responses": {
+          "200": {
+            "description": "Archived public key set (JWK format)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "status": {
+                      "type": "string",
+                      "enum": [
+                        "success"
+                      ],
+                      "example": "success"
+                    },
+                    "timestamp": {
+                      "type": "string",
+                      "format": "date-time",
+                      "description": "ISO 8601 timestamp",
+                      "example": "2025-06-30T12:00:00.000Z"
+                    },
+                    "requestId": {
+                      "oneOf": [
+                        {
+                          "type": "string",
+                          "format": "uuid",
+                          "pattern": "^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$",
+                          "description": "UUID v4 identifier",
+                          "example": "550e8400-e29b-41d4-a716-446655440000"
+                        },
+                        {
+                          "type": "null"
+                        }
+                      ]
+                    },
+                    "data": {
+                      "type": "object",
+                      "properties": {},
+                      "additionalProperties": true
+                    }
+                  },
+                  "required": [
+                    "status",
+                    "timestamp",
+                    "data"
+                  ]
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/BadRequest"
+          },
+          "500": {
+            "$ref": "#/components/responses/InternalError"
+          },
+          "503": {
+            "$ref": "#/components/responses/ServiceShuttingDown"
+          }
+        },
+        "description": "archived-key discovery endpoint — artifact-signing keys that have been purged from the live keystore (see /.well-known/qodiqa/keys) but remain published here so historical artifacts stay verifiable indefinitely. Independently and more strictly rate limited than the live discovery endpoint."
+      }
+    },
+    "/.well-known/qodiqa/keys/{keyId}": {
+      "get": {
+        "operationId": "wellKnownKey",
+        "summary": "Well-known key by ID",
+        "tags": [
+          "Well-Known"
+        ],
+        "security": [],
+        "responses": {
+          "200": {
+            "description": "Specific public key (JWK format)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "status": {
+                      "type": "string",
+                      "enum": [
+                        "success"
+                      ],
+                      "example": "success"
+                    },
+                    "timestamp": {
+                      "type": "string",
+                      "format": "date-time",
+                      "description": "ISO 8601 timestamp",
+                      "example": "2025-06-30T12:00:00.000Z"
+                    },
+                    "requestId": {
+                      "oneOf": [
+                        {
+                          "type": "string",
+                          "format": "uuid",
+                          "pattern": "^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$",
+                          "description": "UUID v4 identifier",
+                          "example": "550e8400-e29b-41d4-a716-446655440000"
+                        },
+                        {
+                          "type": "null"
+                        }
+                      ]
+                    },
+                    "data": {
+                      "type": "object",
+                      "properties": {},
+                      "additionalProperties": true
+                    }
+                  },
+                  "required": [
+                    "status",
+                    "timestamp",
+                    "data"
+                  ]
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/BadRequest"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          },
+          "500": {
+            "$ref": "#/components/responses/InternalError"
+          },
+          "503": {
+            "$ref": "#/components/responses/ServiceShuttingDown"
+          }
+        },
+        "parameters": [
+          {
+            "name": "keyId",
+            "in": "path",
+            "schema": {
+              "type": "string"
+            },
+            "description": "Key identifier",
+            "required": true
+          }
+        ]
+      }
+    },
+    "/.well-known/qodiqa/transparency-keys": {
+      "get": {
+        "operationId": "wellKnownTransparencyKeys",
+        "summary": "Well-known transparency-log public keys",
+        "tags": [
+          "Well-Known"
+        ],
+        "security": [],
+        "responses": {
+          "200": {
+            "description": "Transparency log public key set (JWK format)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "status": {
+                      "type": "string",
+                      "enum": [
+                        "success"
+                      ],
+                      "example": "success"
+                    },
+                    "timestamp": {
+                      "type": "string",
+                      "format": "date-time",
+                      "description": "ISO 8601 timestamp",
+                      "example": "2025-06-30T12:00:00.000Z"
+                    },
+                    "requestId": {
+                      "oneOf": [
+                        {
+                          "type": "string",
+                          "format": "uuid",
+                          "pattern": "^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$",
+                          "description": "UUID v4 identifier",
+                          "example": "550e8400-e29b-41d4-a716-446655440000"
+                        },
+                        {
+                          "type": "null"
+                        }
+                      ]
+                    },
+                    "data": {
+                      "type": "object",
+                      "properties": {},
+                      "additionalProperties": true
+                    }
+                  },
+                  "required": [
+                    "status",
+                    "timestamp",
+                    "data"
+                  ]
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/BadRequest"
+          },
+          "500": {
+            "$ref": "#/components/responses/InternalError"
+          },
+          "503": {
+            "$ref": "#/components/responses/ServiceShuttingDown"
+          }
+        },
+        "description": "IANA well-known endpoint for transparency-log Merkle root signing key discovery (JWKS format), distinct from the artifact-signing key set at /.well-known/qodiqa/keys."
+      }
+    },
+    "/.well-known/qodiqa/transparency-keys/{keyId}": {
+      "get": {
+        "operationId": "wellKnownTransparencyKey",
+        "summary": "Well-known transparency key by ID",
+        "tags": [
+          "Well-Known"
+        ],
+        "security": [],
+        "responses": {
+          "200": {
+            "description": "Specific transparency-log public key (JWK format)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "status": {
+                      "type": "string",
+                      "enum": [
+                        "success"
+                      ],
+                      "example": "success"
+                    },
+                    "timestamp": {
+                      "type": "string",
+                      "format": "date-time",
+                      "description": "ISO 8601 timestamp",
+                      "example": "2025-06-30T12:00:00.000Z"
+                    },
+                    "requestId": {
+                      "oneOf": [
+                        {
+                          "type": "string",
+                          "format": "uuid",
+                          "pattern": "^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$",
+                          "description": "UUID v4 identifier",
+                          "example": "550e8400-e29b-41d4-a716-446655440000"
+                        },
+                        {
+                          "type": "null"
+                        }
+                      ]
+                    },
+                    "data": {
+                      "type": "object",
+                      "properties": {},
+                      "additionalProperties": true
+                    }
+                  },
+                  "required": [
+                    "status",
+                    "timestamp",
+                    "data"
+                  ]
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/BadRequest"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          },
+          "500": {
+            "$ref": "#/components/responses/InternalError"
+          },
+          "503": {
+            "$ref": "#/components/responses/ServiceShuttingDown"
+          }
+        },
+        "parameters": [
+          {
+            "name": "keyId",
+            "in": "path",
+            "schema": {
+              "type": "string"
+            },
+            "description": "Key identifier",
+            "required": true
+          }
+        ]
+      }
+    },
+    "/sign": {
+      "post": {
+        "operationId": "signRequest",
+        "summary": "Sign request",
+        "tags": [
+          "Signing"
+        ],
+        "security": [
+          {
+            "SigningApiKey": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Signed artifact",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SignResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid sign request (INVALID_REQUEST, PROVIDER_REQUIRED, PROVIDER_NOT_SUPPORTED, PROVIDER_NOT_CONFIGURED)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/DecisionBlock"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Signing credential missing, unknown or expired (UNAUTHORIZED, API_KEY_EXPIRED)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/DecisionBlock"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Signing identity not permitted (SCOPE_PROVIDER_DENIED, SCOPE_ENVIRONMENT_MISMATCH, …)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/DecisionBlock"
+                }
+              }
+            }
+          },
+          "429": {
+            "$ref": "#/components/responses/TooManyRequests"
+          },
+          "500": {
+            "description": "Signing failed (SIGNING_FAILED)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/DecisionBlock"
+                }
+              }
+            }
+          },
+          "503": {
+            "$ref": "#/components/responses/ServiceShuttingDown"
+          }
+        },
+        "description": "Generate a signed artifact for a request.\n\nRefusals are BLOCK decision bodies (`DecisionBlock`). A 503 is either the shutdown-drain body or, when the signing key or the policy set is unavailable, a `DecisionBlock` with reason `KEY_UNAVAILABLE` or `POLICY_UNAVAILABLE`.\n\nThe artifact can then be passed as `x-qodiqa-artifact` when executing via `/ai/chat`\nor verified independently via `/verify`.\n\nRequires `Authorization: Bearer <signing-api-key>` — a per-identity credential\nissued via `POST /signing-identities/{id}/api-key` (TRUST-1 remediation; there is\nno shared signing secret). The authenticated identity determines which tenant's\nsigning key is used and which environment/providers the artifact may target.\n\nTTL defaults to 60 s (60 000 ms), the maximum artifact age: a larger value is clamped to 60 s\n(reported in `meta.ttlClamped` / `meta.effectiveTtlMs`), a value below 1 s is raised to 1 s, and the\nauthenticated identity's own maxTtlMs can only lower it (API-07; previously documented as 5 min / [1 s, 24 h]).",
+        "requestBody": {
+          "required": true,
+          "description": "Request to sign",
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/SignRequest"
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/ai/chat": {
+      "post": {
+        "operationId": "executeAiChatV1",
+        "summary": "Execute AI request (enforcement, v1)",
+        "tags": [
+          "Execution"
+        ],
+        "security": [],
+        "responses": {
+          "200": {
+            "description": "Enforcement decision. `decision: \"EXECUTE\"` (request executed), or — in the DEFAULT `decision` mode (QODIQA_BLOCK_HTTP_MODE unset or `decision`) — `decision: \"BLOCK\"` with the `reason` that stopped it. Clients MUST read `decision`; HTTP 200 alone does not mean the request executed. With `stream: true` an executing request answers `text/event-stream` instead (a BLOCK decided before the stream opens is still this JSON body).",
+            "headers": {
+              "Idempotency-Key": {
+                "description": "Echo of the request `Idempotency-Key`, when one was sent and accepted.",
+                "schema": {
+                  "type": "string"
+                }
+              },
+              "Idempotency-Replayed": {
+                "description": "`true` when this response is the stored result of an earlier request with the same `Idempotency-Key` (only `requestId` is re-stamped); absent otherwise.",
+                "schema": {
+                  "type": "string",
+                  "enum": [
+                    "true"
+                  ]
+                }
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/EnforcementDecision"
+                }
+              },
+              "text/event-stream": {
+                "schema": {
+                  "type": "string",
+                  "description": "Server-sent events (docs/architecture/streaming.md). Each frame is `event: <name>` (absent on `[DONE]`) + `id: <streamId>:<seq>` + `data: <JSON>`; the first frame also sends `retry: 3000`. Clients should read `data:`; the JSON payload repeats the `event` name. Event objects carry `event`: `stream_started`, then zero or more `chunk_forwarded` (`delta` = released output text), then exactly one terminal `stream_completed` or `stream_cancelled` (`reason`, e.g. SEMANTIC_OUTPUT_BLOCKED, OUTPUT_TOO_LARGE, STREAM_TIMEOUT, CLIENT_DISCONNECT, a provider error code), followed by the literal `data: [DONE]`. Output is released in semantic-window bursts after it has been classified; the stream is not resumable (no Last-Event-ID support) and an artifact cannot be reused to reconnect."
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "`status` mode only: enforcement BLOCK for a missing or unreadable artifact (MISSING_ARTIFACT, ARTIFACT_DECODE_FAILED, …). In both modes: request-body input-guard failures (canonical error envelope).",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "oneOf": [
+                    {
+                      "$ref": "#/components/schemas/EnforcementDecision"
+                    },
+                    {
+                      "$ref": "#/components/schemas/ErrorEnvelope"
+                    }
+                  ]
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "`status` mode only (QODIQA_BLOCK_HTTP_MODE=status): enforcement BLOCK (`decision: \"BLOCK\"`) for an invalid artifact, request mismatch, anomaly, consent, policy, tenant/identity, semantic or output-limit reason. The `reason` field identifies the cause (docs/protocol/QODIQA-PROTOCOL.md). In the default mode these are HTTP 200.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/EnforcementDecision"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "`REPLAY_DETECTED` (the artifact nonce was already used; `status` mode only — HTTP 200 in the default mode), or `IDEMPOTENCY_KEY_CONFLICT` / `IDEMPOTENCY_REQUEST_IN_PROGRESS` (both modes: the `Idempotency-Key` was reused with a different request, or its first request is still running).",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/EnforcementDecision"
+                }
+              }
+            }
+          },
+          "413": {
+            "description": "Both modes: `ARTIFACT_TOO_LARGE` (the `x-qodiqa-artifact` header exceeds 8 KB) or `IDEMPOTENCY_KEY_TOO_LARGE` (the `Idempotency-Key` exceeds its length cap).",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/EnforcementDecision"
+                }
+              }
+            }
+          },
+          "415": {
+            "description": "Both modes: `UNSUPPORTED_MEDIA_TYPE` — the request `Content-Type` is not `application/json`.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/EnforcementDecision"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Both modes: `AUDIT_UNREPRESENTABLE_TEXT` — the request or provider output contains a value the evidence stores cannot represent (U+0000, a lone surrogate); refused before any partial audit record is written.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/EnforcementDecision"
+                }
+              }
+            }
+          },
+          "429": {
+            "$ref": "#/components/responses/TooManyRequests"
+          },
+          "500": {
+            "$ref": "#/components/responses/InternalError"
+          },
+          "502": {
+            "description": "Both modes: `PROVIDER_RESPONSE_INVALID` — the AI provider returned a response that could not be used.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/EnforcementDecision"
+                }
+              }
+            }
+          },
+          "503": {
+            "$ref": "#/components/responses/ServiceShuttingDown"
+          },
+          "504": {
+            "description": "Both modes: `PROVIDER_TIMEOUT`, `REQUEST_TIMEOUT` (the pipeline exceeded AI_CHAT_TIMEOUT_MS) or `PROVIDER_CANCELLED`. The outcome is unknown to the client; a retry needs a freshly signed artifact (an `Idempotency-Key` makes the retry exactly-once).",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/EnforcementDecision"
+                }
+              }
+            }
+          }
+        },
+        "description": "Execute an AI request through the QODIQA enforcement pipeline.\n\nThe enforcement pipeline performs:\n1. Artifact signature verification (Ed25519)\n2. Request binding validation\n3. Nonce replay protection\n4. Anomaly detection\n5. Policy evaluation\n6. AI provider execution (if allowed)\n\nReturns `decision: \"EXECUTE\"`, or `decision: \"BLOCK\"` if any pipeline step rejects the request. In the default `decision` mode both are HTTP 200 (read `decision`, not the status); in the opt-in `status` mode a BLOCK carries its class status (400/403/409/429/500/503). Retrying with the same artifact after the nonce was consumed answers REPLAY_DETECTED; only a 503 SERVER_OVERLOADED (admission control, before nonce registration) leaves the artifact reusable.\n\nThe request **must** include a signed artifact in the `x-qodiqa-artifact` header.",
+        "parameters": [
+          {
+            "name": "x-qodiqa-artifact",
+            "in": "header",
+            "schema": {
+              "type": "string",
+              "description": "Base64url-encoded signed artifact"
+            },
+            "description": "Signed QODIQA artifact. Required.",
+            "required": true
+          },
+          {
+            "name": "Idempotency-Key",
+            "in": "header",
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 255,
+              "pattern": "^[\\x21-\\x7E]+$",
+              "description": "Opaque client token, printable non-whitespace ASCII; maximum length 255 by default (IDEMPOTENCY_KEY_MAX_LENGTH)."
+            },
+            "description": "Optional exactly-once retry token (docs/architecture/IDEMPOTENCY_KEY.md). Rejected with `stream: true` (`IDEMPOTENCY_STREAMING_UNSUPPORTED`).",
+            "required": false
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "description": "AI chat execution request",
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/AiChatRequest"
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/ai/chat/stream": {
+      "post": {
+        "operationId": "executeAiChatStreamV1",
+        "summary": "AI request (alias of /v1/ai/chat; streams only with stream: true)",
+        "tags": [
+          "Execution"
+        ],
+        "security": [],
+        "responses": {
+          "200": {
+            "description": "Enforcement decision. `decision: \"EXECUTE\"` (request executed), or — in the DEFAULT `decision` mode (QODIQA_BLOCK_HTTP_MODE unset or `decision`) — `decision: \"BLOCK\"` with the `reason` that stopped it. Clients MUST read `decision`; HTTP 200 alone does not mean the request executed. With `stream: true` an executing request answers `text/event-stream` instead (a BLOCK decided before the stream opens is still this JSON body).",
+            "headers": {
+              "Idempotency-Key": {
+                "description": "Echo of the request `Idempotency-Key`, when one was sent and accepted.",
+                "schema": {
+                  "type": "string"
+                }
+              },
+              "Idempotency-Replayed": {
+                "description": "`true` when this response is the stored result of an earlier request with the same `Idempotency-Key` (only `requestId` is re-stamped); absent otherwise.",
+                "schema": {
+                  "type": "string",
+                  "enum": [
+                    "true"
+                  ]
+                }
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/EnforcementDecision"
+                }
+              },
+              "text/event-stream": {
+                "schema": {
+                  "type": "string",
+                  "description": "Server-sent events (docs/architecture/streaming.md). Each frame is `event: <name>` (absent on `[DONE]`) + `id: <streamId>:<seq>` + `data: <JSON>`; the first frame also sends `retry: 3000`. Clients should read `data:`; the JSON payload repeats the `event` name. Event objects carry `event`: `stream_started`, then zero or more `chunk_forwarded` (`delta` = released output text), then exactly one terminal `stream_completed` or `stream_cancelled` (`reason`, e.g. SEMANTIC_OUTPUT_BLOCKED, OUTPUT_TOO_LARGE, STREAM_TIMEOUT, CLIENT_DISCONNECT, a provider error code), followed by the literal `data: [DONE]`. Output is released in semantic-window bursts after it has been classified; the stream is not resumable (no Last-Event-ID support) and an artifact cannot be reused to reconnect."
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "`status` mode only: enforcement BLOCK for a missing or unreadable artifact (MISSING_ARTIFACT, ARTIFACT_DECODE_FAILED, …). In both modes: request-body input-guard failures (canonical error envelope).",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "oneOf": [
+                    {
+                      "$ref": "#/components/schemas/EnforcementDecision"
+                    },
+                    {
+                      "$ref": "#/components/schemas/ErrorEnvelope"
+                    }
+                  ]
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "`status` mode only (QODIQA_BLOCK_HTTP_MODE=status): enforcement BLOCK (`decision: \"BLOCK\"`) for an invalid artifact, request mismatch, anomaly, consent, policy, tenant/identity, semantic or output-limit reason. The `reason` field identifies the cause (docs/protocol/QODIQA-PROTOCOL.md). In the default mode these are HTTP 200.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/EnforcementDecision"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "`REPLAY_DETECTED` (the artifact nonce was already used; `status` mode only — HTTP 200 in the default mode), or `IDEMPOTENCY_KEY_CONFLICT` / `IDEMPOTENCY_REQUEST_IN_PROGRESS` (both modes: the `Idempotency-Key` was reused with a different request, or its first request is still running).",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/EnforcementDecision"
+                }
+              }
+            }
+          },
+          "413": {
+            "description": "Both modes: `ARTIFACT_TOO_LARGE` (the `x-qodiqa-artifact` header exceeds 8 KB) or `IDEMPOTENCY_KEY_TOO_LARGE` (the `Idempotency-Key` exceeds its length cap).",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/EnforcementDecision"
+                }
+              }
+            }
+          },
+          "415": {
+            "description": "Both modes: `UNSUPPORTED_MEDIA_TYPE` — the request `Content-Type` is not `application/json`.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/EnforcementDecision"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Both modes: `AUDIT_UNREPRESENTABLE_TEXT` — the request or provider output contains a value the evidence stores cannot represent (U+0000, a lone surrogate); refused before any partial audit record is written.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/EnforcementDecision"
+                }
+              }
+            }
+          },
+          "429": {
+            "$ref": "#/components/responses/TooManyRequests"
+          },
+          "500": {
+            "$ref": "#/components/responses/InternalError"
+          },
+          "502": {
+            "description": "Both modes: `PROVIDER_RESPONSE_INVALID` — the AI provider returned a response that could not be used.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/EnforcementDecision"
+                }
+              }
+            }
+          },
+          "503": {
+            "$ref": "#/components/responses/ServiceShuttingDown"
+          },
+          "504": {
+            "description": "Both modes: `PROVIDER_TIMEOUT`, `REQUEST_TIMEOUT` (the pipeline exceeded AI_CHAT_TIMEOUT_MS) or `PROVIDER_CANCELLED`. The outcome is unknown to the client; a retry needs a freshly signed artifact (an `Idempotency-Key` makes the retry exactly-once).",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/EnforcementDecision"
+                }
+              }
+            }
+          }
+        },
+        "description": "Execute an AI request through the QODIQA enforcement pipeline.\n\nThe enforcement pipeline performs:\n1. Artifact signature verification (Ed25519)\n2. Request binding validation\n3. Nonce replay protection\n4. Anomaly detection\n5. Policy evaluation\n6. AI provider execution (if allowed)\n\nReturns `decision: \"EXECUTE\"`, or `decision: \"BLOCK\"` if any pipeline step rejects the request. In the default `decision` mode both are HTTP 200 (read `decision`, not the status); in the opt-in `status` mode a BLOCK carries its class status (400/403/409/429/500/503). Retrying with the same artifact after the nonce was consumed answers REPLAY_DETECTED; only a 503 SERVER_OVERLOADED (admission control, before nonce registration) leaves the artifact reusable.\n\nThe request **must** include a signed artifact in the `x-qodiqa-artifact` header.",
+        "parameters": [
+          {
+            "name": "x-qodiqa-artifact",
+            "in": "header",
+            "schema": {
+              "type": "string",
+              "description": "Base64url-encoded signed artifact"
+            },
+            "description": "Signed QODIQA artifact. Required.",
+            "required": true
+          },
+          {
+            "name": "Idempotency-Key",
+            "in": "header",
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 255,
+              "pattern": "^[\\x21-\\x7E]+$",
+              "description": "Opaque client token, printable non-whitespace ASCII; maximum length 255 by default (IDEMPOTENCY_KEY_MAX_LENGTH)."
+            },
+            "description": "Optional exactly-once retry token (docs/architecture/IDEMPOTENCY_KEY.md). Rejected with `stream: true` (`IDEMPOTENCY_STREAMING_UNSUPPORTED`).",
+            "required": false
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "description": "AI chat execution request",
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/AiChatRequest"
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/portal/report/{verificationId}": {
+      "get": {
+        "operationId": "getPortalReportV1",
+        "summary": "Download verification report",
+        "tags": [
+          "Verification Portal"
+        ],
+        "security": [],
+        "responses": {
+          "200": {
+            "description": "Report (JSON or PDF)",
+            "content": {
+              "application/json": {},
+              "application/pdf": {}
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/BadRequest"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          },
+          "429": {
+            "$ref": "#/components/responses/TooManyRequests"
+          },
+          "500": {
+            "$ref": "#/components/responses/InternalError"
+          },
+          "503": {
+            "$ref": "#/components/responses/ServiceShuttingDown"
+          }
+        },
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/PortalIdParam"
+          },
+          {
+            "name": "format",
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "enum": [
+                "json",
+                "pdf"
+              ],
+              "default": "json"
+            },
+            "description": null,
+            "required": false
+          }
+        ]
+      }
+    },
+    "/v1/portal/result/{verificationId}": {
+      "get": {
+        "operationId": "getPortalResultV1",
+        "summary": "Get verification result",
+        "tags": [
+          "Verification Portal"
+        ],
+        "security": [],
+        "responses": {
+          "200": {
+            "description": "Verification result",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "status": {
+                      "type": "string",
+                      "enum": [
+                        "success"
+                      ],
+                      "example": "success"
+                    },
+                    "timestamp": {
+                      "type": "string",
+                      "format": "date-time",
+                      "description": "ISO 8601 timestamp",
+                      "example": "2025-06-30T12:00:00.000Z"
+                    },
+                    "requestId": {
+                      "oneOf": [
+                        {
+                          "type": "string",
+                          "format": "uuid",
+                          "pattern": "^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$",
+                          "description": "UUID v4 identifier",
+                          "example": "550e8400-e29b-41d4-a716-446655440000"
+                        },
+                        {
+                          "type": "null"
+                        }
+                      ]
+                    },
+                    "data": {
+                      "type": "object",
+                      "properties": {},
+                      "additionalProperties": true
+                    }
+                  },
+                  "required": [
+                    "status",
+                    "timestamp",
+                    "data"
+                  ]
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/BadRequest"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          },
+          "429": {
+            "$ref": "#/components/responses/TooManyRequests"
+          },
+          "500": {
+            "$ref": "#/components/responses/InternalError"
+          },
+          "503": {
+            "$ref": "#/components/responses/ServiceShuttingDown"
+          }
+        },
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/PortalIdParam"
+          }
+        ]
+      }
+    },
+    "/v1/portal/verify": {
+      "post": {
+        "operationId": "submitPortalVerificationV1",
+        "summary": "Submit for verification",
+        "tags": [
+          "Verification Portal"
+        ],
+        "security": [],
+        "responses": {
+          "200": {
+            "description": "Verification submitted",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "status": {
+                      "type": "string",
+                      "enum": [
+                        "success"
+                      ],
+                      "example": "success"
+                    },
+                    "timestamp": {
+                      "type": "string",
+                      "format": "date-time",
+                      "description": "ISO 8601 timestamp",
+                      "example": "2025-06-30T12:00:00.000Z"
+                    },
+                    "requestId": {
+                      "oneOf": [
+                        {
+                          "type": "string",
+                          "format": "uuid",
+                          "pattern": "^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$",
+                          "description": "UUID v4 identifier",
+                          "example": "550e8400-e29b-41d4-a716-446655440000"
+                        },
+                        {
+                          "type": "null"
+                        }
+                      ]
+                    },
+                    "data": {
+                      "type": "object",
+                      "properties": {},
+                      "additionalProperties": true
+                    }
+                  },
+                  "required": [
+                    "status",
+                    "timestamp",
+                    "data"
+                  ]
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/BadRequest"
+          },
+          "429": {
+            "$ref": "#/components/responses/TooManyRequests"
+          },
+          "500": {
+            "$ref": "#/components/responses/InternalError"
+          },
+          "503": {
+            "$ref": "#/components/responses/ServiceShuttingDown"
+          }
+        },
+        "requestBody": {
+          "required": true,
+          "description": null,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "artifact": {
+                    "$ref": "#/components/schemas/Artifact"
+                  },
+                  "context": {
+                    "type": "object",
+                    "properties": {},
+                    "additionalProperties": true
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/transparency/consistency/{fromRootId}/{toRootId}": {
+      "get": {
+        "operationId": "getTransparencyConsistencyProofV1",
+        "summary": "Get Merkle consistency proof",
+        "tags": [
+          "Transparency Log"
+        ],
+        "security": [],
+        "responses": {
+          "200": {
+            "description": "RFC 6962 consistency proof that tree(fromRoot) is a cryptographic prefix of tree(toRoot). verification.valid is true only when the hash relation verifies AND both roots' signatures authenticate under active/deprecated transparency keys (FROM_ROOT_SIGNATURE, TO_ROOT_SIGNATURE checks; an unusable key store is SKIP and not valid); structurallyValid and authenticated report the two halves separately",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "status": {
+                      "type": "string",
+                      "enum": [
+                        "success"
+                      ],
+                      "example": "success"
+                    },
+                    "timestamp": {
+                      "type": "string",
+                      "format": "date-time",
+                      "description": "ISO 8601 timestamp",
+                      "example": "2025-06-30T12:00:00.000Z"
+                    },
+                    "requestId": {
+                      "oneOf": [
+                        {
+                          "type": "string",
+                          "format": "uuid",
+                          "pattern": "^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$",
+                          "description": "UUID v4 identifier",
+                          "example": "550e8400-e29b-41d4-a716-446655440000"
+                        },
+                        {
+                          "type": "null"
+                        }
+                      ]
+                    },
+                    "data": {
+                      "type": "object",
+                      "properties": {
+                        "fromRootId": {
+                          "type": "string",
+                          "format": "uuid",
+                          "pattern": "^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$",
+                          "description": "UUID v4 identifier",
+                          "example": "550e8400-e29b-41d4-a716-446655440000"
+                        },
+                        "toRootId": {
+                          "type": "string",
+                          "format": "uuid",
+                          "pattern": "^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$",
+                          "description": "UUID v4 identifier",
+                          "example": "550e8400-e29b-41d4-a716-446655440000"
+                        },
+                        "consistencyProof": {
+                          "type": "object",
+                          "properties": {},
+                          "additionalProperties": true
+                        },
+                        "verification": {
+                          "type": "object",
+                          "properties": {
+                            "valid": {
+                              "type": "boolean"
+                            },
+                            "structurallyValid": {
+                              "type": "boolean"
+                            },
+                            "authenticated": {
+                              "type": "boolean"
+                            },
+                            "checks": {
+                              "type": "array",
+                              "items": {
+                                "$ref": "#/components/schemas/TransparencyCheck"
+                              }
+                            },
+                            "failedCheck": {
+                              "oneOf": [
+                                {
+                                  "type": "string"
+                                },
+                                {
+                                  "type": "null"
+                                }
+                              ]
+                            },
+                            "failureReason": {
+                              "oneOf": [
+                                {
+                                  "type": "string"
+                                },
+                                {
+                                  "type": "null"
+                                }
+                              ]
+                            }
+                          },
+                          "required": [
+                            "valid",
+                            "structurallyValid",
+                            "authenticated",
+                            "checks"
+                          ]
+                        }
+                      },
+                      "required": [
+                        "fromRootId",
+                        "toRootId",
+                        "consistencyProof",
+                        "verification"
+                      ]
+                    }
+                  },
+                  "required": [
+                    "status",
+                    "timestamp",
+                    "data"
+                  ]
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/BadRequest"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          },
+          "500": {
+            "$ref": "#/components/responses/InternalError"
+          },
+          "503": {
+            "$ref": "#/components/responses/ServiceShuttingDown"
+          }
+        },
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/FromRootIdParam"
+          },
+          {
+            "$ref": "#/components/parameters/ToRootIdParam"
+          }
+        ]
+      }
+    },
+    "/v1/transparency/entries": {
+      "get": {
+        "operationId": "listTransparencyEntriesV1",
+        "summary": "List transparency entries",
+        "tags": [
+          "Transparency Log"
+        ],
+        "security": [],
+        "responses": {
+          "200": {
+            "description": "Entry list (pagination metadata flat beside the list — src/utils/pagination.js withPaginationMeta)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "status": {
+                      "type": "string",
+                      "enum": [
+                        "success"
+                      ],
+                      "example": "success"
+                    },
+                    "timestamp": {
+                      "type": "string",
+                      "format": "date-time",
+                      "description": "ISO 8601 timestamp",
+                      "example": "2025-06-30T12:00:00.000Z"
+                    },
+                    "requestId": {
+                      "oneOf": [
+                        {
+                          "type": "string",
+                          "format": "uuid",
+                          "pattern": "^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$",
+                          "description": "UUID v4 identifier",
+                          "example": "550e8400-e29b-41d4-a716-446655440000"
+                        },
+                        {
+                          "type": "null"
+                        }
+                      ]
+                    },
+                    "data": {
+                      "type": "object",
+                      "properties": {
+                        "entries": {
+                          "type": "array",
+                          "items": {
+                            "$ref": "#/components/schemas/TransparencyEntry"
+                          }
+                        },
+                        "total": {
+                          "type": "integer",
+                          "minimum": 0
+                        },
+                        "page": {
+                          "type": "integer",
+                          "minimum": 1
+                        },
+                        "pageSize": {
+                          "type": "integer",
+                          "minimum": 1
+                        },
+                        "totalItems": {
+                          "type": "integer",
+                          "minimum": 0
+                        },
+                        "totalPages": {
+                          "type": "integer",
+                          "minimum": 0
+                        },
+                        "hasNextPage": {
+                          "type": "boolean"
+                        },
+                        "hasPreviousPage": {
+                          "type": "boolean"
+                        }
+                      },
+                      "required": [
+                        "entries",
+                        "total",
+                        "page",
+                        "pageSize"
+                      ]
+                    }
+                  },
+                  "required": [
+                    "status",
+                    "timestamp",
+                    "data"
+                  ]
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/BadRequest"
+          },
+          "500": {
+            "$ref": "#/components/responses/InternalError"
+          },
+          "503": {
+            "$ref": "#/components/responses/ServiceShuttingDown"
+          }
+        },
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/PageParam"
+          },
+          {
+            "$ref": "#/components/parameters/PageSizeParam"
+          },
+          {
+            "$ref": "#/components/parameters/SortOrderParam"
+          }
+        ]
+      }
+    },
+    "/v1/transparency/entry/{transparencyId}": {
+      "get": {
+        "operationId": "getTransparencyEntryV1",
+        "summary": "Get transparency entry",
+        "tags": [
+          "Transparency Log"
+        ],
+        "security": [],
+        "responses": {
+          "200": {
+            "description": "Transparency entry",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "status": {
+                      "type": "string",
+                      "enum": [
+                        "success"
+                      ],
+                      "example": "success"
+                    },
+                    "timestamp": {
+                      "type": "string",
+                      "format": "date-time",
+                      "description": "ISO 8601 timestamp",
+                      "example": "2025-06-30T12:00:00.000Z"
+                    },
+                    "requestId": {
+                      "oneOf": [
+                        {
+                          "type": "string",
+                          "format": "uuid",
+                          "pattern": "^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$",
+                          "description": "UUID v4 identifier",
+                          "example": "550e8400-e29b-41d4-a716-446655440000"
+                        },
+                        {
+                          "type": "null"
+                        }
+                      ]
+                    },
+                    "data": {
+                      "type": "object",
+                      "properties": {
+                        "entry": {
+                          "$ref": "#/components/schemas/TransparencyEntry"
+                        }
+                      },
+                      "required": [
+                        "entry"
+                      ]
+                    }
+                  },
+                  "required": [
+                    "status",
+                    "timestamp",
+                    "data"
+                  ]
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/BadRequest"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          },
+          "500": {
+            "$ref": "#/components/responses/InternalError"
+          },
+          "503": {
+            "$ref": "#/components/responses/ServiceShuttingDown"
+          }
+        },
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/TransparencyIdParam"
+          }
+        ]
+      }
+    },
+    "/v1/transparency/proof/{transparencyId}": {
+      "get": {
+        "operationId": "getInclusionProofV1",
+        "summary": "Get Merkle inclusion proof",
+        "tags": [
+          "Transparency Log"
+        ],
+        "security": [],
+        "responses": {
+          "200": {
+            "description": "Merkle inclusion proof (proof is null with a message until a root covers the entry). proofVerification.valid is true only when the proof verifies structurally AND the entry and covering-root signatures authenticate under active/deprecated transparency keys (ENTRY_SIGNATURE, ROOT_SIGNATURE checks; an unusable key store is SKIP and not valid)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "status": {
+                      "type": "string",
+                      "enum": [
+                        "success"
+                      ],
+                      "example": "success"
+                    },
+                    "timestamp": {
+                      "type": "string",
+                      "format": "date-time",
+                      "description": "ISO 8601 timestamp",
+                      "example": "2025-06-30T12:00:00.000Z"
+                    },
+                    "requestId": {
+                      "oneOf": [
+                        {
+                          "type": "string",
+                          "format": "uuid",
+                          "pattern": "^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$",
+                          "description": "UUID v4 identifier",
+                          "example": "550e8400-e29b-41d4-a716-446655440000"
+                        },
+                        {
+                          "type": "null"
+                        }
+                      ]
+                    },
+                    "data": {
+                      "type": "object",
+                      "properties": {
+                        "transparencyId": {
+                          "type": "string",
+                          "format": "uuid",
+                          "pattern": "^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$",
+                          "description": "UUID v4 identifier",
+                          "example": "550e8400-e29b-41d4-a716-446655440000"
+                        },
+                        "proof": {
+                          "oneOf": [
+                            {
+                              "$ref": "#/components/schemas/TransparencyInclusionProof"
+                            },
+                            {
+                              "type": "null"
+                            }
+                          ]
+                        },
+                        "proofVerification": {
+                          "type": "object",
+                          "properties": {
+                            "valid": {
+                              "type": "boolean"
+                            },
+                            "structurallyValid": {
+                              "type": "boolean"
+                            },
+                            "authenticated": {
+                              "type": "boolean"
+                            },
+                            "checks": {
+                              "type": "array",
+                              "items": {
+                                "$ref": "#/components/schemas/TransparencyCheck"
+                              }
+                            },
+                            "failedCheck": {
+                              "oneOf": [
+                                {
+                                  "type": "string"
+                                },
+                                {
+                                  "type": "null"
+                                }
+                              ]
+                            },
+                            "failureReason": {
+                              "oneOf": [
+                                {
+                                  "type": "string"
+                                },
+                                {
+                                  "type": "null"
+                                }
+                              ]
+                            }
+                          },
+                          "required": [
+                            "valid",
+                            "checks"
+                          ]
+                        },
+                        "message": {
+                          "type": "string"
+                        }
+                      },
+                      "required": [
+                        "transparencyId",
+                        "proof"
+                      ]
+                    }
+                  },
+                  "required": [
+                    "status",
+                    "timestamp",
+                    "data"
+                  ]
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/BadRequest"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          },
+          "500": {
+            "$ref": "#/components/responses/InternalError"
+          },
+          "503": {
+            "$ref": "#/components/responses/ServiceShuttingDown"
+          }
+        },
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/TransparencyIdParam"
+          }
+        ]
+      }
+    },
+    "/v1/transparency/receipt/{requestId}": {
+      "get": {
+        "operationId": "getTransparencyReceiptV1",
+        "summary": "Get the signed receipt of a decision",
+        "tags": [
+          "Transparency Log"
+        ],
+        "security": [],
+        "responses": {
+          "200": {
+            "description": "The receipt stored for that request (the body is the receipt and nothing else: no tenant, no reason). Receipts are kept for a bounded retrieval window (QODIQA_RECEIPT_TTL_SECONDS, default 3600 s); after it the answer is 404 and the durable evidence is the transparency inclusion proof",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "status": {
+                      "type": "string",
+                      "enum": [
+                        "success"
+                      ],
+                      "example": "success"
+                    },
+                    "timestamp": {
+                      "type": "string",
+                      "format": "date-time",
+                      "description": "ISO 8601 timestamp",
+                      "example": "2025-06-30T12:00:00.000Z"
+                    },
+                    "requestId": {
+                      "oneOf": [
+                        {
+                          "type": "string",
+                          "format": "uuid",
+                          "pattern": "^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$",
+                          "description": "UUID v4 identifier",
+                          "example": "550e8400-e29b-41d4-a716-446655440000"
+                        },
+                        {
+                          "type": "null"
+                        }
+                      ]
+                    },
+                    "data": {
+                      "type": "object",
+                      "properties": {
+                        "receipt": {
+                          "$ref": "#/components/schemas/SignedReceipt"
+                        }
+                      },
+                      "required": [
+                        "receipt"
+                      ]
+                    }
+                  },
+                  "required": [
+                    "status",
+                    "timestamp",
+                    "data"
+                  ]
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/BadRequest"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          },
+          "500": {
+            "$ref": "#/components/responses/InternalError"
+          },
+          "503": {
+            "$ref": "#/components/responses/ServiceShuttingDown"
+          }
+        },
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/ReceiptRequestIdParam"
+          }
+        ]
+      }
+    },
+    "/v1/transparency/root": {
+      "get": {
+        "operationId": "getTransparencyRootV1",
+        "summary": "Get latest Merkle root",
+        "tags": [
+          "Transparency Log"
+        ],
+        "security": [],
+        "responses": {
+          "200": {
+            "description": "Latest signed root, or the root named by ?rootId (root is null with a message before the first root)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "status": {
+                      "type": "string",
+                      "enum": [
+                        "success"
+                      ],
+                      "example": "success"
+                    },
+                    "timestamp": {
+                      "type": "string",
+                      "format": "date-time",
+                      "description": "ISO 8601 timestamp",
+                      "example": "2025-06-30T12:00:00.000Z"
+                    },
+                    "requestId": {
+                      "oneOf": [
+                        {
+                          "type": "string",
+                          "format": "uuid",
+                          "pattern": "^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$",
+                          "description": "UUID v4 identifier",
+                          "example": "550e8400-e29b-41d4-a716-446655440000"
+                        },
+                        {
+                          "type": "null"
+                        }
+                      ]
+                    },
+                    "data": {
+                      "type": "object",
+                      "properties": {
+                        "root": {
+                          "oneOf": [
+                            {
+                              "$ref": "#/components/schemas/TransparencyRootRow"
+                            },
+                            {
+                              "type": "null"
+                            }
+                          ]
+                        },
+                        "message": {
+                          "type": "string"
+                        }
+                      },
+                      "required": [
+                        "root"
+                      ]
+                    }
+                  },
+                  "required": [
+                    "status",
+                    "timestamp",
+                    "data"
+                  ]
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/BadRequest"
+          },
+          "500": {
+            "$ref": "#/components/responses/InternalError"
+          },
+          "503": {
+            "$ref": "#/components/responses/ServiceShuttingDown"
+          }
+        }
+      }
+    },
+    "/v1/transparency/roots": {
+      "get": {
+        "operationId": "listTransparencyRootsV1",
+        "summary": "List Merkle roots",
+        "tags": [
+          "Transparency Log"
+        ],
+        "security": [],
+        "responses": {
+          "200": {
+            "description": "Root history, newest first (pagination metadata flat beside the list)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "status": {
+                      "type": "string",
+                      "enum": [
+                        "success"
+                      ],
+                      "example": "success"
+                    },
+                    "timestamp": {
+                      "type": "string",
+                      "format": "date-time",
+                      "description": "ISO 8601 timestamp",
+                      "example": "2025-06-30T12:00:00.000Z"
+                    },
+                    "requestId": {
+                      "oneOf": [
+                        {
+                          "type": "string",
+                          "format": "uuid",
+                          "pattern": "^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$",
+                          "description": "UUID v4 identifier",
+                          "example": "550e8400-e29b-41d4-a716-446655440000"
+                        },
+                        {
+                          "type": "null"
+                        }
+                      ]
+                    },
+                    "data": {
+                      "type": "object",
+                      "properties": {
+                        "roots": {
+                          "type": "array",
+                          "items": {
+                            "$ref": "#/components/schemas/TransparencyRootRow"
+                          }
+                        },
+                        "total": {
+                          "type": "integer",
+                          "minimum": 0
+                        },
+                        "page": {
+                          "type": "integer",
+                          "minimum": 1
+                        },
+                        "pageSize": {
+                          "type": "integer",
+                          "minimum": 1
+                        },
+                        "totalItems": {
+                          "type": "integer",
+                          "minimum": 0
+                        },
+                        "totalPages": {
+                          "type": "integer",
+                          "minimum": 0
+                        },
+                        "hasNextPage": {
+                          "type": "boolean"
+                        },
+                        "hasPreviousPage": {
+                          "type": "boolean"
+                        }
+                      },
+                      "required": [
+                        "roots",
+                        "total",
+                        "page",
+                        "pageSize"
+                      ]
+                    }
+                  },
+                  "required": [
+                    "status",
+                    "timestamp",
+                    "data"
+                  ]
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/BadRequest"
+          },
+          "500": {
+            "$ref": "#/components/responses/InternalError"
+          },
+          "503": {
+            "$ref": "#/components/responses/ServiceShuttingDown"
+          }
+        },
+        "parameters": [
+          {
+            "name": "page",
+            "in": "query",
+            "schema": {
+              "type": "integer",
+              "minimum": 1,
+              "default": 1
+            },
+            "description": null,
+            "required": false
+          },
+          {
+            "name": "pageSize",
+            "in": "query",
+            "schema": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 200,
+              "default": 20
+            },
+            "description": null,
+            "required": false
+          },
+          {
+            "$ref": "#/components/parameters/LimitParam"
+          },
+          {
+            "$ref": "#/components/parameters/OffsetParam"
+          }
+        ]
+      }
+    },
+    "/v1/transparency/verify/{transparencyId}": {
+      "get": {
+        "operationId": "verifyTransparencyEntryV1",
+        "summary": "Verify transparency entry",
+        "tags": [
+          "Transparency Log"
+        ],
+        "security": [],
+        "responses": {
+          "200": {
+            "description": "Entry verification result",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "status": {
+                      "type": "string",
+                      "enum": [
+                        "success"
+                      ],
+                      "example": "success"
+                    },
+                    "timestamp": {
+                      "type": "string",
+                      "format": "date-time",
+                      "description": "ISO 8601 timestamp",
+                      "example": "2025-06-30T12:00:00.000Z"
+                    },
+                    "requestId": {
+                      "oneOf": [
+                        {
+                          "type": "string",
+                          "format": "uuid",
+                          "pattern": "^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$",
+                          "description": "UUID v4 identifier",
+                          "example": "550e8400-e29b-41d4-a716-446655440000"
+                        },
+                        {
+                          "type": "null"
+                        }
+                      ]
+                    },
+                    "data": {
+                      "$ref": "#/components/schemas/TransparencyEntryVerification"
+                    }
+                  },
+                  "required": [
+                    "status",
+                    "timestamp",
+                    "data"
+                  ]
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/BadRequest"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          },
+          "500": {
+            "$ref": "#/components/responses/InternalError"
+          },
+          "503": {
+            "$ref": "#/components/responses/ServiceShuttingDown"
+          }
+        },
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/TransparencyIdParam"
+          }
+        ]
+      }
+    },
+    "/v1/verify": {
+      "post": {
+        "operationId": "verifyArtifactV1",
+        "summary": "Verify artifact (v1)",
+        "tags": [
+          "Verification"
+        ],
+        "security": [],
+        "responses": {
+          "200": {
+            "description": "Verification result",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/EnforcementDecision"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/BadRequest"
+          },
+          "429": {
+            "$ref": "#/components/responses/TooManyRequests"
+          },
+          "500": {
+            "$ref": "#/components/responses/InternalError"
+          },
+          "503": {
+            "$ref": "#/components/responses/ServiceShuttingDown"
+          }
+        },
+        "description": "Verify a signed artifact without executing the underlying request.\n\nPerforms the complete 5-step verification pipeline in dry-run mode:\n1. Ed25519 signature verification\n2. Request binding verification\n3. Nonce check (dry-run, no state write)\n4. Anomaly detection (dry-run)\n5. Policy evaluation\n\nReturns HTTP 200 with `decision: \"EXECUTE\"` or `decision: \"BLOCK\"`. No AI provider is called.",
+        "requestBody": {
+          "required": true,
+          "description": "Artifact and original request to verify",
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/VerifyRequest"
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/verify/v2": {
+      "post": {
+        "operationId": "verifyArtifactV2V1",
+        "summary": "Verify artifact (v1, v2 rate limit tier)",
+        "tags": [
+          "Verification"
+        ],
+        "security": [],
+        "responses": {
+          "200": {
+            "description": "Verification result",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/EnforcementDecision"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/BadRequest"
+          },
+          "429": {
+            "$ref": "#/components/responses/TooManyRequests"
+          },
+          "500": {
+            "$ref": "#/components/responses/InternalError"
+          },
+          "503": {
+            "$ref": "#/components/responses/ServiceShuttingDown"
+          }
+        },
+        "description": "Verify a signed artifact without executing the underlying request.\n\nPerforms the complete 5-step verification pipeline in dry-run mode:\n1. Ed25519 signature verification\n2. Request binding verification\n3. Nonce check (dry-run, no state write)\n4. Anomaly detection (dry-run)\n5. Policy evaluation\n\nReturns HTTP 200 with `decision: \"EXECUTE\"` or `decision: \"BLOCK\"`. No AI provider is called.\n\nIdentical verification pipeline to /verify, exposed under a separate, independently configurable rate limit for higher-volume callers.",
+        "requestBody": {
+          "required": true,
+          "description": "Artifact and original request to verify",
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/VerifyRequest"
+              }
+            }
+          }
+        }
+      }
+    }
+  },
+  "components": {
+    "parameters": {
+      "FromRootIdParam": {
+        "name": "fromRootId",
+        "in": "path",
+        "required": true,
+        "schema": {
+          "type": "string",
+          "format": "uuid",
+          "pattern": "^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$",
+          "description": "UUID v4 identifier",
+          "example": "550e8400-e29b-41d4-a716-446655440000"
+        },
+        "description": "Earlier Merkle root identifier"
+      },
+      "LimitParam": {
+        "name": "limit",
+        "in": "query",
+        "description": "Deprecated alias for `pageSize`. Prefer `pageSize`.",
+        "required": false,
+        "deprecated": true,
+        "schema": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 500,
+          "example": 50
+        }
+      },
+      "OffsetParam": {
+        "name": "offset",
+        "in": "query",
+        "description": "Deprecated alias for `page` (0-based item offset, honored exactly even when not page-aligned). Prefer `page`.",
+        "required": false,
+        "deprecated": true,
+        "schema": {
+          "type": "integer",
+          "minimum": 0,
+          "example": 0
+        }
+      },
+      "PageParam": {
+        "name": "page",
+        "in": "query",
+        "description": "Page number (1-based). Canonical pagination parameter.",
+        "required": false,
+        "schema": {
+          "type": "integer",
+          "minimum": 1,
+          "example": 1,
+          "default": 1
+        }
+      },
+      "PageSizeParam": {
+        "name": "pageSize",
+        "in": "query",
+        "description": "Items per page (1–500). Canonical pagination parameter.",
+        "required": false,
+        "schema": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 500,
+          "example": 50,
+          "default": 50
+        }
+      },
+      "PortalIdParam": {
+        "name": "verificationId",
+        "in": "path",
+        "required": true,
+        "schema": {
+          "type": "string",
+          "format": "uuid",
+          "pattern": "^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$",
+          "description": "UUID v4 identifier",
+          "example": "550e8400-e29b-41d4-a716-446655440000"
+        },
+        "description": "Verification submission identifier"
+      },
+      "ReceiptRequestIdParam": {
+        "name": "requestId",
+        "in": "path",
+        "required": true,
+        "schema": {
+          "type": "string",
+          "format": "uuid",
+          "pattern": "^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$",
+          "description": "UUID v4 identifier",
+          "example": "550e8400-e29b-41d4-a716-446655440000"
+        },
+        "description": "The payload.requestId of the consumed artifact (a UUID). Knowing it is the only authorization for this endpoint."
+      },
+      "SortOrderParam": {
+        "name": "sortOrder",
+        "in": "query",
+        "description": "Sort direction. Canonical pagination parameter.",
+        "required": false,
+        "schema": {
+          "type": "string",
+          "enum": [
+            "asc",
+            "desc"
+          ],
+          "default": "desc"
+        }
+      },
+      "ToRootIdParam": {
+        "name": "toRootId",
+        "in": "path",
+        "required": true,
+        "schema": {
+          "type": "string",
+          "format": "uuid",
+          "pattern": "^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$",
+          "description": "UUID v4 identifier",
+          "example": "550e8400-e29b-41d4-a716-446655440000"
+        },
+        "description": "Later Merkle root identifier"
+      },
+      "TransparencyIdParam": {
+        "name": "transparencyId",
+        "in": "path",
+        "required": true,
+        "schema": {
+          "type": "string",
+          "format": "uuid",
+          "pattern": "^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$",
+          "description": "UUID v4 identifier",
+          "example": "550e8400-e29b-41d4-a716-446655440000"
+        },
+        "description": "Transparency log entry identifier"
+      }
+    },
+    "responses": {
+      "BadRequest": {
+        "description": "Bad request — validation error or malformed input (canonical error envelope, src/api/response.js buildFailureBody)",
+        "content": {
+          "application/json": {
+            "schema": {
+              "$ref": "#/components/schemas/ErrorEnvelope"
+            },
+            "example": {
+              "status": "error",
+              "timestamp": "2026-10-02T00:00:00.000Z",
+              "requestId": "550e8400-e29b-41d4-a716-446655440000",
+              "error": {
+                "code": "INVALID_INPUT",
+                "message": "body.actor_id must be a non-empty string"
+              }
+            }
+          }
+        }
+      },
+      "InternalError": {
+        "description": "Internal server error (src/api/response.js handleUnexpectedError; never the raw error message)",
+        "content": {
+          "application/json": {
+            "schema": {
+              "$ref": "#/components/schemas/ErrorEnvelope"
+            },
+            "example": {
+              "status": "error",
+              "timestamp": "2026-10-02T00:00:00.000Z",
+              "requestId": "550e8400-e29b-41d4-a716-446655440000",
+              "error": {
+                "code": "INTERNAL_ERROR",
+                "message": "An unexpected error occurred"
+              }
+            }
+          }
+        }
+      },
+      "NotFound": {
+        "description": "Not found — resource does not exist",
+        "content": {
+          "application/json": {
+            "schema": {
+              "$ref": "#/components/schemas/ErrorEnvelope"
+            },
+            "example": {
+              "status": "error",
+              "timestamp": "2026-10-02T00:00:00.000Z",
+              "requestId": "550e8400-e29b-41d4-a716-446655440000",
+              "error": {
+                "code": "NOT_FOUND",
+                "message": "Record not found"
+              }
+            }
+          }
+        }
+      },
+      "ServiceShuttingDown": {
+        "description": "Service is shutting down. Returned by the request-drain middleware (`src/runtime/requestDrain.js`), mounted ahead of every route below, for all new requests received after graceful shutdown has begun. In-flight requests are still allowed to complete.",
+        "content": {
+          "application/json": {
+            "schema": {
+              "type": "object",
+              "properties": {
+                "success": {
+                  "type": "boolean",
+                  "example": false
+                },
+                "error": {
+                  "type": "object",
+                  "properties": {
+                    "code": {
+                      "type": "string",
+                      "example": "SERVICE_SHUTTING_DOWN"
+                    },
+                    "message": {
+                      "type": "string",
+                      "example": "Service unavailable"
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      },
+      "TooManyRequests": {
+        "description": "Too many requests. The body depends on the rate-limit bucket's configured envelope (src/core/rateLimit/middleware.js _deny429): management and legacyFailure buckets send the canonical error envelope; the protocol-decision bucket sends the BLOCK decision body; protocol buckets send the flat limiter body.",
+        "headers": {
+          "Retry-After": {
+            "schema": {
+              "type": "integer",
+              "description": "Seconds until the bucket allows another request"
+            }
+          }
+        },
+        "content": {
+          "application/json": {
+            "schema": {
+              "oneOf": [
+                {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                },
+                {
+                  "$ref": "#/components/schemas/DecisionBlock"
+                },
+                {
+                  "type": "object",
+                  "properties": {
+                    "error": {
+                      "type": "string",
+                      "example": "RATE_LIMITED"
+                    },
+                    "surface": {
+                      "type": "string"
+                    },
+                    "dimension": {
+                      "type": "string"
+                    },
+                    "reason": {
+                      "type": "string"
+                    },
+                    "retryAfterSeconds": {
+                      "type": "integer",
+                      "minimum": 0
+                    },
+                    "requestId": {
+                      "oneOf": [
+                        {
+                          "type": "string"
+                        },
+                        {
+                          "type": "null"
+                        }
+                      ]
+                    }
+                  },
+                  "required": [
+                    "error",
+                    "surface",
+                    "dimension",
+                    "retryAfterSeconds"
+                  ]
+                }
+              ]
+            }
+          }
+        }
+      }
+    },
+    "schemas": {
+      "AiChatRequest": {
+        "type": "object",
+        "properties": {
+          "prompt": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 32768,
+            "description": "Prompt text. Limit: 32 768 UTF-8 BYTES (-> 400 PROMPT_TOO_LARGE) - multi-byte characters count more than once, so maxLength (characters) is only an upper bound. Missing, non-string or whitespace-only -> 400 MISSING_PROMPT.",
+            "example": "Summarise the latest EU AI Act requirements."
+          },
+          "model": {
+            "type": "string",
+            "description": "Model identifier; over-long values -> 400 MODEL_TOO_LARGE",
+            "example": "gpt-4o"
+          },
+          "stream": {
+            "type": "boolean",
+            "description": "Enable streaming response",
+            "default": false
+          },
+          "provider": {
+            "type": "string",
+            "description": "Accepted; the provider is taken from the signed artifact, not from this field",
+            "example": "openai"
+          },
+          "messages": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "role": {
+                  "type": "string",
+                  "enum": [
+                    "system",
+                    "user",
+                    "assistant"
+                  ]
+                },
+                "content": {
+                  "type": "string",
+                  "minLength": 1
+                }
+              },
+              "required": [
+                "role",
+                "content"
+              ]
+            },
+            "minItems": 1,
+            "maxItems": 50,
+            "description": "A multi-turn conversation INSTEAD of prompt: 1..50 messages, each content 1..32 768 UTF-8 bytes, whole conversation <= 131 072 bytes, the LAST message is role user. Every message is part of the signed request body, so changing, adding, dropping or reordering a turn after signing invalidates the artifact; every role is screened (the evidence names the role and position). Not allowed together with prompt (400 PROMPT_AND_MESSAGES). QODIQA_MULTI_TURN_ENABLED=false refuses it again."
+          },
+          "system": {
+            "type": "string",
+            "minLength": 1,
+            "description": "System instruction, becomes the first message; only with messages."
+          },
+          "purpose": {
+            "type": "string",
+            "maxLength": 64,
+            "description": "the purpose the caller DECLARES for this request ([A-Za-z0-9._:/ -]). A claim, not a proof: policy rules may require one (ABAC_PURPOSE_NOT_DECLARED) but QODIQA cannot verify it.",
+            "example": "support"
+          },
+          "dataRegion": {
+            "type": "string",
+            "maxLength": 64,
+            "description": "the region the caller DECLARES the data comes from (same character set). A claim, not a proof.",
+            "example": "eu"
+          }
+        },
+        "additionalProperties": true,
+        "anyOf": [
+          {
+            "required": [
+              "prompt"
+            ]
+          },
+          {
+            "required": [
+              "messages"
+            ]
+          }
+        ],
+        "not": {
+          "anyOf": [
+            {
+              "required": [
+                "tools"
+              ]
+            },
+            {
+              "required": [
+                "tool_choice"
+              ]
+            },
+            {
+              "required": [
+                "functions"
+              ]
+            },
+            {
+              "required": [
+                "function_call"
+              ]
+            },
+            {
+              "required": [
+                "response_format"
+              ]
+            }
+          ]
+        },
+        "description": "Either prompt or messages (+ optional system). Refused fields (400 UNSUPPORTED_FIELD, named in the error; on a streaming request the tool fields give 400 STREAM_TOOLS_UNSUPPORTED): tools, tool_choice, functions, function_call, response_format. Any other unknown field is accepted and ignored."
+      },
+      "Artifact": {
+        "type": "object",
+        "properties": {
+          "payload": {
+            "type": "object",
+            "properties": {
+              "provider": {
+                "type": "string",
+                "description": "Requested provider (present for AI routes)",
+                "example": "openai"
+              },
+              "requestId": {
+                "type": "string",
+                "format": "uuid",
+                "pattern": "^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$",
+                "description": "UUID v4 identifier",
+                "example": "550e8400-e29b-41d4-a716-446655440000"
+              },
+              "requestHash": {
+                "type": "string",
+                "description": "Lowercase hex SHA-256 request binding (protocol §5)",
+                "example": "44e051a4f91257079a8be87f42aaaf159b3e34994a2023fe3e73aff51956dcac"
+              },
+              "policyHash": {
+                "type": "string",
+                "description": "Lowercase hex SHA-256 of the policy set at signing time (informational)",
+                "example": "0198efcd800b44a52ca570d82e3409947aabcdc637a34f718e839ec1befe9b1f"
+              },
+              "tenantId": {
+                "type": "string",
+                "minLength": 1,
+                "maxLength": 128,
+                "pattern": "^[a-zA-Z0-9._:@/-]{1,128}$",
+                "description": "Tenant identifier",
+                "example": "tenant-acme"
+              },
+              "callerContext": {
+                "type": "object",
+                "properties": {},
+                "additionalProperties": true
+              }
+            },
+            "description": "Signed payload; a plain object with no undefined values",
+            "additionalProperties": true
+          },
+          "publicKeyId": {
+            "type": "string",
+            "description": "<tenantId>:key_v<n>",
+            "example": "dev-local:key_v1"
+          },
+          "signature": {
+            "type": "string",
+            "description": "Ed25519 signature, canonical standard base64 (exactly 88 characters ending \"==\")",
+            "example": "0WBYKyIgR3k9cWmkE9A+ilucBCFwju1Vgw0xAL57LkAEdlyEBQ1p5gVOL/sFl30tCDrcBGdeOOhNEXTyTa9RCw=="
+          },
+          "timestamp": {
+            "type": "integer",
+            "description": "Issue time, Unix epoch milliseconds",
+            "example": 1790924920927
+          },
+          "expiry": {
+            "type": "integer",
+            "description": "Expiry, Unix epoch milliseconds",
+            "example": 1790924980927
+          }
+        },
+        "required": [
+          "payload",
+          "publicKeyId",
+          "signature",
+          "timestamp",
+          "expiry"
+        ],
+        "additionalProperties": false
+      },
+      "DecisionBlock": {
+        "type": "object",
+        "properties": {
+          "decision": {
+            "type": "string",
+            "enum": [
+              "BLOCK"
+            ]
+          },
+          "reason": {
+            "type": "string",
+            "description": "Machine-readable reason code; see the top-level `x-qodiqa-error-catalog` (API-09/API-10).",
+            "example": "INVALID_REQUEST"
+          },
+          "details": {
+            "type": "object",
+            "properties": {},
+            "additionalProperties": true
+          },
+          "requestId": {
+            "oneOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          }
+        },
+        "required": [
+          "decision",
+          "reason"
+        ]
+      },
+      "EnforcementDecision": {
+        "type": "object",
+        "properties": {
+          "decision": {
+            "type": "string",
+            "enum": [
+              "EXECUTE",
+              "BLOCK"
+            ],
+            "description": "Enforcement decision — always inspect this field, never the HTTP status alone. The dry-run verification endpoints (/verify, /v1/verify) return this body with HTTP 200 for both EXECUTE and BLOCK. The enforcement endpoints (/ai/chat, /v1/ai/chat, and their /stream variants) also return HTTP 200 for an enforcement BLOCK in the DEFAULT `decision` mode (QODIQA_BLOCK_HTTP_MODE unset or `decision`, src/api/blockHttpStatus.js); only in the opt-in `status` mode does a BLOCK carry its class status (400 malformed artifact, 403 invalid artifact/consent/policy/semantic, 409 replay, 429 policy rate rule, 500 internal, 503 dependency unavailable — docs/protocol/QODIQA-PROTOCOL.md). Transport throttles (429 RATE_LIMITED), input-guard 400s, 413, provider errors (502/503/504) are non-200 in both modes.",
+            "example": "EXECUTE"
+          },
+          "reason": {
+            "type": "string",
+            "description": "Machine-readable reason code. Every BLOCK reason, its class, its status-mode HTTP status and whether it is retryable are listed in the top-level `x-qodiqa-error-catalog` (API-09/API-10). The set is open: a reason not listed there is still a denial (status mode: 403).",
+            "example": "RULES_MATCHED:ALLOW_EFFECT"
+          },
+          "requestId": {
+            "oneOf": [
+              {
+                "type": "string",
+                "format": "uuid",
+                "pattern": "^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$",
+                "description": "Per-HTTP trace id (the same value as the `X-Request-ID` response header). Not the artifact id: to look up the audit record (GET /audit/{artifactId}) use the `artifactId` returned by POST /sign.",
+                "example": "550e8400-e29b-41d4-a716-446655440000"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "details": {
+            "type": "object",
+            "properties": {},
+            "additionalProperties": true
+          },
+          "receipt": {
+            "$ref": "#/components/schemas/SignedReceipt"
+          }
+        },
+        "required": [
+          "decision",
+          "reason",
+          "requestId"
+        ]
+      },
+      "ErrorEnvelope": {
+        "type": "object",
+        "properties": {
+          "status": {
+            "type": "string",
+            "enum": [
+              "error"
+            ],
+            "example": "error"
+          },
+          "error": {
+            "type": "object",
+            "properties": {
+              "code": {
+                "type": "string",
+                "description": "Machine-readable error code. Protocol/enforcement codes are listed in the top-level `x-qodiqa-error-catalog`; management-API codes are route-specific (API-10).",
+                "example": "INVALID_INPUT"
+              },
+              "message": {
+                "type": "string",
+                "description": "Human-readable description",
+                "example": "body.policy must be a plain object"
+              }
+            },
+            "required": [
+              "code",
+              "message"
+            ]
+          },
+          "timestamp": {
+            "type": "string",
+            "format": "date-time",
+            "description": "ISO 8601 timestamp",
+            "example": "2025-06-30T12:00:00.000Z"
+          },
+          "requestId": {
+            "oneOf": [
+              {
+                "type": "string",
+                "format": "uuid",
+                "pattern": "^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$",
+                "description": "UUID v4 identifier",
+                "example": "550e8400-e29b-41d4-a716-446655440000"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          }
+        },
+        "required": [
+          "status",
+          "timestamp",
+          "error",
+          "requestId"
+        ]
+      },
+      "SignRequest": {
+        "type": "object",
+        "properties": {
+          "request": {
+            "type": "object",
+            "properties": {
+              "method": {
+                "type": "string",
+                "enum": [
+                  "GET",
+                  "POST",
+                  "PUT",
+                  "PATCH",
+                  "DELETE",
+                  "HEAD",
+                  "OPTIONS"
+                ],
+                "description": "Any other value -> 400 INVALID_METHOD",
+                "example": "POST"
+              },
+              "path": {
+                "type": "string",
+                "maxLength": 2048,
+                "description": "At most 2048 UTF-8 BYTES (-> 400 PATH_TOO_LONG); maxLength here is the character bound only",
+                "example": "/v1/ai/chat"
+              },
+              "body": {
+                "type": "object",
+                "properties": {},
+                "description": "Required. The exact JSON body to be bound (use {} for a request without a body); at most 10 levels deep (-> 400 BODY_TOO_DEEP)",
+                "additionalProperties": true
+              },
+              "query": {
+                "type": "string",
+                "description": "Protocol V2 only (needs a v2 block): the raw query string WITHOUT the leading \"?\", bound into the artifact. A raw \"+\" or \";\" is refused with 400 QUERY_NOT_BINDABLE — write %20, %2B, %3B."
+              },
+              "headers": {
+                "type": "object",
+                "properties": {},
+                "description": "Protocol V2 only (needs a v2 block): the values of the headers named in v2.bind.headers (lower-case names); a header not listed there is refused.",
+                "additionalProperties": {
+                  "type": "string"
+                }
+              }
+            },
+            "required": [
+              "method",
+              "path",
+              "body"
+            ],
+            "additionalProperties": false
+          },
+          "payload": {
+            "type": "object",
+            "properties": {},
+            "description": "Optional additional payload. The name \"qodiqa\" (and any look-alike) is reserved: 400 RESERVED_CLAIM; caller data may be put under \"claims\" in a V2 artifact.",
+            "additionalProperties": true
+          },
+          "v2": {
+            "type": "object",
+            "properties": {
+              "bind": {
+                "type": "object",
+                "properties": {
+                  "headers": {
+                    "type": "array",
+                    "items": {
+                      "type": "string",
+                      "pattern": "^[a-z0-9-]{1,64}$"
+                    },
+                    "maxItems": 16,
+                    "description": "Names of the request headers whose values are bound (lower-case; none of x-qodiqa-artifact, authorization, proxy-authorization, cookie, set-cookie, host, content-length, transfer-encoding, connection, keep-alive, te, trailer, upgrade, via, forwarded, x-forwarded-for). May be empty."
+                  }
+                },
+                "required": [
+                  "headers"
+                ],
+                "additionalProperties": false
+              },
+              "model": {
+                "oneOf": [
+                  {
+                    "type": "string",
+                    "description": "The one model this artifact authorizes; /ai/chat refuses a body that names another (REQUEST_MISMATCH)."
+                  },
+                  {
+                    "type": "null"
+                  }
+                ]
+              },
+              "limits": {
+                "type": "object",
+                "properties": {
+                  "maxTokens": {
+                    "type": "integer",
+                    "minimum": 1,
+                    "description": "Caps the provider output for this request (enforced by the provider adapters, streaming included). maxCostMicros is not accepted yet."
+                  }
+                },
+                "additionalProperties": false
+              },
+              "crit": {
+                "type": "array",
+                "items": {
+                  "type": "string"
+                },
+                "minItems": 1,
+                "description": "Claims a verifier MUST understand; an unknown critical claim is refused (UNSUPPORTED_CRITICAL_CLAIM)."
+              }
+            },
+            "required": [
+              "bind"
+            ],
+            "description": "Issue a protocol-V2 artifact (docs/protocol/PROTOCOL-V2.md; needs QODIQA_PROTOCOL_V2_ISSUE=true). The artifact then binds method, path, query, the listed headers and the body under JCS-P1 (requestHash over QODIQA::REQUEST::V2) and carries payload.qodiqa = { v: 2, kind: \"request\", bind, model?, limits?, crit? }.",
+            "additionalProperties": false
+          },
+          "ttl": {
+            "type": "number",
+            "description": "Requested artifact TTL in milliseconds. Default and effective maximum: 60 000 ms (60 s) — verification refuses any artifact older than the 60 s maximum artifact age, so a larger value is CLAMPED to 60 s (never rejected; the response reports `meta.ttlClamped` and `meta.effectiveTtlMs`); values below 1 000 ms are raised to 1 000 ms; the signing identity `maxTtlMs` can only lower it (src/api/routes/sign.js).",
+            "example": 60000
+          }
+        },
+        "required": [
+          "request"
+        ],
+        "additionalProperties": false
+      },
+      "SignResponse": {
+        "type": "object",
+        "properties": {
+          "artifactId": {
+            "type": "string",
+            "format": "uuid",
+            "pattern": "^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$",
+            "description": "UUID v4 identifier",
+            "example": "550e8400-e29b-41d4-a716-446655440000"
+          },
+          "artifact": {
+            "$ref": "#/components/schemas/Artifact"
+          },
+          "meta": {
+            "type": "object",
+            "properties": {
+              "keyId": {
+                "type": "string",
+                "example": "default:key_v1"
+              },
+              "expiresAt": {
+                "type": "integer",
+                "description": "Artifact expiry, Unix epoch milliseconds (= artifact.expiry)"
+              },
+              "tenantId": {
+                "type": "string",
+                "minLength": 1,
+                "maxLength": 128,
+                "pattern": "^[a-zA-Z0-9._:@/-]{1,128}$",
+                "description": "Tenant identifier",
+                "example": "tenant-acme"
+              },
+              "callerId": {
+                "type": "string",
+                "format": "uuid",
+                "pattern": "^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$",
+                "description": "UUID v4 identifier",
+                "example": "550e8400-e29b-41d4-a716-446655440000"
+              },
+              "effectiveTtlMs": {
+                "type": "integer",
+                "description": "TTL actually applied (requested ttl clamped to the 60 s maximum artifact age)",
+                "example": 60000
+              },
+              "ttlClamped": {
+                "type": "boolean",
+                "description": "true when the requested ttl exceeded the maximum and was clamped"
+              }
+            },
+            "required": [
+              "keyId",
+              "expiresAt",
+              "tenantId",
+              "callerId",
+              "effectiveTtlMs",
+              "ttlClamped"
+            ]
+          },
+          "requestId": {
+            "oneOf": [
+              {
+                "type": "string",
+                "format": "uuid",
+                "pattern": "^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$",
+                "description": "UUID v4 identifier",
+                "example": "550e8400-e29b-41d4-a716-446655440000"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          }
+        },
+        "required": [
+          "artifactId",
+          "artifact",
+          "meta",
+          "requestId"
+        ]
+      },
+      "SignedReceipt": {
+        "type": "object",
+        "properties": {
+          "v": {
+            "type": "integer",
+            "description": "Receipt version"
+          },
+          "requestId": {
+            "type": "string",
+            "format": "uuid",
+            "pattern": "^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$",
+            "description": "UUID v4 identifier",
+            "example": "550e8400-e29b-41d4-a716-446655440000"
+          },
+          "decision": {
+            "type": "string",
+            "enum": [
+              "ALLOW",
+              "BLOCK"
+            ],
+            "description": "The decision of the audit DECISION entry of that request"
+          },
+          "issuedAt": {
+            "type": "integer",
+            "minimum": 0,
+            "description": "Signing time, Unix epoch milliseconds"
+          },
+          "entryHash": {
+            "type": "string",
+            "description": "Hash of the audit DECISION entry (64 lowercase hex)",
+            "example": "44e051a4f91257079a8be87f42aaaf159b3e34994a2023fe3e73aff51956dcac"
+          },
+          "leafHash": {
+            "type": "string",
+            "description": "RFC 6962 leaf hash of the transparency leaf registered for it (64 lowercase hex)",
+            "example": "0198efcd800b44a52ca570d82e3409947aabcdc637a34f718e839ec1befe9b1f"
+          },
+          "keyId": {
+            "type": "string",
+            "description": "A TRANSPARENCY key id (never an artifact key)",
+            "example": "tr-default:key_v1"
+          },
+          "signature": {
+            "type": "string",
+            "description": "base64(Ed25519.sign(SHA-256(\"QODIQA::RECEIPT::V1\" || JCS-P1(receipt without signature)))) — standard base64 of the 64-byte signature"
+          }
+        },
+        "required": [
+          "v",
+          "requestId",
+          "decision",
+          "issuedAt",
+          "entryHash",
+          "leafHash",
+          "keyId",
+          "signature"
+        ],
+        "additionalProperties": false
+      },
+      "TransparencyCheck": {
+        "type": "object",
+        "properties": {
+          "check": {
+            "type": "string"
+          },
+          "result": {
+            "type": "string",
+            "enum": [
+              "PASS",
+              "FAIL",
+              "SKIP"
+            ]
+          }
+        },
+        "required": [
+          "check",
+          "result"
+        ],
+        "additionalProperties": true
+      },
+      "TransparencyEntry": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "description": "Log sequence number (bigint, serialised as a string)",
+            "example": "2"
+          },
+          "transparency_id": {
+            "type": "string",
+            "format": "uuid",
+            "pattern": "^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$",
+            "description": "UUID v4 identifier",
+            "example": "550e8400-e29b-41d4-a716-446655440000"
+          },
+          "entry_type": {
+            "type": "string",
+            "enum": [
+              "ARTIFACT",
+              "EVIDENCE",
+              "VERIFICATION",
+              "POLICY",
+              "AUDIT",
+              "SYSTEM",
+              "AUDIT_CHECKPOINT"
+            ]
+          },
+          "artifact_id": {
+            "oneOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "evidence_chain_id": {
+            "oneOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "verification_id": {
+            "oneOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "payload_hash": {
+            "type": "string",
+            "description": "Lowercase hex SHA-256 of the canonical payload"
+          },
+          "previous_entry_hash": {
+            "oneOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "entry_hash": {
+            "type": "string",
+            "description": "Lowercase hex SHA-256(\"QODIQA::TRANSPARENCY::V1\" || canonical entry)"
+          },
+          "signer_key_id": {
+            "type": "string"
+          },
+          "signature": {
+            "type": "string",
+            "description": "Ed25519 signature, base64"
+          },
+          "created_at": {
+            "type": "string",
+            "format": "date-time",
+            "description": "ISO 8601 timestamp",
+            "example": "2025-06-30T12:00:00.000Z"
+          }
+        },
+        "required": [
+          "id",
+          "transparency_id",
+          "entry_type",
+          "payload_hash",
+          "entry_hash",
+          "signer_key_id",
+          "signature",
+          "created_at"
+        ]
+      },
+      "TransparencyEntryVerification": {
+        "type": "object",
+        "properties": {
+          "transparencyId": {
+            "type": "string",
+            "format": "uuid",
+            "pattern": "^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$",
+            "description": "UUID v4 identifier",
+            "example": "550e8400-e29b-41d4-a716-446655440000"
+          },
+          "verifiedAt": {
+            "type": "string",
+            "format": "date-time",
+            "description": "ISO 8601 timestamp",
+            "example": "2025-06-30T12:00:00.000Z"
+          },
+          "durationMs": {
+            "type": "number",
+            "minimum": 0
+          },
+          "result": {
+            "type": "string",
+            "enum": [
+              "VALID",
+              "INVALID",
+              "PARTIAL",
+              "ERROR"
+            ]
+          },
+          "signatureValid": {
+            "oneOf": [
+              {
+                "type": "boolean"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "signerKeyStatus": {
+            "oneOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "integrityChecks": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/TransparencyCheck"
+            }
+          },
+          "firstFailure": {
+            "oneOf": [
+              {
+                "$ref": "#/components/schemas/TransparencyCheck"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          }
+        },
+        "required": [
+          "transparencyId",
+          "result",
+          "integrityChecks",
+          "firstFailure"
+        ]
+      },
+      "TransparencyInclusionProof": {
+        "type": "object",
+        "properties": {
+          "proofVersion": {
+            "type": "string",
+            "example": "2"
+          },
+          "proofType": {
+            "type": "string",
+            "enum": [
+              "TRANSPARENCY_INCLUSION"
+            ]
+          },
+          "generatedAt": {
+            "type": "string",
+            "format": "date-time",
+            "description": "ISO 8601 timestamp",
+            "example": "2025-06-30T12:00:00.000Z"
+          },
+          "entry": {
+            "type": "object",
+            "properties": {},
+            "description": "The entry in camelCase form (transparencyId, id, entryType, payloadHash, entryHash, …)",
+            "additionalProperties": true
+          },
+          "root": {
+            "type": "object",
+            "properties": {},
+            "description": "The covering root in camelCase form (rootId, seqFrom, seqTo, rootHash, signature, …)",
+            "additionalProperties": true
+          },
+          "proof": {
+            "type": "object",
+            "properties": {
+              "leafIndex": {
+                "type": "integer",
+                "minimum": 0
+              },
+              "treeSize": {
+                "type": "integer",
+                "minimum": 1
+              },
+              "merklePath": {
+                "type": "array",
+                "items": {
+                  "type": "object",
+                  "properties": {
+                    "hash": {
+                      "type": "string"
+                    },
+                    "side": {
+                      "type": "string",
+                      "enum": [
+                        "left",
+                        "right"
+                      ]
+                    }
+                  },
+                  "required": [
+                    "hash",
+                    "side"
+                  ]
+                }
+              },
+              "merkleRoot": {
+                "type": "string"
+              }
+            },
+            "required": [
+              "leafIndex",
+              "treeSize",
+              "merklePath",
+              "merkleRoot"
+            ]
+          },
+          "verifiable": {
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "proofVersion",
+          "proofType",
+          "entry",
+          "root",
+          "proof",
+          "verifiable"
+        ]
+      },
+      "TransparencyRootRow": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "description": "bigint, serialised as a string",
+            "example": "1"
+          },
+          "root_id": {
+            "type": "string",
+            "format": "uuid",
+            "pattern": "^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$",
+            "description": "UUID v4 identifier",
+            "example": "550e8400-e29b-41d4-a716-446655440000"
+          },
+          "seq_from": {
+            "type": "string",
+            "description": "bigint, serialised as a string"
+          },
+          "seq_to": {
+            "type": "string",
+            "description": "bigint, serialised as a string"
+          },
+          "entry_count": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "root_hash": {
+            "type": "string",
+            "description": "RFC 6962 Merkle root, lowercase hex"
+          },
+          "previous_root_hash": {
+            "oneOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "signature": {
+            "type": "string",
+            "description": "Ed25519 over the root (present on GET /root, absent from list rows)"
+          },
+          "signer_key_id": {
+            "type": "string"
+          },
+          "generated_by": {
+            "type": "string"
+          },
+          "generated_at": {
+            "type": "string",
+            "format": "date-time",
+            "description": "ISO 8601 timestamp",
+            "example": "2025-06-30T12:00:00.000Z"
+          }
+        },
+        "required": [
+          "id",
+          "root_id",
+          "seq_from",
+          "seq_to",
+          "entry_count",
+          "root_hash",
+          "previous_root_hash",
+          "signer_key_id",
+          "generated_by",
+          "generated_at"
+        ]
+      },
+      "VerifyRequest": {
+        "type": "object",
+        "properties": {
+          "artifact": {
+            "$ref": "#/components/schemas/Artifact"
+          },
+          "request": {
+            "type": "object",
+            "properties": {
+              "method": {
+                "type": "string",
+                "enum": [
+                  "GET",
+                  "POST",
+                  "PUT",
+                  "PATCH",
+                  "DELETE",
+                  "HEAD",
+                  "OPTIONS"
+                ]
+              },
+              "path": {
+                "type": "string",
+                "example": "/v1/ai/chat"
+              },
+              "body": {
+                "type": "object",
+                "properties": {},
+                "additionalProperties": true
+              }
+            },
+            "required": [
+              "method",
+              "path"
+            ]
+          }
+        },
+        "required": [
+          "artifact",
+          "request"
+        ]
+      }
+    },
+    "securitySchemes": {
+      "SigningApiKey": {
+        "type": "http",
+        "scheme": "bearer",
+        "description": "Per-identity signing API key (TRUST-1 remediation).\n\n`Authorization: Bearer sk_<64 hex chars>`\n\nEvery caller of POST /sign authenticates with its own individually-\nissued, individually-revocable signing identity — there is no shared\nsecret. Issued via `POST /signing-identities/{id}/api-key` or\n`scripts/provision-signing-identity.js`; stored as a SHA-256 hash —\nthe plaintext is shown **once** at issuance. Each identity is scoped\nto one tenant, one deployment environment, and optionally a\nrestricted set of AI providers."
+      }
+    }
+  }
+}

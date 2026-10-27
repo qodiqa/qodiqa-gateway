@@ -1,0 +1,27 @@
+# the gateway's base egress allows only Redis:6380, PostgreSQL:5432, DNS and
+# PUBLIC :443 (RFC 1918 excluded), so a Vault at VAULT_ADDR=https://vault.internal:8200 (configmap.yaml) was
+# unreachable and the KEK fetch failed at boot on any CNI that enforces NetworkPolicy. This adds Vault egress.
+# ADJUST the destination to where your Vault actually runs:
+#   - in-cluster: the namespaceSelector (+ optionally a podSelector) below;
+#   - outside the cluster: replace the `to` entry with `- ipBlock: { cidr: <vault CIDR>/32 }`.
+# Never widen it to 0.0.0.0/0.
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: qodiqa-egress-vault
+  namespace: qodiqa
+spec:
+  podSelector:
+    matchLabels:
+      app.kubernetes.io/name:      qodiqa
+      app.kubernetes.io/component: gateway
+  policyTypes:
+    - Egress
+  egress:
+    - to:
+        - namespaceSelector:
+            matchLabels:
+              kubernetes.io/metadata.name: vault   # adjust to your Vault namespace (or use an ipBlock, see above)
+      ports:
+        - protocol: TCP
+          port:     8200

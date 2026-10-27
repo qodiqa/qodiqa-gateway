@@ -1,0 +1,11 @@
+# Fires qodiqa-pg-backup-incremental.service every 6 hours.
+[Unit]
+Description=QODIQA incremental PostgreSQL backup schedule
+
+[Timer]
+OnCalendar=*-*-* 00/6:00:00
+Persistent=true
+RandomizedDelaySec=60
+
+[Install]
+WantedBy=timers.target

@@ -1,0 +1,27 @@
+# PKCS#11 HSM reference overlay.
+#
+# Same shape as ../vault-transit/ — see that overlay's kustomization.yaml
+# header and ../README.md for the shared rationale. This overlay sets
+# QODIQA_KMS_PROVIDER=hsm and the PKCS#11 configuration
+# src/infra/keys/providers/hsm.js requires.
+#
+# IMPORTANT: unlike Vault (a network service), an HSM requires its vendor's
+# PKCS#11 shared library (.so) and, for most vendors, a client daemon or
+# device access on the node — see statefulset-patch.yaml's volume comments
+# and ../README.md's "What these overlays deliberately do NOT solve for
+# you" section. The hostPath volume below is a placeholder you MUST replace
+# with your vendor's actual delivery mechanism.
+#
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+
+resources:
+  - ../../single-node
+  - secret.yaml
+  - configmap.yaml
+
+patches:
+  - path: statefulset-patch.yaml
+    target:
+      kind: StatefulSet
+      name: qodiqa

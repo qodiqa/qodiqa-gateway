@@ -1,0 +1,19 @@
+{{- if and .Values.keystore.persistence.enabled (not .Values.keystore.useEmptyDir) (not .Values.keystore.persistence.existingClaim) }}
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: {{ include "qodiqa.fullname" . }}-keystore
+  labels:
+    {{- include "qodiqa.labels" . | nindent 4 }}
+  annotations:
+    helm.sh/resource-policy: keep   # the signing keys must outlive the release
+spec:
+  accessModes:
+    {{- toYaml .Values.keystore.persistence.accessModes | nindent 4 }}
+  {{- if .Values.keystore.persistence.storageClassName }}
+  storageClassName: {{ .Values.keystore.persistence.storageClassName | quote }}
+  {{- end }}
+  resources:
+    requests:
+      storage: {{ .Values.keystore.persistence.size }}
+{{- end }}

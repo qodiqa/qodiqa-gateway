@@ -1,0 +1,11 @@
+# Fires qodiqa-pg-backup-weekly.service.
+[Unit]
+Description=QODIQA weekly PostgreSQL backup schedule
+
+[Timer]
+OnCalendar=Sun *-*-* 03:00:00
+Persistent=true
+RandomizedDelaySec=120
+
+[Install]
+WantedBy=timers.target

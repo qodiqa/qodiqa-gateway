@@ -1,0 +1,130 @@
+# Configuration for QODIQA's scheduled backup CronJobs.
+#
+# Every value a backup/verify/retention/restore-validation script reads at
+# runtime lives here — retention counts, timeouts, paths, alert webhook.
+# Nothing is hardcoded inside scripts/pg-backup.sh, scripts/dr/*.js, or the
+# CronJob command strings in backup-cronjobs.yaml; they all read these same
+# env vars (with safe defaults if a key is ever removed from this ConfigMap).
+#
+# The one thing that CANNOT live in a ConfigMap value is the cron `schedule`
+# string itself — the Kubernetes CronJob API requires it as a literal field
+# on the resource (spec.schedule), not an env var lookup. Per-environment
+# schedule overrides belong in a Kustomize overlay patch targeting that
+# field, not in this ConfigMap. See docs/operations/backup-scheduling.md
+# ("Configuration") for the full rationale and an overlay example.
+#
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: qodiqa-backup-config
+  namespace: qodiqa
+  labels:
+    app.kubernetes.io/name:      qodiqa
+    app.kubernetes.io/component: backup
+data:
+  # ── scripts/pg-backup.sh (PostgreSQL physical/logical backup) ────────────
+  QODIQA_BACKUP_DIR:            "/backups/pg"
+  QODIQA_BACKUP_RETAIN_DAYS:    "30"   # untiered legacy fallback only
+  QODIQA_BACKUP_RETAIN_DAILY:   "7"
+  QODIQA_BACKUP_RETAIN_WEEKLY:  "4"
+  QODIQA_BACKUP_RETAIN_MONTHLY: "12"
+  QODIQA_BACKUP_JOBS:           "4"
+  QODIQA_BACKUP_METRICS_FILE:   "/backups/pg/metrics/qodiqa_pg_backup.prom"
+  # refuse to write an unencrypted backup (the key is qodiqa-secrets backup-encryption-key). Off-site copy:
+  # set QODIQA_BACKUP_OFFSITE_COMMAND to a command in the backup image that copies "$1" and "$2" (the file and its
+  # .seal) to storage outside this cluster — the destination is the operator's choice.
+  QODIQA_BACKUP_REQUIRE_ENCRYPTION: "true"
+
+  # ── scripts/dr/backup.js + retention.js (file + Postgres JSON DR backup) ─
+  QODIQA_DR_RETAIN_DAILY:   "7"
+  QODIQA_DR_RETAIN_WEEKLY:  "4"
+  QODIQA_DR_RETAIN_MONTHLY: "12"
+
+  # ── scripts/pg-wal-archive.sh ─
+  # The PostgreSQL server's own archive_command must be configured to write
+  # into the SAME storage this directory resolves to (Postgres itself is
+  # external/managed in this repo — no in-cluster Postgres manifest exists
+  # to wire this automatically). See docs/operations/backup-runbook.md's
+  # WAL-archiving prerequisites block for the exact postgresql.conf values.
+  QODIQA_WAL_ARCHIVE_DIR:             "/backups/pg/wal-archive"
+  QODIQA_WAL_ARCHIVE_RETAIN_DAYS:     "7"
+  QODIQA_WAL_ARCHIVE_TIMEOUT_SECONDS: "300"
+  QODIQA_WAL_ARCHIVE_MAX_AGE_SECONDS: "600"
+
+  # ── scripts/backup-audit-log.sh ───────────────────────
+  # Reference only — see backup-cronjobs.yaml's header comment for why this
+  # is NOT scheduled as a standalone Kubernetes CronJob (per-pod-exclusive
+  # audit-log volume) and docs/operations/disaster-recovery.md §1 for which
+  # mechanism satisfies the audit-chain RPO claim in this topology instead.
+  QODIQA_AUDIT_BACKUP_RETAIN_DAYS:     "90"
+  QODIQA_AUDIT_BACKUP_MAX_AGE_SECONDS: "600"
+
+  # NOTE on QODIQA_BACKUP_METRICS_FILE: both scripts/pg-backup.sh and the
+  # scripts/dr/*.js family read this SAME env var name (see
+  # scripts/dr/metricsFile.js), but each CronJob below overrides it to a
+  # path under its OWN mounted volume (pg jobs -> qodiqa-pg-backups,
+  # dr-backup/verify/restore-validation jobs -> qodiqa-dr-backups) — set
+  # directly in each container's `env:` in backup-cronjobs.yaml, not here,
+  # since the correct value differs per job. Point your node_exporter (or
+  # equivalent agent) textfile collector at whichever directory you mount
+  # these into to expose them in Prometheus; otherwise the file remains
+  # available via kubectl exec / job logs for manual inspection.
+
+  # ── PostgreSQL connection (non-secret parts) — same convention as
+  # configmap-distributed.yaml; QODIQA_PG_PASSWORD comes from secret.yaml.
+  QODIQA_PG_HOST:     "postgres-service.qodiqa.svc.cluster.local"
+  QODIQA_PG_PORT:     "5432"
+  QODIQA_PG_DATABASE: "qodiqa"
+  QODIQA_PG_USER:     "qodiqa_app"
+  PGHOST:     "postgres-service.qodiqa.svc.cluster.local"
+  PGPORT:     "5432"
+  PGDATABASE: "qodiqa"
+  # every BACKUP connection (pg-backup.sh via libpq PG*, and the DR JSON dump via
+  # QODIQA_PG_URL built from PGUSER in backup-cronjobs.yaml) is the dedicated read-only backup role —
+  # BYPASSRLS + SELECT only (migration 067). As qodiqa_app, pg_dump failed every full backup
+  # (LOCK TABLE: permission denied) and the JSON dump silently dropped every tenant-scoped row.
+  PGUSER:     "qodiqa_backup"
+  # pg_dump / pg_restore (scripts/pg-backup.sh, via libpq) previously had no
+  # sslmode at all, i.e. libpq's default `prefer` — a full BYPASSRLS dump could silently fall back to PLAINTEXT.
+  # `require` refuses plaintext. It cannot break a working deployment: this is the same server the gateway
+  # reaches, and a production gateway only boots with PostgreSQL TLS (boot rule tls.pg, rejectUnauthorized).
+  # It does NOT authenticate the server certificate. To verify it (recommended), create Secret qodiqa-pg-tls
+  # (key ca.crt — it is mounted, optional, at /etc/qodiqa-pg-tls in every PostgreSQL-touching CronJob) and set
+  #   PGSSLMODE: "verify-full"   and   PGSSLROOTCERT: "/etc/qodiqa-pg-tls/ca.crt"
+  # (owner/operator step — verify-full without the Secret would fail every backup).
+  PGSSLMODE:  "require"
+  # The restore-validation job's restore-TARGET writer (QODIQA_PG_RESTORE_URL) keeps its own identity.
+  QODIQA_PG_RESTORE_USER: "qodiqa_app"
+
+  # Isolated restore-validation target database (scripts/dr/cycle.js) — MUST
+  # be a genuinely separate database from PGDATABASE above, never the live
+  # one. Provision it once (`CREATE DATABASE qodiqa_restore_validation
+  # OWNER qodiqa_app;`) and run migrations against it exactly as the CI
+  # workflow does (.github/workflows/backup-restore.yml's dr-postgres job) —
+  # see docs/operations/backup-scheduling.md ("Restore Validation Setup").
+  QODIQA_PG_RESTORE_DATABASE: "qodiqa_restore_validation"
+
+  # (post-H113 integration audit): tells scripts/dr/backup.js and
+  # scripts/dr/cycle.js (both envFrom this ConfigMap) which audit-evidence
+  # source is authoritative for the qodiqa-dr-backup / qodiqa-dr-restore-
+  # validation CronJobs specifically — see backup-cronjobs.yaml's "Known
+  # scope boundary" comment for the full reasoning. This standalone CronJob
+  # pod has no safe way to reach the app's own per-pod audit.log volume
+  # REGARDLESS of which topology overlay (single-node or distributed) the
+  # app itself runs under — from this pod's own perspective, PostgreSQL's
+  # audit_chain table is always the only reachable evidence source, which is
+  # exactly what QODIQA_DEPLOYMENT_MODE=distributed tells
+  # getResolvedDeploymentConfig() (src/infra/config/deploymentMode.js) to
+  # record into the backup manifest and what restore.js's mode-aware
+  # gate then verifies against. Without this, scripts/dr/cycle.js's restore
+  # step throws AUDIT_CHAIN_INTEGRITY_FAILED on every single run (reason
+  # AUDIT_LOG_NOT_RESTORED, since the manifest would otherwise default to
+  # 'single-node' and require a file this pod can never produce) — found by
+  # tracing runRestore()'s actual mode dispatch against this CronJob's real
+  # env, not merely by reading the comment's own prior claim that a graceful
+  # per-probe breakdown was reachable here (it was not, even pre-H113:
+  # validateComponents()'s REQUIRED_COMPONENT_MISSING already threw
+  # before DR_VALIDATE_COMPLETE could ever be logged). This is harmless to
+  # every other CronJob in backup-cronjobs.yaml (scripts/pg-backup.sh and
+  # scripts/pg-wal-archive.sh never read this variable).
+  QODIQA_DEPLOYMENT_MODE: "distributed"

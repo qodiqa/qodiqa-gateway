@@ -1,0 +1,57 @@
+# QODIQA local EVALUATION sandbox with Docker Compose. Not a production deployment: throw-away databases (tmpfs), a built-in sandbox model
+# (no AI provider account, no model call), content screening by embedding switched off (QODIQA_SEM_EMBEDDING_ENABLED=false; the screening models and
+# reference data are not part of the repository), and the published placeholder database passwords of the development roles.
+#
+#   docker compose -f docker-compose.quickstart.yml up
+#
+# The gateway prints the signing key it generated. Then follow docs/guides/quickstart.md, "Zero-setup sandbox" (the commands are the same).
+name: qodiqa-quickstart
+services:
+  redis:
+    image: redis:7.4.11-alpine@sha256:ff02b58f971e7d7d156a1267e283fcbbeee91773b6aa36c49dac28ecfe28eadf
+    tmpfs: ["/data"]
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 3s
+      timeout: 3s
+      retries: 20
+  postgres:
+    image: postgres:16-alpine@sha256:f4610795587492cd4fb887c2dc3de301b813278bb6f616992061141b5f15ac36
+    environment:
+      POSTGRES_USER: qodiqa
+      POSTGRES_PASSWORD: quickstart-throwaway
+      POSTGRES_DB: postgres
+    tmpfs: ["/var/lib/postgresql/data:rw,size=1g"]
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U qodiqa"]
+      interval: 3s
+      timeout: 3s
+      retries: 30
+  gateway:
+    build: { context: ., dockerfile: Dockerfile.quickstart }
+    depends_on:
+      redis: { condition: service_healthy }
+      postgres: { condition: service_healthy }
+    ports: ["127.0.0.1:3000:3000"]
+    environment:
+      QODIQA_PG_ENABLED: "true"
+      QODIQA_PG_HOST: postgres
+      QODIQA_PG_PORT: "5432"
+      QODIQA_PG_SSL: "false"
+      QODIQA_PG_DATABASE: ""
+      QODIQA_PG_TEST_USER: qodiqa
+      QODIQA_PG_TEST_PASSWORD: quickstart-throwaway
+      QODIQA_PG_MIG_USER: qodiqa
+      QODIQA_PG_MIG_PASSWORD: quickstart-throwaway
+      QODIQA_PG_USER: qodiqa_app
+      QODIQA_PG_PASSWORD: REPLACE_WITH_VAULT_SECRET_APP
+      QODIQA_PG_RETENTION_PASSWORD: REPLACE_WITH_VAULT_SECRET_RETENTION
+      QODIQA_PG_SYSTEM_PASSWORD: REPLACE_WITH_VAULT_SECRET_SYSTEM
+      QODIQA_PG_REPORTING_PASSWORD: REPLACE_WITH_VAULT_SECRET_REPORTING
+      QODIQA_PG_CONTROL_PASSWORD: REPLACE_WITH_VAULT_SECRET_CONTROL
+      QODIQA_PG_BACKUP_PASSWORD: REPLACE_WITH_VAULT_SECRET_BACKUP
+      PORT: "3000"
+      QODIQA_SEM_EMBEDDING_ENABLED: "false"
+      QODIQA_SEM_FT3_ENABLED: "false"
+      QODIQA_SEM_FT2_ENABLED: "false"
+      QODIQA_BIND_HOST: 0.0.0.0

@@ -1,0 +1,1030 @@
+{
+ "format": "qodiqa-vectors/1",
+ "family": "v2-receipt",
+ "generatedBy": "scripts/protocol/gen-receipt-vectors.js",
+ "specVersion": "v2-freeze-1",
+ "mode": "verify",
+ "nowMs": 0,
+ "inputSchema": {
+  "type": "object",
+  "required": [
+   "receipt"
+  ],
+  "properties": {
+   "receipt": {
+    "description": "any JSON value: the receipt under test"
+   },
+   "trustedAt": {
+    "type": "integer",
+    "description": "timed mode (ms): an independently attested time, accepted for a revoked key only before its revokedAt"
+   }
+  },
+  "description": "the verdict is expected.outcome \"ok\" or expectedError.code, the first failing rule of: NOT_AN_OBJECT, FIELD_SET, UNSUPPORTED_VERSION, INVALID_FIELD, UNKNOWN_KEY, BAD_SIGNATURE, REVOKED_KEY. keys[] are published test keys: publicKeySpkiB64 is the base64 SPKI DER of an Ed25519 key."
+ },
+ "keys": [
+  {
+   "keyId": "tr-test:key_v1",
+   "publicKeySpkiB64": "MCowBQYDK2VwAyEA1VOI+o0BOveT8fGGEI9LwJ3+2U6/SgItiSSa1ZOfa8U=",
+   "status": "active"
+  },
+  {
+   "keyId": "tr-test:key_v0",
+   "publicKeySpkiB64": "MCowBQYDK2VwAyEAxND0ZHTCP9c8iDE3dV6/ExIC0ccxQ4qmfo/fIX51w+Y=",
+   "status": "revoked",
+   "revokedAt": 1790000100000
+  },
+  {
+   "keyId": "tr-test:key_v2",
+   "publicKeySpkiB64": "MCowBQYDK2VwAyEAswzlW/O609CNorvF+3aLIU2YEIiUxhXzRTTYxVuOUFs=",
+   "status": "deprecated"
+  }
+ ],
+ "cases": [
+  {
+   "id": "V2-RECEIPT-001",
+   "description": "a genuine ALLOW receipt",
+   "input": {
+    "receipt": {
+     "v": 1,
+     "requestId": "6f1c0a52-1d7e-4c25-9b0a-3a1d2e4f5a6b",
+     "decision": "ALLOW",
+     "issuedAt": 1790000000000,
+     "entryHash": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+     "leafHash": "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+     "keyId": "tr-test:key_v1",
+     "signature": "xFZIz2IR85o8cqgva/mZ6jheFXidBEUNT9WIOxj470ZsbtZ7ti6RR//Stj79J5TnxvlPtmP22gj6/Jw6TDRRCQ=="
+    }
+   },
+   "expected": {
+    "outcome": "ok"
+   }
+  },
+  {
+   "id": "V2-RECEIPT-002",
+   "description": "a genuine BLOCK receipt",
+   "input": {
+    "receipt": {
+     "v": 1,
+     "requestId": "6f1c0a52-1d7e-4c25-9b0a-3a1d2e4f5a6b",
+     "decision": "BLOCK",
+     "issuedAt": 1790000000000,
+     "entryHash": "cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc",
+     "leafHash": "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+     "keyId": "tr-test:key_v1",
+     "signature": "N4hqQDexLv+UirostOAOR706/lDQJAqKF1YBo6mVeNYZQ1d7dfR2c5LYurRYSwvxFaXdBX3Yr3gVthxdZKKIBw=="
+    }
+   },
+   "expected": {
+    "outcome": "ok"
+   }
+  },
+  {
+   "id": "V2-RECEIPT-003",
+   "description": "a genuine receipt signed by a deprecated key still verifies (old receipts stay verifiable)",
+   "input": {
+    "receipt": {
+     "v": 1,
+     "requestId": "6f1c0a52-1d7e-4c25-9b0a-3a1d2e4f5a6b",
+     "decision": "ALLOW",
+     "issuedAt": 1790000000000,
+     "entryHash": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+     "leafHash": "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+     "keyId": "tr-test:key_v2",
+     "signature": "Hl70L06u5xipktzaMVzKbwKQVzCHfWFbddy4CjLyyTVvFCawgm10shxxk/SxwzTXWv5tME42joq0bGgiJ5RBCw=="
+    }
+   },
+   "expected": {
+    "outcome": "ok"
+   }
+  },
+  {
+   "id": "V2-RECEIPT-004",
+   "description": "requestId changed after signing",
+   "input": {
+    "receipt": {
+     "v": 1,
+     "requestId": "7f1c0a52-1d7e-4c25-9b0a-3a1d2e4f5a6b",
+     "decision": "ALLOW",
+     "issuedAt": 1790000000000,
+     "entryHash": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+     "leafHash": "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+     "keyId": "tr-test:key_v1",
+     "signature": "xFZIz2IR85o8cqgva/mZ6jheFXidBEUNT9WIOxj470ZsbtZ7ti6RR//Stj79J5TnxvlPtmP22gj6/Jw6TDRRCQ=="
+    }
+   },
+   "expectedError": {
+    "code": "BAD_SIGNATURE"
+   }
+  },
+  {
+   "id": "V2-RECEIPT-005",
+   "description": "decision changed after signing",
+   "input": {
+    "receipt": {
+     "v": 1,
+     "requestId": "6f1c0a52-1d7e-4c25-9b0a-3a1d2e4f5a6b",
+     "decision": "BLOCK",
+     "issuedAt": 1790000000000,
+     "entryHash": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+     "leafHash": "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+     "keyId": "tr-test:key_v1",
+     "signature": "xFZIz2IR85o8cqgva/mZ6jheFXidBEUNT9WIOxj470ZsbtZ7ti6RR//Stj79J5TnxvlPtmP22gj6/Jw6TDRRCQ=="
+    }
+   },
+   "expectedError": {
+    "code": "BAD_SIGNATURE"
+   }
+  },
+  {
+   "id": "V2-RECEIPT-006",
+   "description": "issuedAt changed after signing",
+   "input": {
+    "receipt": {
+     "v": 1,
+     "requestId": "6f1c0a52-1d7e-4c25-9b0a-3a1d2e4f5a6b",
+     "decision": "ALLOW",
+     "issuedAt": 1790000000001,
+     "entryHash": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+     "leafHash": "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+     "keyId": "tr-test:key_v1",
+     "signature": "xFZIz2IR85o8cqgva/mZ6jheFXidBEUNT9WIOxj470ZsbtZ7ti6RR//Stj79J5TnxvlPtmP22gj6/Jw6TDRRCQ=="
+    }
+   },
+   "expectedError": {
+    "code": "BAD_SIGNATURE"
+   }
+  },
+  {
+   "id": "V2-RECEIPT-007",
+   "description": "entryHash changed after signing",
+   "input": {
+    "receipt": {
+     "v": 1,
+     "requestId": "6f1c0a52-1d7e-4c25-9b0a-3a1d2e4f5a6b",
+     "decision": "ALLOW",
+     "issuedAt": 1790000000000,
+     "entryHash": "cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc",
+     "leafHash": "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+     "keyId": "tr-test:key_v1",
+     "signature": "xFZIz2IR85o8cqgva/mZ6jheFXidBEUNT9WIOxj470ZsbtZ7ti6RR//Stj79J5TnxvlPtmP22gj6/Jw6TDRRCQ=="
+    }
+   },
+   "expectedError": {
+    "code": "BAD_SIGNATURE"
+   }
+  },
+  {
+   "id": "V2-RECEIPT-008",
+   "description": "leafHash changed after signing",
+   "input": {
+    "receipt": {
+     "v": 1,
+     "requestId": "6f1c0a52-1d7e-4c25-9b0a-3a1d2e4f5a6b",
+     "decision": "ALLOW",
+     "issuedAt": 1790000000000,
+     "entryHash": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+     "leafHash": "cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc",
+     "keyId": "tr-test:key_v1",
+     "signature": "xFZIz2IR85o8cqgva/mZ6jheFXidBEUNT9WIOxj470ZsbtZ7ti6RR//Stj79J5TnxvlPtmP22gj6/Jw6TDRRCQ=="
+    }
+   },
+   "expectedError": {
+    "code": "BAD_SIGNATURE"
+   }
+  },
+  {
+   "id": "V2-RECEIPT-009",
+   "description": "keyId changed to another known key after signing",
+   "input": {
+    "receipt": {
+     "v": 1,
+     "requestId": "6f1c0a52-1d7e-4c25-9b0a-3a1d2e4f5a6b",
+     "decision": "ALLOW",
+     "issuedAt": 1790000000000,
+     "entryHash": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+     "leafHash": "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+     "keyId": "tr-test:key_v2",
+     "signature": "xFZIz2IR85o8cqgva/mZ6jheFXidBEUNT9WIOxj470ZsbtZ7ti6RR//Stj79J5TnxvlPtmP22gj6/Jw6TDRRCQ=="
+    }
+   },
+   "expectedError": {
+    "code": "BAD_SIGNATURE"
+   }
+  },
+  {
+   "id": "V2-RECEIPT-010",
+   "description": "signature byte flipped",
+   "input": {
+    "receipt": {
+     "v": 1,
+     "requestId": "6f1c0a52-1d7e-4c25-9b0a-3a1d2e4f5a6b",
+     "decision": "ALLOW",
+     "issuedAt": 1790000000000,
+     "entryHash": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+     "leafHash": "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+     "keyId": "tr-test:key_v1",
+     "signature": "xVZIz2IR85o8cqgva/mZ6jheFXidBEUNT9WIOxj470ZsbtZ7ti6RR//Stj79J5TnxvlPtmP22gj6/Jw6TDRRCQ=="
+    }
+   },
+   "expectedError": {
+    "code": "BAD_SIGNATURE"
+   }
+  },
+  {
+   "id": "V2-RECEIPT-011",
+   "description": "signature made by an unrelated key",
+   "input": {
+    "receipt": {
+     "v": 1,
+     "requestId": "6f1c0a52-1d7e-4c25-9b0a-3a1d2e4f5a6b",
+     "decision": "ALLOW",
+     "issuedAt": 1790000000000,
+     "entryHash": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+     "leafHash": "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+     "keyId": "tr-test:key_v1",
+     "signature": "Ov3NZ9aB2YeSlwlQ1ao8/PivJJuo7aef+EG2axmGE4Avc6QGw/XyiaYSwJbHM1gyrCLersX95KnvIN55VzMtAg=="
+    }
+   },
+   "expectedError": {
+    "code": "BAD_SIGNATURE"
+   }
+  },
+  {
+   "id": "V2-RECEIPT-012",
+   "description": "signature of the right length that is not valid",
+   "input": {
+    "receipt": {
+     "v": 1,
+     "requestId": "6f1c0a52-1d7e-4c25-9b0a-3a1d2e4f5a6b",
+     "decision": "ALLOW",
+     "issuedAt": 1790000000000,
+     "entryHash": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+     "leafHash": "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+     "keyId": "tr-test:key_v1",
+     "signature": "BwcHBwcHBwcHBwcHBwcHBwcHBwcHBwcHBwcHBwcHBwcHBwcHBwcHBwcHBwcHBwcHBwcHBwcHBwcHBwcHBwcHBw=="
+    }
+   },
+   "expectedError": {
+    "code": "BAD_SIGNATURE"
+   }
+  },
+  {
+   "id": "V2-RECEIPT-013",
+   "description": "signature of the wrong length",
+   "input": {
+    "receipt": {
+     "v": 1,
+     "requestId": "6f1c0a52-1d7e-4c25-9b0a-3a1d2e4f5a6b",
+     "decision": "ALLOW",
+     "issuedAt": 1790000000000,
+     "entryHash": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+     "leafHash": "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+     "keyId": "tr-test:key_v1",
+     "signature": "BwcHBwcHBwcHBwcHBwcHBwcHBwcHBwcHBwcHBwcHBwcHBwcHBwcHBwcHBwcHBwcHBwcHBwcHBwcHBwcHBwcH"
+    }
+   },
+   "expectedError": {
+    "code": "BAD_SIGNATURE"
+   }
+  },
+  {
+   "id": "V2-RECEIPT-014",
+   "description": "signature that is not base64",
+   "input": {
+    "receipt": {
+     "v": 1,
+     "requestId": "6f1c0a52-1d7e-4c25-9b0a-3a1d2e4f5a6b",
+     "decision": "ALLOW",
+     "issuedAt": 1790000000000,
+     "entryHash": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+     "leafHash": "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+     "keyId": "tr-test:key_v1",
+     "signature": "!!!not-base64!!!"
+    }
+   },
+   "expectedError": {
+    "code": "BAD_SIGNATURE"
+   }
+  },
+  {
+   "id": "V2-RECEIPT-015",
+   "description": "an extra field (tenantId) is not allowed",
+   "input": {
+    "receipt": {
+     "v": 1,
+     "requestId": "6f1c0a52-1d7e-4c25-9b0a-3a1d2e4f5a6b",
+     "decision": "ALLOW",
+     "issuedAt": 1790000000000,
+     "entryHash": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+     "leafHash": "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+     "keyId": "tr-test:key_v1",
+     "signature": "xFZIz2IR85o8cqgva/mZ6jheFXidBEUNT9WIOxj470ZsbtZ7ti6RR//Stj79J5TnxvlPtmP22gj6/Jw6TDRRCQ==",
+     "tenantId": "t1"
+    }
+   },
+   "expectedError": {
+    "code": "FIELD_SET"
+   }
+  },
+  {
+   "id": "V2-RECEIPT-016",
+   "description": "an extra field (reason) is not allowed",
+   "input": {
+    "receipt": {
+     "v": 1,
+     "requestId": "6f1c0a52-1d7e-4c25-9b0a-3a1d2e4f5a6b",
+     "decision": "ALLOW",
+     "issuedAt": 1790000000000,
+     "entryHash": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+     "leafHash": "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+     "keyId": "tr-test:key_v1",
+     "signature": "xFZIz2IR85o8cqgva/mZ6jheFXidBEUNT9WIOxj470ZsbtZ7ti6RR//Stj79J5TnxvlPtmP22gj6/Jw6TDRRCQ==",
+     "reason": "ALL_CHECKS_PASSED"
+    }
+   },
+   "expectedError": {
+    "code": "FIELD_SET"
+   }
+  },
+  {
+   "id": "V2-RECEIPT-017",
+   "description": "a missing field (keyId)",
+   "input": {
+    "receipt": {
+     "v": 1,
+     "requestId": "6f1c0a52-1d7e-4c25-9b0a-3a1d2e4f5a6b",
+     "decision": "ALLOW",
+     "issuedAt": 1790000000000,
+     "entryHash": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+     "leafHash": "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+     "signature": "xFZIz2IR85o8cqgva/mZ6jheFXidBEUNT9WIOxj470ZsbtZ7ti6RR//Stj79J5TnxvlPtmP22gj6/Jw6TDRRCQ=="
+    }
+   },
+   "expectedError": {
+    "code": "FIELD_SET"
+   }
+  },
+  {
+   "id": "V2-RECEIPT-018",
+   "description": "a missing field (signature)",
+   "input": {
+    "receipt": {
+     "v": 1,
+     "requestId": "6f1c0a52-1d7e-4c25-9b0a-3a1d2e4f5a6b",
+     "decision": "ALLOW",
+     "issuedAt": 1790000000000,
+     "entryHash": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+     "leafHash": "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+     "keyId": "tr-test:key_v1"
+    }
+   },
+   "expectedError": {
+    "code": "FIELD_SET"
+   }
+  },
+  {
+   "id": "V2-RECEIPT-019",
+   "description": "version 2 is unsupported",
+   "input": {
+    "receipt": {
+     "v": 2,
+     "requestId": "6f1c0a52-1d7e-4c25-9b0a-3a1d2e4f5a6b",
+     "decision": "ALLOW",
+     "issuedAt": 1790000000000,
+     "entryHash": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+     "leafHash": "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+     "keyId": "tr-test:key_v1",
+     "signature": "xFZIz2IR85o8cqgva/mZ6jheFXidBEUNT9WIOxj470ZsbtZ7ti6RR//Stj79J5TnxvlPtmP22gj6/Jw6TDRRCQ=="
+    }
+   },
+   "expectedError": {
+    "code": "UNSUPPORTED_VERSION"
+   }
+  },
+  {
+   "id": "V2-RECEIPT-020",
+   "description": "version \"1\" as a string is unsupported",
+   "input": {
+    "receipt": {
+     "v": "1",
+     "requestId": "6f1c0a52-1d7e-4c25-9b0a-3a1d2e4f5a6b",
+     "decision": "ALLOW",
+     "issuedAt": 1790000000000,
+     "entryHash": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+     "leafHash": "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+     "keyId": "tr-test:key_v1",
+     "signature": "xFZIz2IR85o8cqgva/mZ6jheFXidBEUNT9WIOxj470ZsbtZ7ti6RR//Stj79J5TnxvlPtmP22gj6/Jw6TDRRCQ=="
+    }
+   },
+   "expectedError": {
+    "code": "UNSUPPORTED_VERSION"
+   }
+  },
+  {
+   "id": "V2-RECEIPT-021",
+   "description": "version true is unsupported",
+   "input": {
+    "receipt": {
+     "v": true,
+     "requestId": "6f1c0a52-1d7e-4c25-9b0a-3a1d2e4f5a6b",
+     "decision": "ALLOW",
+     "issuedAt": 1790000000000,
+     "entryHash": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+     "leafHash": "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+     "keyId": "tr-test:key_v1",
+     "signature": "xFZIz2IR85o8cqgva/mZ6jheFXidBEUNT9WIOxj470ZsbtZ7ti6RR//Stj79J5TnxvlPtmP22gj6/Jw6TDRRCQ=="
+    }
+   },
+   "expectedError": {
+    "code": "UNSUPPORTED_VERSION"
+   }
+  },
+  {
+   "id": "V2-RECEIPT-022",
+   "description": "entryHash in upper case",
+   "input": {
+    "receipt": {
+     "v": 1,
+     "requestId": "6f1c0a52-1d7e-4c25-9b0a-3a1d2e4f5a6b",
+     "decision": "ALLOW",
+     "issuedAt": 1790000000000,
+     "entryHash": "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA",
+     "leafHash": "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+     "keyId": "tr-test:key_v1",
+     "signature": "xFZIz2IR85o8cqgva/mZ6jheFXidBEUNT9WIOxj470ZsbtZ7ti6RR//Stj79J5TnxvlPtmP22gj6/Jw6TDRRCQ=="
+    }
+   },
+   "expectedError": {
+    "code": "INVALID_FIELD"
+   }
+  },
+  {
+   "id": "V2-RECEIPT-023",
+   "description": "entryHash too short",
+   "input": {
+    "receipt": {
+     "v": 1,
+     "requestId": "6f1c0a52-1d7e-4c25-9b0a-3a1d2e4f5a6b",
+     "decision": "ALLOW",
+     "issuedAt": 1790000000000,
+     "entryHash": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+     "leafHash": "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+     "keyId": "tr-test:key_v1",
+     "signature": "xFZIz2IR85o8cqgva/mZ6jheFXidBEUNT9WIOxj470ZsbtZ7ti6RR//Stj79J5TnxvlPtmP22gj6/Jw6TDRRCQ=="
+    }
+   },
+   "expectedError": {
+    "code": "INVALID_FIELD"
+   }
+  },
+  {
+   "id": "V2-RECEIPT-024",
+   "description": "leafHash not hex",
+   "input": {
+    "receipt": {
+     "v": 1,
+     "requestId": "6f1c0a52-1d7e-4c25-9b0a-3a1d2e4f5a6b",
+     "decision": "ALLOW",
+     "issuedAt": 1790000000000,
+     "entryHash": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+     "leafHash": "zzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzz",
+     "keyId": "tr-test:key_v1",
+     "signature": "xFZIz2IR85o8cqgva/mZ6jheFXidBEUNT9WIOxj470ZsbtZ7ti6RR//Stj79J5TnxvlPtmP22gj6/Jw6TDRRCQ=="
+    }
+   },
+   "expectedError": {
+    "code": "INVALID_FIELD"
+   }
+  },
+  {
+   "id": "V2-RECEIPT-025",
+   "description": "issuedAt with a fraction",
+   "input": {
+    "receipt": {
+     "v": 1,
+     "requestId": "6f1c0a52-1d7e-4c25-9b0a-3a1d2e4f5a6b",
+     "decision": "ALLOW",
+     "issuedAt": 1790000000000.5,
+     "entryHash": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+     "leafHash": "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+     "keyId": "tr-test:key_v1",
+     "signature": "xFZIz2IR85o8cqgva/mZ6jheFXidBEUNT9WIOxj470ZsbtZ7ti6RR//Stj79J5TnxvlPtmP22gj6/Jw6TDRRCQ=="
+    }
+   },
+   "expectedError": {
+    "code": "INVALID_FIELD"
+   }
+  },
+  {
+   "id": "V2-RECEIPT-026",
+   "description": "issuedAt negative",
+   "input": {
+    "receipt": {
+     "v": 1,
+     "requestId": "6f1c0a52-1d7e-4c25-9b0a-3a1d2e4f5a6b",
+     "decision": "ALLOW",
+     "issuedAt": -1,
+     "entryHash": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+     "leafHash": "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+     "keyId": "tr-test:key_v1",
+     "signature": "xFZIz2IR85o8cqgva/mZ6jheFXidBEUNT9WIOxj470ZsbtZ7ti6RR//Stj79J5TnxvlPtmP22gj6/Jw6TDRRCQ=="
+    }
+   },
+   "expectedError": {
+    "code": "INVALID_FIELD"
+   }
+  },
+  {
+   "id": "V2-RECEIPT-027",
+   "description": "issuedAt as a string",
+   "input": {
+    "receipt": {
+     "v": 1,
+     "requestId": "6f1c0a52-1d7e-4c25-9b0a-3a1d2e4f5a6b",
+     "decision": "ALLOW",
+     "issuedAt": "1790000000000",
+     "entryHash": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+     "leafHash": "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+     "keyId": "tr-test:key_v1",
+     "signature": "xFZIz2IR85o8cqgva/mZ6jheFXidBEUNT9WIOxj470ZsbtZ7ti6RR//Stj79J5TnxvlPtmP22gj6/Jw6TDRRCQ=="
+    }
+   },
+   "expectedError": {
+    "code": "INVALID_FIELD"
+   }
+  },
+  {
+   "id": "V2-RECEIPT-028",
+   "description": "issuedAt above 2^53-1 (2^53)",
+   "input": {
+    "receipt": {
+     "v": 1,
+     "requestId": "6f1c0a52-1d7e-4c25-9b0a-3a1d2e4f5a6b",
+     "decision": "ALLOW",
+     "issuedAt": 9007199254740992,
+     "entryHash": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+     "leafHash": "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+     "keyId": "tr-test:key_v1",
+     "signature": "xFZIz2IR85o8cqgva/mZ6jheFXidBEUNT9WIOxj470ZsbtZ7ti6RR//Stj79J5TnxvlPtmP22gj6/Jw6TDRRCQ=="
+    }
+   },
+   "expectedError": {
+    "code": "INVALID_FIELD"
+   }
+  },
+  {
+   "id": "V2-RECEIPT-029",
+   "description": "issuedAt is the largest safe integer (signed, accepted)",
+   "input": {
+    "receipt": {
+     "v": 1,
+     "requestId": "6f1c0a52-1d7e-4c25-9b0a-3a1d2e4f5a6b",
+     "decision": "ALLOW",
+     "issuedAt": 9007199254740991,
+     "entryHash": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+     "leafHash": "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+     "keyId": "tr-test:key_v1",
+     "signature": "i9gU9qR9QMzWy7FL8cEIJskDuGjPDUmOGc+TVrKfCKWiLduuoB78rzwNmH8zWs7l7lyWrnyIzjyp9azarFDgBA=="
+    }
+   },
+   "expected": {
+    "outcome": "ok"
+   }
+  },
+  {
+   "id": "V2-RECEIPT-030",
+   "description": "issuedAt zero (signed, accepted)",
+   "input": {
+    "receipt": {
+     "v": 1,
+     "requestId": "6f1c0a52-1d7e-4c25-9b0a-3a1d2e4f5a6b",
+     "decision": "ALLOW",
+     "issuedAt": 0,
+     "entryHash": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+     "leafHash": "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+     "keyId": "tr-test:key_v1",
+     "signature": "3yIy6gJkCuEVYmiUI7g8xVQRBP1OTzeiEENLritCJSfw+MaPb+n15xnp027FxHO1pjLcNoUo9SPmH3vVGuRBDw=="
+    }
+   },
+   "expected": {
+    "outcome": "ok"
+   }
+  },
+  {
+   "id": "V2-RECEIPT-031",
+   "description": "decision EXECUTE is not a receipt decision",
+   "input": {
+    "receipt": {
+     "v": 1,
+     "requestId": "6f1c0a52-1d7e-4c25-9b0a-3a1d2e4f5a6b",
+     "decision": "EXECUTE",
+     "issuedAt": 1790000000000,
+     "entryHash": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+     "leafHash": "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+     "keyId": "tr-test:key_v1",
+     "signature": "xFZIz2IR85o8cqgva/mZ6jheFXidBEUNT9WIOxj470ZsbtZ7ti6RR//Stj79J5TnxvlPtmP22gj6/Jw6TDRRCQ=="
+    }
+   },
+   "expectedError": {
+    "code": "INVALID_FIELD"
+   }
+  },
+  {
+   "id": "V2-RECEIPT-032",
+   "description": "decision in lower case",
+   "input": {
+    "receipt": {
+     "v": 1,
+     "requestId": "6f1c0a52-1d7e-4c25-9b0a-3a1d2e4f5a6b",
+     "decision": "allow",
+     "issuedAt": 1790000000000,
+     "entryHash": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+     "leafHash": "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+     "keyId": "tr-test:key_v1",
+     "signature": "xFZIz2IR85o8cqgva/mZ6jheFXidBEUNT9WIOxj470ZsbtZ7ti6RR//Stj79J5TnxvlPtmP22gj6/Jw6TDRRCQ=="
+    }
+   },
+   "expectedError": {
+    "code": "INVALID_FIELD"
+   }
+  },
+  {
+   "id": "V2-RECEIPT-033",
+   "description": "empty requestId",
+   "input": {
+    "receipt": {
+     "v": 1,
+     "requestId": "",
+     "decision": "ALLOW",
+     "issuedAt": 1790000000000,
+     "entryHash": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+     "leafHash": "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+     "keyId": "tr-test:key_v1",
+     "signature": "xFZIz2IR85o8cqgva/mZ6jheFXidBEUNT9WIOxj470ZsbtZ7ti6RR//Stj79J5TnxvlPtmP22gj6/Jw6TDRRCQ=="
+    }
+   },
+   "expectedError": {
+    "code": "INVALID_FIELD"
+   }
+  },
+  {
+   "id": "V2-RECEIPT-034",
+   "description": "a non-UUID requestId is allowed (the document does not constrain its form)",
+   "input": {
+    "receipt": {
+     "v": 1,
+     "requestId": "req-001",
+     "decision": "ALLOW",
+     "issuedAt": 1790000000000,
+     "entryHash": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+     "leafHash": "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+     "keyId": "tr-test:key_v1",
+     "signature": "VUytNMV7wtfS3w9CEaCU28zttJ/PtJ/eNsC5fTmBGavIJ+UuYEwUJXlMTw6L9l67SmTDTr2nXjjsGtF1sosRDQ=="
+    }
+   },
+   "expected": {
+    "outcome": "ok"
+   }
+  },
+  {
+   "id": "V2-RECEIPT-035",
+   "description": "an unknown key id",
+   "input": {
+    "receipt": {
+     "v": 1,
+     "requestId": "6f1c0a52-1d7e-4c25-9b0a-3a1d2e4f5a6b",
+     "decision": "ALLOW",
+     "issuedAt": 1790000000000,
+     "entryHash": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+     "leafHash": "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+     "keyId": "tr-nobody:key_v9",
+     "signature": "xFZIz2IR85o8cqgva/mZ6jheFXidBEUNT9WIOxj470ZsbtZ7ti6RR//Stj79J5TnxvlPtmP22gj6/Jw6TDRRCQ=="
+    }
+   },
+   "expectedError": {
+    "code": "UNKNOWN_KEY"
+   }
+  },
+  {
+   "id": "V2-RECEIPT-036",
+   "description": "a non-string key id",
+   "input": {
+    "receipt": {
+     "v": 1,
+     "requestId": "6f1c0a52-1d7e-4c25-9b0a-3a1d2e4f5a6b",
+     "decision": "ALLOW",
+     "issuedAt": 1790000000000,
+     "entryHash": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+     "leafHash": "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+     "keyId": 5,
+     "signature": "xFZIz2IR85o8cqgva/mZ6jheFXidBEUNT9WIOxj470ZsbtZ7ti6RR//Stj79J5TnxvlPtmP22gj6/Jw6TDRRCQ=="
+    }
+   },
+   "expectedError": {
+    "code": "INVALID_FIELD"
+   }
+  },
+  {
+   "id": "V2-RECEIPT-037",
+   "description": "the receipt is an array",
+   "input": {
+    "receipt": [
+     {
+      "v": 1,
+      "requestId": "6f1c0a52-1d7e-4c25-9b0a-3a1d2e4f5a6b",
+      "decision": "ALLOW",
+      "issuedAt": 1790000000000,
+      "entryHash": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+      "leafHash": "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+      "keyId": "tr-test:key_v1",
+      "signature": "xFZIz2IR85o8cqgva/mZ6jheFXidBEUNT9WIOxj470ZsbtZ7ti6RR//Stj79J5TnxvlPtmP22gj6/Jw6TDRRCQ=="
+     }
+    ]
+   },
+   "expectedError": {
+    "code": "NOT_AN_OBJECT"
+   }
+  },
+  {
+   "id": "V2-RECEIPT-038",
+   "description": "the receipt is null",
+   "input": {
+    "receipt": null
+   },
+   "expectedError": {
+    "code": "NOT_AN_OBJECT"
+   }
+  },
+  {
+   "id": "V2-RECEIPT-039",
+   "description": "the receipt is a string",
+   "input": {
+    "receipt": "receipt"
+   },
+   "expectedError": {
+    "code": "NOT_AN_OBJECT"
+   }
+  },
+  {
+   "id": "V2-RECEIPT-040",
+   "description": "the receipt is a number",
+   "input": {
+    "receipt": 7
+   },
+   "expectedError": {
+    "code": "NOT_AN_OBJECT"
+   }
+  },
+  {
+   "id": "V2-RECEIPT-041",
+   "description": "revoked key, no trustedAt: refused",
+   "input": {
+    "receipt": {
+     "v": 1,
+     "requestId": "6f1c0a52-1d7e-4c25-9b0a-3a1d2e4f5a6b",
+     "decision": "ALLOW",
+     "issuedAt": 1790000000000,
+     "entryHash": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+     "leafHash": "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+     "keyId": "tr-test:key_v0",
+     "signature": "9FYF5fYl/lh7ArrD/+OQiAoqJQ6ck8Fazm390xECfQuZ8FQ1+HkA6yfjs520fQm42oVhrya1UCAorCk01qBgAg=="
+    }
+   },
+   "expectedError": {
+    "code": "REVOKED_KEY"
+   }
+  },
+  {
+   "id": "V2-RECEIPT-042",
+   "description": "revoked key, trustedAt before revokedAt: accepted (timed mode)",
+   "input": {
+    "receipt": {
+     "v": 1,
+     "requestId": "6f1c0a52-1d7e-4c25-9b0a-3a1d2e4f5a6b",
+     "decision": "ALLOW",
+     "issuedAt": 1790000000000,
+     "entryHash": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+     "leafHash": "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+     "keyId": "tr-test:key_v0",
+     "signature": "9FYF5fYl/lh7ArrD/+OQiAoqJQ6ck8Fazm390xECfQuZ8FQ1+HkA6yfjs520fQm42oVhrya1UCAorCk01qBgAg=="
+    },
+    "trustedAt": 1790000050000
+   },
+   "expected": {
+    "outcome": "ok"
+   }
+  },
+  {
+   "id": "V2-RECEIPT-043",
+   "description": "revoked key, trustedAt equal to revokedAt: refused",
+   "input": {
+    "receipt": {
+     "v": 1,
+     "requestId": "6f1c0a52-1d7e-4c25-9b0a-3a1d2e4f5a6b",
+     "decision": "ALLOW",
+     "issuedAt": 1790000000000,
+     "entryHash": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+     "leafHash": "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+     "keyId": "tr-test:key_v0",
+     "signature": "9FYF5fYl/lh7ArrD/+OQiAoqJQ6ck8Fazm390xECfQuZ8FQ1+HkA6yfjs520fQm42oVhrya1UCAorCk01qBgAg=="
+    },
+    "trustedAt": 1790000100000
+   },
+   "expectedError": {
+    "code": "REVOKED_KEY"
+   }
+  },
+  {
+   "id": "V2-RECEIPT-044",
+   "description": "revoked key, trustedAt after revokedAt: refused",
+   "input": {
+    "receipt": {
+     "v": 1,
+     "requestId": "6f1c0a52-1d7e-4c25-9b0a-3a1d2e4f5a6b",
+     "decision": "ALLOW",
+     "issuedAt": 1790000000000,
+     "entryHash": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+     "leafHash": "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+     "keyId": "tr-test:key_v0",
+     "signature": "9FYF5fYl/lh7ArrD/+OQiAoqJQ6ck8Fazm390xECfQuZ8FQ1+HkA6yfjs520fQm42oVhrya1UCAorCk01qBgAg=="
+    },
+    "trustedAt": 1790000200000
+   },
+   "expectedError": {
+    "code": "REVOKED_KEY"
+   }
+  },
+  {
+   "id": "V2-RECEIPT-045",
+   "description": "an active key ignores trustedAt",
+   "input": {
+    "receipt": {
+     "v": 1,
+     "requestId": "6f1c0a52-1d7e-4c25-9b0a-3a1d2e4f5a6b",
+     "decision": "ALLOW",
+     "issuedAt": 1790000000000,
+     "entryHash": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+     "leafHash": "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+     "keyId": "tr-test:key_v1",
+     "signature": "xFZIz2IR85o8cqgva/mZ6jheFXidBEUNT9WIOxj470ZsbtZ7ti6RR//Stj79J5TnxvlPtmP22gj6/Jw6TDRRCQ=="
+    },
+    "trustedAt": 1
+   },
+   "expected": {
+    "outcome": "ok"
+   }
+  },
+  {
+   "id": "V2-RECEIPT-046",
+   "description": "a unicode requestId (signed, accepted): canonical form keeps non-ASCII characters",
+   "input": {
+    "receipt": {
+     "v": 1,
+     "requestId": "req-é-😀",
+     "decision": "ALLOW",
+     "issuedAt": 1790000000000,
+     "entryHash": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+     "leafHash": "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+     "keyId": "tr-test:key_v1",
+     "signature": "OFnnUPOzYr7/O8+uNoH484nqu9E3rmebC/+UpBHueUwwNKSTt6mBwrNsrepMj/gB5PS7BS8G+R+peYC7sgtpDQ=="
+    }
+   },
+   "expected": {
+    "outcome": "ok"
+   }
+  },
+  {
+   "id": "V2-RECEIPT-047",
+   "description": "requestId with control characters (signed, accepted): escaped in the canonical form",
+   "input": {
+    "receipt": {
+     "v": 1,
+     "requestId": "a\tb\nc\u0001",
+     "decision": "ALLOW",
+     "issuedAt": 1790000000000,
+     "entryHash": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+     "leafHash": "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+     "keyId": "tr-test:key_v1",
+     "signature": "GSe3lrcNXKDkE4HXWgP7uHXPrMsX0M3f4LfEMYr+L9uC/b5LF+SRpQLv0hc3lrSJ1AzzFNlkbpEkJ0fECjIRAw=="
+    }
+   },
+   "expected": {
+    "outcome": "ok"
+   }
+  },
+  {
+   "id": "V2-RECEIPT-048",
+   "description": "requestId with a quote and backslash (signed, accepted)",
+   "input": {
+    "receipt": {
+     "v": 1,
+     "requestId": "a\"b\\c",
+     "decision": "ALLOW",
+     "issuedAt": 1790000000000,
+     "entryHash": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+     "leafHash": "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+     "keyId": "tr-test:key_v1",
+     "signature": "w5vIBkaPi/IqLjNfX2150Kl4sremZnkoA/aoQEd5FVaegVd6cMQxjfHICrijoH79LVF9/lTIYxoFb9A18a35Dw=="
+    }
+   },
+   "expected": {
+    "outcome": "ok"
+   }
+  },
+  {
+   "id": "V2-RECEIPT-049",
+   "description": "signature with a newline inserted (lenient decoders ignore it)",
+   "input": {
+    "receipt": {
+     "v": 1,
+     "requestId": "6f1c0a52-1d7e-4c25-9b0a-3a1d2e4f5a6b",
+     "decision": "ALLOW",
+     "issuedAt": 1790000000000,
+     "entryHash": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+     "leafHash": "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+     "keyId": "tr-test:key_v1",
+     "signature": "xFZIz2IR85o8cqgva/mZ6jheFXidBEUNT9WIOxj4\n70ZsbtZ7ti6RR//Stj79J5TnxvlPtmP22gj6/Jw6TDRRCQ=="
+    }
+   },
+   "expectedError": {
+    "code": "BAD_SIGNATURE"
+   }
+  },
+  {
+   "id": "V2-RECEIPT-050",
+   "description": "signature with its padding removed",
+   "input": {
+    "receipt": {
+     "v": 1,
+     "requestId": "6f1c0a52-1d7e-4c25-9b0a-3a1d2e4f5a6b",
+     "decision": "ALLOW",
+     "issuedAt": 1790000000000,
+     "entryHash": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+     "leafHash": "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+     "keyId": "tr-test:key_v1",
+     "signature": "xFZIz2IR85o8cqgva/mZ6jheFXidBEUNT9WIOxj470ZsbtZ7ti6RR//Stj79J5TnxvlPtmP22gj6/Jw6TDRRCQ"
+    }
+   },
+   "expectedError": {
+    "code": "BAD_SIGNATURE"
+   }
+  },
+  {
+   "id": "V2-RECEIPT-051",
+   "description": "signature with non-zero trailing bits in the last character (same 64 bytes, other spelling)",
+   "input": {
+    "receipt": {
+     "v": 1,
+     "requestId": "6f1c0a52-1d7e-4c25-9b0a-3a1d2e4f5a6b",
+     "decision": "ALLOW",
+     "issuedAt": 1790000000000,
+     "entryHash": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+     "leafHash": "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+     "keyId": "tr-test:key_v1",
+     "signature": "xFZIz2IR85o8cqgva/mZ6jheFXidBEUNT9WIOxj470ZsbtZ7ti6RR//Stj79J5TnxvlPtmP22gj6/Jw6TDRRCR=="
+    }
+   },
+   "expectedError": {
+    "code": "BAD_SIGNATURE"
+   }
+  },
+  {
+   "id": "V2-RECEIPT-052",
+   "description": "signature with surrounding whitespace",
+   "input": {
+    "receipt": {
+     "v": 1,
+     "requestId": "6f1c0a52-1d7e-4c25-9b0a-3a1d2e4f5a6b",
+     "decision": "ALLOW",
+     "issuedAt": 1790000000000,
+     "entryHash": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+     "leafHash": "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+     "keyId": "tr-test:key_v1",
+     "signature": " xFZIz2IR85o8cqgva/mZ6jheFXidBEUNT9WIOxj470ZsbtZ7ti6RR//Stj79J5TnxvlPtmP22gj6/Jw6TDRRCQ== "
+    }
+   },
+   "expectedError": {
+    "code": "BAD_SIGNATURE"
+   }
+  },
+  {
+   "id": "V2-RECEIPT-053",
+   "description": "signature in the URL-safe alphabet where it differs",
+   "input": {
+    "receipt": {
+     "v": 1,
+     "requestId": "6f1c0a52-1d7e-4c25-9b0a-3a1d2e4f5a6b",
+     "decision": "ALLOW",
+     "issuedAt": 1790000000000,
+     "entryHash": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+     "leafHash": "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+     "keyId": "tr-test:key_v1",
+     "signature": "xFZIz2IR85o8cqgva_mZ6jheFXidBEUNT9WIOxj470ZsbtZ7ti6RR__Stj79J5TnxvlPtmP22gj6_Jw6TDRRCQ=="
+    }
+   },
+   "expectedError": {
+    "code": "BAD_SIGNATURE"
+   }
+  }
+ ]
+}

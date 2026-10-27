@@ -1,0 +1,57 @@
+# ============================================================================
+# QODIQA Kubernetes deployment — topology selection required
+# ============================================================================
+#
+# This directory used to be a single flat Kustomize base that listed BOTH
+# execution topologies as resources at once:
+#   - statefulset.yaml (single-node audit-chain ordering)
+#   - deployment.yaml  (distributed audit-chain ordering, PostgreSQL-backed)
+# both named "qodiqa", both matching the same Service selector
+# (app.kubernetes.io/component: gateway). Running
+#   kubectl apply -k deploy/kubernetes/
+# therefore created BOTH a StatefulSet/qodiqa and a Deployment/qodiqa, and
+# the single Service in service.yaml load-balanced across pods from both —
+# double-serving traffic across two mutually exclusive, incompatible
+# audit-ordering models (database findings C1). That is an invalid
+# deployment architecture and has been eliminated.
+#
+# The topologies are now split into two independently deployable overlays,
+# each with its own Service carrying a distinct `topology` label
+# (single-node / distributed) so the two can never be selected by the same
+# Service selector even if both were mistakenly applied to one namespace:
+#
+#   deploy/kubernetes/base/                   — shared resources only
+#                                                (namespace, secrets, shared
+#                                                ConfigMap, keystore PVC,
+#                                                shared NetworkPolicy, backup
+#                                                CronJobs)
+#   deploy/kubernetes/overlays/single-node/   — StatefulSet, per-pod
+#                                                exclusive audit-log volume
+#                                                (default, docs/deployment/topology.md
+#                                                Topology C/D)
+#   deploy/kubernetes/overlays/distributed/   — Deployment,
+#                                                QODIQA_AUDIT_ORDERING_MODE=distributed,
+#                                                PostgreSQL is the ordering
+#                                                authority (SCAL-11), plus
+#                                                the PostgreSQL egress
+#                                                NetworkPolicy that topology
+#                                                requires (database finding)
+#
+# Pick exactly one and deploy it directly — there is intentionally no
+# top-level entry point that deploys "the app" anymore:
+#
+#   kubectl apply -k deploy/kubernetes/overlays/single-node/
+#   kubectl apply -k deploy/kubernetes/overlays/distributed/
+#
+# This file is NOT a valid, deployable Kustomization — the resource path
+# below does not exist on purpose, so `kubectl kustomize deploy/kubernetes/`
+# (and therefore `kubectl apply -k deploy/kubernetes/`) fails loudly with a
+# clear error instead of silently deploying nothing, one topology, or (as
+# before this fix) both at once. See docs/deployment/cloud-deployment.md and
+# docs/deployment/production.md for the full overlay architecture and migration
+# guidance.
+# ============================================================================
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+resources:
+  - THIS_ROOT_KUSTOMIZATION_IS_INTENTIONALLY_BROKEN__READ_THE_HEADER_COMMENT_ABOVE__USE_deploy_kubernetes_overlays_single-node_OR_overlays_distributed_INSTEAD.yaml

@@ -1,0 +1,45 @@
+# Kustomize base for QODIQA — resources genuinely shared by BOTH topology
+# overlays (single-node and distributed). Nothing topology-specific lives
+# here: no StatefulSet/Deployment, no Service, no per-topology ConfigMap or
+# NetworkPolicy rule.
+#
+# This base is never applied directly (there is no top-level Service or
+# workload here to receive traffic) — always go through an overlay:
+#   kubectl apply -k deploy/kubernetes/overlays/single-node/
+#   kubectl apply -k deploy/kubernetes/overlays/distributed/
+#
+# Contents:
+#   namespace.yaml          — the qodiqa namespace
+#   secret.yaml              — Template only — replace with ExternalSecret or sealed secret
+#   configmap.yaml           — shared runtime config + policies.json (both topologies envFrom this)
+#   pvc.yaml                 — qodiqa-keystore (ReadWriteMany, shared by every replica in either topology)
+#   serviceaccount.yaml — token-less SAs `qodiqa` (gateway) and `qodiqa-backup` (CronJobs)
+#   networkpolicy.yaml       — default-deny + ingress + Redis egress + DNS + backup egress, common to both topologies
+#   backup-configmap.yaml — scheduled backup CronJob configuration
+#   backup-pvc.yaml — backup storage (qodiqa-pg-backups, qodiqa-dr-backups)
+#   backup-cronjobs.yaml — PostgreSQL + DR backup/verify/restore-validation CronJobs
+#                              (topology-independent — these back up PostgreSQL-resident
+#                              data such as consent/investigations/compliance records that
+#                              exist regardless of which audit-ordering topology is deployed)
+#
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+
+namespace: qodiqa
+
+resources:
+  - namespace.yaml
+  - serviceaccount.yaml
+  - secret.yaml
+  - configmap.yaml
+  - pvc.yaml
+  - networkpolicy.yaml
+  - backup-configmap.yaml
+  - backup-pvc.yaml
+  - backup-cronjobs.yaml
+
+labels:
+  - pairs:
+      app.kubernetes.io/name:       qodiqa
+      app.kubernetes.io/managed-by: kustomize
+    includeSelectors: false

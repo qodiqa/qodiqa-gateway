@@ -1,0 +1,31 @@
+# Single-node audit-ordering topology overlay — SMALL PRODUCTION:
+# one replica, single-node ordering, PostgreSQL enabled as durable evidence
+# store + audit mirror (option C — see statefulset.yaml's header
+# comment).
+#
+# Deploys the StatefulSet-based QODIQA topology only — see statefulset.yaml
+# for the full rationale (exclusive audit-log volume, process-local
+# in-memory ordering). Independently deployable:
+#
+#   kubectl kustomize deploy/kubernetes/overlays/single-node/
+#   kubectl apply -k deploy/kubernetes/overlays/single-node/
+#
+# Never apply this overlay AND overlays/distributed/ into the same
+# namespace — see the root deploy/kubernetes/kustomization.yaml header
+# comment for why.
+#
+# Prerequisites:
+#   - PostgreSQL migrated (node src/infra/postgres/migrate.js)
+#   - A reachable `postgres-service` in this namespace, or an adjusted
+#     networkpolicy-postgres.yaml (see that file's header comment)
+#
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+
+resources:
+  - ../../base
+  - statefulset.yaml
+  - configmap-single-node.yaml
+  - headless-service.yaml
+  - service.yaml
+  - networkpolicy-postgres.yaml

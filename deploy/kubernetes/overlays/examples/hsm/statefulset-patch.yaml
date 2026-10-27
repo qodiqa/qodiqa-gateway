@@ -1,0 +1,50 @@
+# Strategic-merge patch onto overlays/single-node/statefulset.yaml's `qodiqa`
+# container/pod. `env`, `volumeMounts`, and `volumes` all have a Kubernetes-
+# API merge key (`name`), so these entries APPEND to the existing ones
+# rather than replacing them — see vault-transit/statefulset-patch.yaml's
+# header comment for the same pattern.
+apiVersion: apps/v1
+kind: StatefulSet
+metadata:
+  name: qodiqa
+  namespace: qodiqa
+spec:
+  template:
+    spec:
+      containers:
+        - name: qodiqa
+          # see vault-transit/statefulset-patch.yaml's comment —
+          # the shipped default topologies never call
+          # keyProviderFactory.initialize(); start.js does.
+          command: ["node", "start.js"]
+          env:
+            - name: QODIQA_KMS_PROVIDER
+              value: "hsm"
+            - name: HSM_PKCS11_LIB
+              valueFrom:
+                configMapKeyRef: { name: qodiqa-hsm-config, key: HSM_PKCS11_LIB }
+            - name: HSM_PKCS11_SLOT
+              valueFrom:
+                configMapKeyRef: { name: qodiqa-hsm-config, key: HSM_PKCS11_SLOT }
+            - name: HSM_KEY_INDEX_PATH
+              valueFrom:
+                configMapKeyRef: { name: qodiqa-hsm-config, key: HSM_KEY_INDEX_PATH }
+            - name: HSM_PKCS11_PIN
+              valueFrom:
+                secretKeyRef: { name: qodiqa-hsm-secrets, key: hsm-pkcs11-pin }
+          volumeMounts:
+            # PLACEHOLDER — see ../README.md: replace this hostPath mount
+            # with your HSM vendor's actual delivery mechanism (a custom
+            # image layer, an init container, or the vendor's own device
+            # plugin/sidecar). A hostPath dependency is included here only so
+            # this overlay is a complete, buildable example; it is NOT
+            # portable across nodes and most production clusters correctly
+            # restrict hostPath via policy.
+            - name: hsm-pkcs11-lib
+              mountPath: /usr/lib/softhsm
+              readOnly: true
+      volumes:
+        - name: hsm-pkcs11-lib
+          hostPath:
+            path: /opt/hsm/lib
+            type: Directory

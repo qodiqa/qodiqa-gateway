@@ -1,0 +1,39 @@
+# Values for the kind verification (fixtures.yaml next to this file). Development profile: NOT for real traffic.
+profile: development
+image:
+  repository: qodiqa
+  tag: local
+  pullPolicy: Never          # the image is loaded into kind with `kind load docker-image`
+replicaCount: 2
+secrets:
+  createDevSecret: true
+postgres:
+  host: pg
+  ssl: false
+redis:
+  url: "redis://redis:6379"
+  tls: false
+migrations:
+  user: qodiqa               # the fixture's PostgreSQL superuser
+  admin:
+    user: qodiqa             # and the administrative role that rotates the runtime role passwords
+keystore:
+  useEmptyDir: true          # keys live as long as the pod: fine for a test, never for real use
+  provision:
+    enabled: true            # an init container creates the signing, consent-signer and transparency keys
+topologySpread:
+  enabled: false
+apparmor:
+  enabled: false             # Docker Desktop's kernel has no AppArmor: pods carrying the profile are rejected
+networkPolicy:
+  enabled: false             # kind's default CNI does not enforce NetworkPolicy
+resources:
+  requests: { cpu: 100m, memory: 512Mi }
+  limits: { cpu: 2000m, memory: 2Gi }
+gateway:
+  env:
+    QODIQA_PG_SSL: "false"
+    LOCAL_BASE_URL: "http://sandbox-provider:8080/v1"      # fixtures.yaml
+    PROVIDER_DEFAULT_MODEL_LOCAL: "sandbox-echo-1"
+    QODIQA_OPS_MFA_REQUIRED: "false"          # development only: lets the smoke test grant consent without enrolling a TOTP device
+    QODIQA_CONTROL_PLANE_BACKEND: "pg"        # state in PostgreSQL (shared by the replicas), so identities created with kubectl exec are seen by every pod

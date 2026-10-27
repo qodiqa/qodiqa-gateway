@@ -1,0 +1,28 @@
+{
+  "logEventTypes": 1002,
+  "envVariables": {
+    "direct": 434,
+    "withHelpers": 656
+  },
+  "metrics": {
+    "counters": 200,
+    "gauges": 87,
+    "histograms": 28,
+    "total": 315
+  },
+  "openapi": {
+    "operations": 364,
+    "paths": 324
+  },
+  "routes": {
+    "documented": 364,
+    "reviewedUndocumented": 5,
+    "defaultBuild": 369
+  },
+  "migrations": {
+    "files": 96,
+    "first": "001_initial_schema.sql",
+    "last": "108_unused_tables_comment.sql"
+  },
+  "tables": 94
+}

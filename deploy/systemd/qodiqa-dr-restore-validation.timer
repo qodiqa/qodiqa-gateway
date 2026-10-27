@@ -1,0 +1,11 @@
+# Fires qodiqa-dr-restore-validation.service weekly, Monday 05:00.
+[Unit]
+Description=QODIQA DR restore validation schedule
+
+[Timer]
+OnCalendar=Mon *-*-* 05:00:00
+Persistent=true
+RandomizedDelaySec=120
+
+[Install]
+WantedBy=timers.target

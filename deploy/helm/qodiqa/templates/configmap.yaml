@@ -1,0 +1,55 @@
+{{- include "qodiqa.validate" . -}}
+{{- $prod := eq .Values.profile "production" -}}
+{{- $defaults := dict
+  "NODE_ENV" (ternary "production" "development" $prod)
+  "PORT" (toString .Values.gateway.port)
+  "QODIQA_DEPLOYMENT_MODE" (ternary "single-node" "distributed" $prod)
+  "STRICT_REPLAY_PROTECTION" (ternary "true" "false" $prod)
+  "REDIS_URL" .Values.redis.url
+  "REDIS_USERNAME" .Values.redis.username
+  "REDIS_CONNECT_TIMEOUT_MS" "5000"
+  "SHUTDOWN_TIMEOUT_MS" "30000"
+  "AI_CHAT_TIMEOUT_MS" "30000"
+  "VERIFY_TIMEOUT_MS" "5000"
+  "AUDIT_TIMEOUT_MS" "10000"
+  "OPENAI_TIMEOUT_MS" "30000"
+  "QODIQA_AUDIT_LOG" "/opt/qodiqa/logs/audit.log"
+  "QODIQA_KEYS_PATH" "/opt/qodiqa/data/keys.json"
+  "POLICY_FILE" "/opt/qodiqa/config/policies.json"
+  "TRUSTED_PROXY" "loopback"
+  "QODIQA_RBAC_STORE_PATH" "/opt/qodiqa/data/rbac-users.json"
+  "QODIQA_RBAC_CUSTOM_ROLE_STORE_PATH" "/opt/qodiqa/data/rbac-custom-roles.json"
+  "QODIQA_TRANSPARENCY_KEYS_PATH" "/opt/qodiqa/data/transparency-keys.json"
+  "QODIQA_POLICY_STORE" "/opt/qodiqa/data/policy-store.json"
+  "TENANT_STORE_PATH" "/opt/qodiqa/data/tenants.json"
+  "QODIQA_PRQ_JOURNAL_DIR" "/opt/qodiqa/data/prq-journal"
+  "QODIQA_SIGNING_STORE_PATH" "/opt/qodiqa/data/signing-identities.json"
+  "QODIQA_PG_ENABLED" "true"
+  "QODIQA_PG_HOST" .Values.postgres.host
+  "QODIQA_PG_PORT" (toString .Values.postgres.port)
+  "QODIQA_PG_DATABASE" .Values.postgres.database
+  "QODIQA_PG_USER" .Values.postgres.user
+  "QODIQA_PG_SSL" (toString .Values.postgres.ssl)
+-}}
+{{- if .Values.redis.tls -}}
+{{- $_ := set $defaults "REDIS_TLS" "true" -}}
+{{- $_ := set $defaults "REDIS_TLS_CA" "/etc/qodiqa-tls/ca.crt" -}}
+{{- $_ := set $defaults "REDIS_TLS_CERT" "/etc/qodiqa-tls/client.crt" -}}
+{{- $_ := set $defaults "REDIS_TLS_KEY" "/etc/qodiqa-tls/client.key" -}}
+{{- end -}}
+{{- if .Values.postgres.sslCaFile -}}
+{{- $_ := set $defaults "QODIQA_PG_SSL_CA" .Values.postgres.sslCaFile -}}
+{{- end -}}
+{{- $env := merge (deepCopy .Values.gateway.env) $defaults -}}
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: {{ include "qodiqa.fullname" . }}-config
+  labels:
+    {{- include "qodiqa.labels" . | nindent 4 }}
+data:
+  {{- range $k, $v := $env }}
+  {{ $k }}: {{ toString $v | quote }}
+  {{- end }}
+  policies.json: |
+    {{- toPrettyJson .Values.gateway.policies | nindent 4 }}

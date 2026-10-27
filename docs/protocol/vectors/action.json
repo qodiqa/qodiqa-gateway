@@ -1,0 +1,1121 @@
+{
+  "format": "qodiqa-vectors/1",
+  "family": "action",
+  "spec": "docs/protocol/PROTOCOL-V2.md section 5.1",
+  "specVersion": "v2-freeze-1",
+  "generatedBy": "scripts/protocol/gen-action-vectors.js",
+  "domains": {
+    "action": "QODIQA::ACTION::V2",
+    "toolSchema": "QODIQA::TOOL_SCHEMA::V1"
+  },
+  "documentText": "members in this order: v, tenantId, agentId, sessionId, seq, tool, args, parentRequestHash, prevActionHash - input.argsText spliced verbatim, other members as JSON; canonicalised with JCS-P1",
+  "cases": [
+    {
+      "id": "ACTION-001",
+      "kind": "action",
+      "description": "minimal first action",
+      "input": {
+        "tenantId": "tenant-a",
+        "agentId": "aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa",
+        "sessionId": "bbbbbbbb-bbbb-4bbb-9bbb-bbbbbbbbbbbb",
+        "seq": 1,
+        "tool": {
+          "server": "files",
+          "name": "read",
+          "schemaHash": "eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee"
+        },
+        "parentRequestHash": null,
+        "prevActionHash": null,
+        "argsText": "{\"p\\u0061th\":\"/tmp/a.txt\"}"
+      },
+      "expected": {
+        "canonicalSha256": "dcc44b6edb16764c2629c2a886e528c28c6dbedc1f701adc7e79fd8e85b4eea9",
+        "canonical": "{\"agentId\":\"aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa\",\"args\":{\"path\":\"/tmp/a.txt\"},\"parentRequestHash\":null,\"prevActionHash\":null,\"seq\":1,\"sessionId\":\"bbbbbbbb-bbbb-4bbb-9bbb-bbbbbbbbbbbb\",\"tenantId\":\"tenant-a\",\"tool\":{\"name\":\"read\",\"schemaHash\":\"eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee\",\"server\":\"files\"},\"v\":2}",
+        "actionHash": "01f4512b8a3e9094c685d347147d7e3deb99b52b933f6f7c0c509522e603ded2"
+      }
+    },
+    {
+      "id": "ACTION-002",
+      "kind": "action",
+      "description": "empty arguments object",
+      "input": {
+        "tenantId": "tenant-a",
+        "agentId": "aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa",
+        "sessionId": "bbbbbbbb-bbbb-4bbb-9bbb-bbbbbbbbbbbb",
+        "seq": 1,
+        "tool": {
+          "server": "files",
+          "name": "read",
+          "schemaHash": "eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee"
+        },
+        "parentRequestHash": null,
+        "prevActionHash": null,
+        "argsText": "{}"
+      },
+      "expected": {
+        "canonicalSha256": "d21a1fbb98656ee3231515d9e85b50251e81eb1822d378f2160fc143c15cb502",
+        "canonical": "{\"agentId\":\"aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa\",\"args\":{},\"parentRequestHash\":null,\"prevActionHash\":null,\"seq\":1,\"sessionId\":\"bbbbbbbb-bbbb-4bbb-9bbb-bbbbbbbbbbbb\",\"tenantId\":\"tenant-a\",\"tool\":{\"name\":\"read\",\"schemaHash\":\"eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee\",\"server\":\"files\"},\"v\":2}",
+        "actionHash": "22204980a076c70b1c81d8e888411182d45fdfa508dc1f3f3dcc1b31efff3d45"
+      }
+    },
+    {
+      "id": "ACTION-003",
+      "kind": "action",
+      "description": "second action chained to the first",
+      "input": {
+        "tenantId": "tenant-a",
+        "agentId": "aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa",
+        "sessionId": "bbbbbbbb-bbbb-4bbb-9bbb-bbbbbbbbbbbb",
+        "seq": 2,
+        "tool": {
+          "server": "files",
+          "name": "read",
+          "schemaHash": "eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee"
+        },
+        "parentRequestHash": null,
+        "prevActionHash": "1111111111111111111111111111111111111111111111111111111111111111",
+        "argsText": "{\"p\\u0061th\":\"/tmp/a.txt\"}"
+      },
+      "expected": {
+        "canonicalSha256": "d84aed50338578fcd5543f1ba4a5e3ff150918e203f1fe3ba0db53f60dc39fdf",
+        "canonical": "{\"agentId\":\"aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa\",\"args\":{\"path\":\"/tmp/a.txt\"},\"parentRequestHash\":null,\"prevActionHash\":\"1111111111111111111111111111111111111111111111111111111111111111\",\"seq\":2,\"sessionId\":\"bbbbbbbb-bbbb-4bbb-9bbb-bbbbbbbbbbbb\",\"tenantId\":\"tenant-a\",\"tool\":{\"name\":\"read\",\"schemaHash\":\"eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee\",\"server\":\"files\"},\"v\":2}",
+        "actionHash": "c8d372f1e291c13e48540ce9cad639db531f89041b5fdd974b66fa49cf27a289"
+      }
+    },
+    {
+      "id": "ACTION-004",
+      "kind": "action",
+      "description": "parent request hash present",
+      "input": {
+        "tenantId": "tenant-a",
+        "agentId": "aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa",
+        "sessionId": "bbbbbbbb-bbbb-4bbb-9bbb-bbbbbbbbbbbb",
+        "seq": 1,
+        "tool": {
+          "server": "files",
+          "name": "read",
+          "schemaHash": "eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee"
+        },
+        "parentRequestHash": "ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff",
+        "prevActionHash": null,
+        "argsText": "{\"p\\u0061th\":\"/tmp/a.txt\"}"
+      },
+      "expected": {
+        "canonicalSha256": "12e0a03504f96f0f70abfbaeaaca9d62fba5a442568005b85ad12f55b9f7325f",
+        "canonical": "{\"agentId\":\"aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa\",\"args\":{\"path\":\"/tmp/a.txt\"},\"parentRequestHash\":\"ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff\",\"prevActionHash\":null,\"seq\":1,\"sessionId\":\"bbbbbbbb-bbbb-4bbb-9bbb-bbbbbbbbbbbb\",\"tenantId\":\"tenant-a\",\"tool\":{\"name\":\"read\",\"schemaHash\":\"eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee\",\"server\":\"files\"},\"v\":2}",
+        "actionHash": "a964c0f037fd3ad27af2c96951e4dac10c272dddd9a9d78a1e179abf574dbd43"
+      }
+    },
+    {
+      "id": "ACTION-005",
+      "kind": "action",
+      "description": "tool name with a slash and server with dots",
+      "input": {
+        "tenantId": "tenant-a",
+        "agentId": "aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa",
+        "sessionId": "bbbbbbbb-bbbb-4bbb-9bbb-bbbbbbbbbbbb",
+        "seq": 1,
+        "tool": {
+          "server": "mcp.fs-1",
+          "name": "files/read:v2",
+          "schemaHash": "dddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddd"
+        },
+        "parentRequestHash": null,
+        "prevActionHash": null,
+        "argsText": "{\"p\\u0061th\":\"/tmp/a.txt\"}"
+      },
+      "expected": {
+        "canonicalSha256": "39e518a8ed32ea644ad63009a421d44bdebe206b32af75d92d383793d705e998",
+        "canonical": "{\"agentId\":\"aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa\",\"args\":{\"path\":\"/tmp/a.txt\"},\"parentRequestHash\":null,\"prevActionHash\":null,\"seq\":1,\"sessionId\":\"bbbbbbbb-bbbb-4bbb-9bbb-bbbbbbbbbbbb\",\"tenantId\":\"tenant-a\",\"tool\":{\"name\":\"files/read:v2\",\"schemaHash\":\"dddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddd\",\"server\":\"mcp.fs-1\"},\"v\":2}",
+        "actionHash": "cc49c4af3cdb4174f489e14729cee2dec83d55e7a415df56c5c38a2b810a55b5"
+      }
+    },
+    {
+      "id": "ACTION-006",
+      "kind": "action",
+      "description": "a member name written with an escape equals the literal name (same hash as the first case)",
+      "input": {
+        "tenantId": "tenant-a",
+        "agentId": "aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa",
+        "sessionId": "bbbbbbbb-bbbb-4bbb-9bbb-bbbbbbbbbbbb",
+        "seq": 1,
+        "tool": {
+          "server": "files",
+          "name": "read",
+          "schemaHash": "eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee"
+        },
+        "parentRequestHash": null,
+        "prevActionHash": null,
+        "argsText": "{\"p\\u0061th\":\"/tmp/a.txt\"}"
+      },
+      "expected": {
+        "canonicalSha256": "dcc44b6edb16764c2629c2a886e528c28c6dbedc1f701adc7e79fd8e85b4eea9",
+        "canonical": "{\"agentId\":\"aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa\",\"args\":{\"path\":\"/tmp/a.txt\"},\"parentRequestHash\":null,\"prevActionHash\":null,\"seq\":1,\"sessionId\":\"bbbbbbbb-bbbb-4bbb-9bbb-bbbbbbbbbbbb\",\"tenantId\":\"tenant-a\",\"tool\":{\"name\":\"read\",\"schemaHash\":\"eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee\",\"server\":\"files\"},\"v\":2}",
+        "actionHash": "01f4512b8a3e9094c685d347147d7e3deb99b52b933f6f7c0c509522e603ded2"
+      }
+    },
+    {
+      "id": "ACTION-007",
+      "kind": "action",
+      "description": "argument keys given unsorted (canonical order is by UTF-16 code unit)",
+      "input": {
+        "tenantId": "tenant-a",
+        "agentId": "aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa",
+        "sessionId": "bbbbbbbb-bbbb-4bbb-9bbb-bbbbbbbbbbbb",
+        "seq": 1,
+        "tool": {
+          "server": "files",
+          "name": "read",
+          "schemaHash": "eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee"
+        },
+        "parentRequestHash": null,
+        "prevActionHash": null,
+        "argsText": "{\"z\":1,\"a\":2,\"m\":{\"y\":true,\"b\":null}}"
+      },
+      "expected": {
+        "canonicalSha256": "9846522c524facf4864b104c23afaeca17e3bd0f23e3a063fafc2e4fed1dc392",
+        "canonical": "{\"agentId\":\"aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa\",\"args\":{\"a\":2,\"m\":{\"b\":null,\"y\":true},\"z\":1},\"parentRequestHash\":null,\"prevActionHash\":null,\"seq\":1,\"sessionId\":\"bbbbbbbb-bbbb-4bbb-9bbb-bbbbbbbbbbbb\",\"tenantId\":\"tenant-a\",\"tool\":{\"name\":\"read\",\"schemaHash\":\"eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee\",\"server\":\"files\"},\"v\":2}",
+        "actionHash": "876e0b1ef7d0b601b3309134a56d7c4240d97df234179c505cec9f19ff48c223"
+      }
+    },
+    {
+      "id": "ACTION-008",
+      "kind": "action",
+      "description": "same members, other textual order: identical canonical form",
+      "input": {
+        "tenantId": "tenant-a",
+        "agentId": "aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa",
+        "sessionId": "bbbbbbbb-bbbb-4bbb-9bbb-bbbbbbbbbbbb",
+        "seq": 1,
+        "tool": {
+          "server": "files",
+          "name": "read",
+          "schemaHash": "eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee"
+        },
+        "parentRequestHash": null,
+        "prevActionHash": null,
+        "argsText": "{\"m\":{\"b\":null,\"y\":true},\"a\":2,\"z\":1}"
+      },
+      "expected": {
+        "canonicalSha256": "9846522c524facf4864b104c23afaeca17e3bd0f23e3a063fafc2e4fed1dc392",
+        "canonical": "{\"agentId\":\"aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa\",\"args\":{\"a\":2,\"m\":{\"b\":null,\"y\":true},\"z\":1},\"parentRequestHash\":null,\"prevActionHash\":null,\"seq\":1,\"sessionId\":\"bbbbbbbb-bbbb-4bbb-9bbb-bbbbbbbbbbbb\",\"tenantId\":\"tenant-a\",\"tool\":{\"name\":\"read\",\"schemaHash\":\"eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee\",\"server\":\"files\"},\"v\":2}",
+        "actionHash": "876e0b1ef7d0b601b3309134a56d7c4240d97df234179c505cec9f19ff48c223"
+      }
+    },
+    {
+      "id": "ACTION-009",
+      "kind": "action",
+      "description": "decimal numbers (JCS-P1 allows them)",
+      "input": {
+        "tenantId": "tenant-a",
+        "agentId": "aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa",
+        "sessionId": "bbbbbbbb-bbbb-4bbb-9bbb-bbbbbbbbbbbb",
+        "seq": 1,
+        "tool": {
+          "server": "files",
+          "name": "read",
+          "schemaHash": "eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee"
+        },
+        "parentRequestHash": null,
+        "prevActionHash": null,
+        "argsText": "{\"x\":10.5,\"y\":-0.25,\"z\":0.1}"
+      },
+      "expected": {
+        "canonicalSha256": "c89029c8e699c78d47aa00c26e352e0ff3392e45c2c72c26481bc2dd5ccba1e2",
+        "canonical": "{\"agentId\":\"aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa\",\"args\":{\"x\":10.5,\"y\":-0.25,\"z\":0.1},\"parentRequestHash\":null,\"prevActionHash\":null,\"seq\":1,\"sessionId\":\"bbbbbbbb-bbbb-4bbb-9bbb-bbbbbbbbbbbb\",\"tenantId\":\"tenant-a\",\"tool\":{\"name\":\"read\",\"schemaHash\":\"eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee\",\"server\":\"files\"},\"v\":2}",
+        "actionHash": "0bed071e25b67cb43b98e62dd8e1c9f4a9714ee116c5f9ae14dfad7f27584b25"
+      }
+    },
+    {
+      "id": "ACTION-010",
+      "kind": "action",
+      "description": "exponent lexemes are normalised",
+      "input": {
+        "tenantId": "tenant-a",
+        "agentId": "aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa",
+        "sessionId": "bbbbbbbb-bbbb-4bbb-9bbb-bbbbbbbbbbbb",
+        "seq": 1,
+        "tool": {
+          "server": "files",
+          "name": "read",
+          "schemaHash": "eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee"
+        },
+        "parentRequestHash": null,
+        "prevActionHash": null,
+        "argsText": "{\"a\":1e2,\"b\":1E-2,\"c\":5e0}"
+      },
+      "expected": {
+        "canonicalSha256": "353cecb48d4f9b651c6fe47293f5d9ca7a1f1180aceb57dd0e2dbf6a761503a5",
+        "canonical": "{\"agentId\":\"aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa\",\"args\":{\"a\":100,\"b\":0.01,\"c\":5},\"parentRequestHash\":null,\"prevActionHash\":null,\"seq\":1,\"sessionId\":\"bbbbbbbb-bbbb-4bbb-9bbb-bbbbbbbbbbbb\",\"tenantId\":\"tenant-a\",\"tool\":{\"name\":\"read\",\"schemaHash\":\"eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee\",\"server\":\"files\"},\"v\":2}",
+        "actionHash": "5048287cccfcbe8ed4ec948f0216e12140d43919f95379a856c97e3f62d0fbed"
+      }
+    },
+    {
+      "id": "ACTION-011",
+      "kind": "action",
+      "description": "negative zero is zero",
+      "input": {
+        "tenantId": "tenant-a",
+        "agentId": "aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa",
+        "sessionId": "bbbbbbbb-bbbb-4bbb-9bbb-bbbbbbbbbbbb",
+        "seq": 1,
+        "tool": {
+          "server": "files",
+          "name": "read",
+          "schemaHash": "eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee"
+        },
+        "parentRequestHash": null,
+        "prevActionHash": null,
+        "argsText": "{\"a\":-0,\"b\":0}"
+      },
+      "expected": {
+        "canonicalSha256": "61a8e5fcef0d6ee6e7c5a05e6139c37036ca4aae8313b91b472bdd7ffb455fe7",
+        "canonical": "{\"agentId\":\"aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa\",\"args\":{\"a\":0,\"b\":0},\"parentRequestHash\":null,\"prevActionHash\":null,\"seq\":1,\"sessionId\":\"bbbbbbbb-bbbb-4bbb-9bbb-bbbbbbbbbbbb\",\"tenantId\":\"tenant-a\",\"tool\":{\"name\":\"read\",\"schemaHash\":\"eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee\",\"server\":\"files\"},\"v\":2}",
+        "actionHash": "794bc690c3d1ce6aee2331b45dcd5deb518bef6793060e7b7480163c8a231a82"
+      }
+    },
+    {
+      "id": "ACTION-012",
+      "kind": "action",
+      "description": "largest safe integer",
+      "input": {
+        "tenantId": "tenant-a",
+        "agentId": "aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa",
+        "sessionId": "bbbbbbbb-bbbb-4bbb-9bbb-bbbbbbbbbbbb",
+        "seq": 1,
+        "tool": {
+          "server": "files",
+          "name": "read",
+          "schemaHash": "eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee"
+        },
+        "parentRequestHash": null,
+        "prevActionHash": null,
+        "argsText": "{\"n\":9007199254740991}"
+      },
+      "expected": {
+        "canonicalSha256": "06c04a3e356ff326585ea62f00ca6ee568cb78d73167cc86dd0ad0872640bbb8",
+        "canonical": "{\"agentId\":\"aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa\",\"args\":{\"n\":9007199254740991},\"parentRequestHash\":null,\"prevActionHash\":null,\"seq\":1,\"sessionId\":\"bbbbbbbb-bbbb-4bbb-9bbb-bbbbbbbbbbbb\",\"tenantId\":\"tenant-a\",\"tool\":{\"name\":\"read\",\"schemaHash\":\"eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee\",\"server\":\"files\"},\"v\":2}",
+        "actionHash": "b8b36cf7cf9aabc7573e66ec167252b356f30b6087db5c89cb938d852322e5b7"
+      }
+    },
+    {
+      "id": "ACTION-013",
+      "kind": "action",
+      "description": "arrays, booleans and null",
+      "input": {
+        "tenantId": "tenant-a",
+        "agentId": "aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa",
+        "sessionId": "bbbbbbbb-bbbb-4bbb-9bbb-bbbbbbbbbbbb",
+        "seq": 1,
+        "tool": {
+          "server": "files",
+          "name": "read",
+          "schemaHash": "eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee"
+        },
+        "parentRequestHash": null,
+        "prevActionHash": null,
+        "argsText": "{\"l\":[1,\"two\",false,null,[],{}]}"
+      },
+      "expected": {
+        "canonicalSha256": "a0e45d3a39ff56aec2b380aa1618c7082826304d5ce529878b6e52857c1b3be6",
+        "canonical": "{\"agentId\":\"aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa\",\"args\":{\"l\":[1,\"two\",false,null,[],{}]},\"parentRequestHash\":null,\"prevActionHash\":null,\"seq\":1,\"sessionId\":\"bbbbbbbb-bbbb-4bbb-9bbb-bbbbbbbbbbbb\",\"tenantId\":\"tenant-a\",\"tool\":{\"name\":\"read\",\"schemaHash\":\"eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee\",\"server\":\"files\"},\"v\":2}",
+        "actionHash": "ba8da4a4bf6662219a9c0feb34a8e47045d13749781390d7e04d0dc49b7b5083"
+      }
+    },
+    {
+      "id": "ACTION-014",
+      "kind": "action",
+      "description": "composed (NFC) non-ASCII text",
+      "input": {
+        "tenantId": "tenant-a",
+        "agentId": "aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa",
+        "sessionId": "bbbbbbbb-bbbb-4bbb-9bbb-bbbbbbbbbbbb",
+        "seq": 1,
+        "tool": {
+          "server": "files",
+          "name": "read",
+          "schemaHash": "eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee"
+        },
+        "parentRequestHash": null,
+        "prevActionHash": null,
+        "argsText": "{\"name\":\"café über 中文\"}"
+      },
+      "expected": {
+        "canonicalSha256": "c6e84b98670d3b427c5e1b977a13296edc647363c66e36cf707c20b6b22af23a",
+        "canonical": "{\"agentId\":\"aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa\",\"args\":{\"name\":\"café über 中文\"},\"parentRequestHash\":null,\"prevActionHash\":null,\"seq\":1,\"sessionId\":\"bbbbbbbb-bbbb-4bbb-9bbb-bbbbbbbbbbbb\",\"tenantId\":\"tenant-a\",\"tool\":{\"name\":\"read\",\"schemaHash\":\"eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee\",\"server\":\"files\"},\"v\":2}",
+        "actionHash": "5a48d76406bac3d47e76d65b2820791b7100293dbe0d85e0b0fff1880b8a9876"
+      }
+    },
+    {
+      "id": "ACTION-015",
+      "kind": "action",
+      "description": "escape sequences are decoded then re-encoded canonically",
+      "input": {
+        "tenantId": "tenant-a",
+        "agentId": "aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa",
+        "sessionId": "bbbbbbbb-bbbb-4bbb-9bbb-bbbbbbbbbbbb",
+        "seq": 1,
+        "tool": {
+          "server": "files",
+          "name": "read",
+          "schemaHash": "eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee"
+        },
+        "parentRequestHash": null,
+        "prevActionHash": null,
+        "argsText": "{\"s\":\"\\u00e9\\n\\\"q\\\"\\\\ \\u0001 /\"}"
+      },
+      "expected": {
+        "canonicalSha256": "bfc2446c989bc529cb87f66e81dc73a17737441ebbcfecace68f528247c4d210",
+        "canonical": "{\"agentId\":\"aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa\",\"args\":{\"s\":\"é\\n\\\"q\\\"\\\\ \\u0001 /\"},\"parentRequestHash\":null,\"prevActionHash\":null,\"seq\":1,\"sessionId\":\"bbbbbbbb-bbbb-4bbb-9bbb-bbbbbbbbbbbb\",\"tenantId\":\"tenant-a\",\"tool\":{\"name\":\"read\",\"schemaHash\":\"eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee\",\"server\":\"files\"},\"v\":2}",
+        "actionHash": "cd45f095c9cad8c10be1765f472081ecccdab191cdec7c3555fd0887ecef5c3b"
+      }
+    },
+    {
+      "id": "ACTION-016",
+      "kind": "action",
+      "description": "supplementary-plane character sorts by UTF-16 code units",
+      "input": {
+        "tenantId": "tenant-a",
+        "agentId": "aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa",
+        "sessionId": "bbbbbbbb-bbbb-4bbb-9bbb-bbbbbbbbbbbb",
+        "seq": 1,
+        "tool": {
+          "server": "files",
+          "name": "read",
+          "schemaHash": "eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee"
+        },
+        "parentRequestHash": null,
+        "prevActionHash": null,
+        "argsText": "{\"\\ud83d\\ude00\":1,\"\\uff5e\":2,\"b\":3}"
+      },
+      "expected": {
+        "canonicalSha256": "7fa006f4554e8aed2ff09e3b4be52eff2246f251b68ffce3e0fd198c97b5680a",
+        "canonical": "{\"agentId\":\"aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa\",\"args\":{\"b\":3,\"😀\":1,\"～\":2},\"parentRequestHash\":null,\"prevActionHash\":null,\"seq\":1,\"sessionId\":\"bbbbbbbb-bbbb-4bbb-9bbb-bbbbbbbbbbbb\",\"tenantId\":\"tenant-a\",\"tool\":{\"name\":\"read\",\"schemaHash\":\"eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee\",\"server\":\"files\"},\"v\":2}",
+        "actionHash": "77a79809ef0f3763a79cc6ecf78794b437dd4b6634b0bb40769728797aa22a7f"
+      }
+    },
+    {
+      "id": "ACTION-017",
+      "kind": "action",
+      "description": "whitespace in the argument text is irrelevant",
+      "input": {
+        "tenantId": "tenant-a",
+        "agentId": "aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa",
+        "sessionId": "bbbbbbbb-bbbb-4bbb-9bbb-bbbbbbbbbbbb",
+        "seq": 1,
+        "tool": {
+          "server": "files",
+          "name": "read",
+          "schemaHash": "eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee"
+        },
+        "parentRequestHash": null,
+        "prevActionHash": null,
+        "argsText": " {\n  \"a\" : 1 ,\t\"b\" : [ 1 , 2 ]\n} "
+      },
+      "expected": {
+        "canonicalSha256": "2fe8988072e9be9a65d869c6e7a46d0fd6d3d386d3e5c02dfbae6b56c5c0253f",
+        "canonical": "{\"agentId\":\"aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa\",\"args\":{\"a\":1,\"b\":[1,2]},\"parentRequestHash\":null,\"prevActionHash\":null,\"seq\":1,\"sessionId\":\"bbbbbbbb-bbbb-4bbb-9bbb-bbbbbbbbbbbb\",\"tenantId\":\"tenant-a\",\"tool\":{\"name\":\"read\",\"schemaHash\":\"eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee\",\"server\":\"files\"},\"v\":2}",
+        "actionHash": "4a2f4bcd2a5df96544341f3e2fafbb5ad3cee111f04483a475d0fca592a41684"
+      }
+    },
+    {
+      "id": "ACTION-018",
+      "kind": "action",
+      "description": "deep but allowed nesting",
+      "input": {
+        "tenantId": "tenant-a",
+        "agentId": "aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa",
+        "sessionId": "bbbbbbbb-bbbb-4bbb-9bbb-bbbbbbbbbbbb",
+        "seq": 1,
+        "tool": {
+          "server": "files",
+          "name": "read",
+          "schemaHash": "eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee"
+        },
+        "parentRequestHash": null,
+        "prevActionHash": null,
+        "argsText": "{\"a\":{\"a\":{\"a\":{\"a\":{\"a\":{\"a\":{\"a\":{\"a\":{\"a\":{\"a\":{\"a\":{\"a\":{\"a\":{\"a\":{\"a\":{\"a\":{\"a\":{\"a\":{\"a\":{\"a\":{\"a\":{\"a\":{\"a\":{\"a\":{\"a\":{\"a\":{\"a\":{\"a\":{\"a\":{\"a\":1}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}"
+      },
+      "expected": {
+        "canonicalSha256": "8543e39c5ab9880618e7c6edf75c21d45f19c1eff69105c73aedd569ff8299ba",
+        "actionHash": "986acdfcd3482c494434aa526ee2cce5e46e50072e1b84b1e9bfedeb332191a2"
+      }
+    },
+    {
+      "id": "ACTION-019",
+      "kind": "action",
+      "description": "seq 1 with a long tenant id",
+      "input": {
+        "tenantId": "TTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTT",
+        "agentId": "aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa",
+        "sessionId": "bbbbbbbb-bbbb-4bbb-9bbb-bbbbbbbbbbbb",
+        "seq": 1,
+        "tool": {
+          "server": "files",
+          "name": "read",
+          "schemaHash": "eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee"
+        },
+        "parentRequestHash": null,
+        "prevActionHash": null,
+        "argsText": "{\"p\\u0061th\":\"/tmp/a.txt\"}"
+      },
+      "expected": {
+        "canonicalSha256": "e0622c9042921e0328d1ab493d79c7b6e1c1b44abb877109a2f587c38d129680",
+        "canonical": "{\"agentId\":\"aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa\",\"args\":{\"path\":\"/tmp/a.txt\"},\"parentRequestHash\":null,\"prevActionHash\":null,\"seq\":1,\"sessionId\":\"bbbbbbbb-bbbb-4bbb-9bbb-bbbbbbbbbbbb\",\"tenantId\":\"TTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTT\",\"tool\":{\"name\":\"read\",\"schemaHash\":\"eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee\",\"server\":\"files\"},\"v\":2}",
+        "actionHash": "f0881fffb4ee2d9e1cf9dcbecd915818c44c78a1588fb2d4eb66836c0de46527"
+      }
+    },
+    {
+      "id": "ACTION-020",
+      "kind": "action",
+      "description": "a different schemaHash is a different action",
+      "input": {
+        "tenantId": "tenant-a",
+        "agentId": "aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa",
+        "sessionId": "bbbbbbbb-bbbb-4bbb-9bbb-bbbbbbbbbbbb",
+        "seq": 1,
+        "tool": {
+          "server": "files",
+          "name": "read",
+          "schemaHash": "cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc"
+        },
+        "parentRequestHash": null,
+        "prevActionHash": null,
+        "argsText": "{\"p\\u0061th\":\"/tmp/a.txt\"}"
+      },
+      "expected": {
+        "canonicalSha256": "1e93cc37fe90db4043c740da1ce281ef132f277659b47b48b33522be52861344",
+        "canonical": "{\"agentId\":\"aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa\",\"args\":{\"path\":\"/tmp/a.txt\"},\"parentRequestHash\":null,\"prevActionHash\":null,\"seq\":1,\"sessionId\":\"bbbbbbbb-bbbb-4bbb-9bbb-bbbbbbbbbbbb\",\"tenantId\":\"tenant-a\",\"tool\":{\"name\":\"read\",\"schemaHash\":\"cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc\",\"server\":\"files\"},\"v\":2}",
+        "actionHash": "80f88b4d19ebac213a982266ed58bdffd96883e29b2a9407fb8c3ba389cb8844"
+      }
+    },
+    {
+      "id": "ACTION-021",
+      "kind": "action",
+      "description": "a different session is a different action",
+      "input": {
+        "tenantId": "tenant-a",
+        "agentId": "aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa",
+        "sessionId": "cccccccc-cccc-4ccc-8ccc-cccccccccccc",
+        "seq": 1,
+        "tool": {
+          "server": "files",
+          "name": "read",
+          "schemaHash": "eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee"
+        },
+        "parentRequestHash": null,
+        "prevActionHash": null,
+        "argsText": "{\"p\\u0061th\":\"/tmp/a.txt\"}"
+      },
+      "expected": {
+        "canonicalSha256": "8f141c80f23cdbc4062f68151d5cf6ad2de9203c34b5f8846dca5174aa4e7542",
+        "canonical": "{\"agentId\":\"aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa\",\"args\":{\"path\":\"/tmp/a.txt\"},\"parentRequestHash\":null,\"prevActionHash\":null,\"seq\":1,\"sessionId\":\"cccccccc-cccc-4ccc-8ccc-cccccccccccc\",\"tenantId\":\"tenant-a\",\"tool\":{\"name\":\"read\",\"schemaHash\":\"eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee\",\"server\":\"files\"},\"v\":2}",
+        "actionHash": "476906d9b991a49d5c338df681aa9e86ab542d689e0af250c02f2c467c523353"
+      }
+    },
+    {
+      "id": "ACTION-022",
+      "kind": "action",
+      "description": "tenant id with a space",
+      "input": {
+        "tenantId": "a b",
+        "agentId": "aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa",
+        "sessionId": "bbbbbbbb-bbbb-4bbb-9bbb-bbbbbbbbbbbb",
+        "seq": 1,
+        "tool": {
+          "server": "files",
+          "name": "read",
+          "schemaHash": "eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee"
+        },
+        "parentRequestHash": null,
+        "prevActionHash": null,
+        "argsText": "{\"p\\u0061th\":\"/tmp/a.txt\"}"
+      },
+      "expectedError": {
+        "code": "ACTION_INVALID_TENANT"
+      }
+    },
+    {
+      "id": "ACTION-023",
+      "kind": "action",
+      "description": "tenant id empty",
+      "input": {
+        "tenantId": "",
+        "agentId": "aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa",
+        "sessionId": "bbbbbbbb-bbbb-4bbb-9bbb-bbbbbbbbbbbb",
+        "seq": 1,
+        "tool": {
+          "server": "files",
+          "name": "read",
+          "schemaHash": "eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee"
+        },
+        "parentRequestHash": null,
+        "prevActionHash": null,
+        "argsText": "{\"p\\u0061th\":\"/tmp/a.txt\"}"
+      },
+      "expectedError": {
+        "code": "ACTION_INVALID_TENANT"
+      }
+    },
+    {
+      "id": "ACTION-024",
+      "kind": "action",
+      "description": "agent id in upper case",
+      "input": {
+        "tenantId": "tenant-a",
+        "agentId": "AAAAAAAA-AAAA-4AAA-8AAA-AAAAAAAAAAAA",
+        "sessionId": "bbbbbbbb-bbbb-4bbb-9bbb-bbbbbbbbbbbb",
+        "seq": 1,
+        "tool": {
+          "server": "files",
+          "name": "read",
+          "schemaHash": "eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee"
+        },
+        "parentRequestHash": null,
+        "prevActionHash": null,
+        "argsText": "{\"p\\u0061th\":\"/tmp/a.txt\"}"
+      },
+      "expectedError": {
+        "code": "ACTION_INVALID_AGENT"
+      }
+    },
+    {
+      "id": "ACTION-025",
+      "kind": "action",
+      "description": "agent id is a UUID v1",
+      "input": {
+        "tenantId": "tenant-a",
+        "agentId": "aaaaaaaa-aaaa-1aaa-8aaa-aaaaaaaaaaaa",
+        "sessionId": "bbbbbbbb-bbbb-4bbb-9bbb-bbbbbbbbbbbb",
+        "seq": 1,
+        "tool": {
+          "server": "files",
+          "name": "read",
+          "schemaHash": "eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee"
+        },
+        "parentRequestHash": null,
+        "prevActionHash": null,
+        "argsText": "{\"p\\u0061th\":\"/tmp/a.txt\"}"
+      },
+      "expectedError": {
+        "code": "ACTION_INVALID_AGENT"
+      }
+    },
+    {
+      "id": "ACTION-026",
+      "kind": "action",
+      "description": "session id with a wrong variant",
+      "input": {
+        "tenantId": "tenant-a",
+        "agentId": "aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa",
+        "sessionId": "bbbbbbbb-bbbb-4bbb-cbbb-bbbbbbbbbbbb",
+        "seq": 1,
+        "tool": {
+          "server": "files",
+          "name": "read",
+          "schemaHash": "eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee"
+        },
+        "parentRequestHash": null,
+        "prevActionHash": null,
+        "argsText": "{\"p\\u0061th\":\"/tmp/a.txt\"}"
+      },
+      "expectedError": {
+        "code": "ACTION_INVALID_SESSION"
+      }
+    },
+    {
+      "id": "ACTION-027",
+      "kind": "action",
+      "description": "seq 0",
+      "input": {
+        "tenantId": "tenant-a",
+        "agentId": "aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa",
+        "sessionId": "bbbbbbbb-bbbb-4bbb-9bbb-bbbbbbbbbbbb",
+        "seq": 0,
+        "tool": {
+          "server": "files",
+          "name": "read",
+          "schemaHash": "eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee"
+        },
+        "parentRequestHash": null,
+        "prevActionHash": null,
+        "argsText": "{\"p\\u0061th\":\"/tmp/a.txt\"}"
+      },
+      "expectedError": {
+        "code": "ACTION_INVALID_SEQ"
+      }
+    },
+    {
+      "id": "ACTION-028",
+      "kind": "action",
+      "description": "seq negative",
+      "input": {
+        "tenantId": "tenant-a",
+        "agentId": "aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa",
+        "sessionId": "bbbbbbbb-bbbb-4bbb-9bbb-bbbbbbbbbbbb",
+        "seq": -1,
+        "tool": {
+          "server": "files",
+          "name": "read",
+          "schemaHash": "eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee"
+        },
+        "parentRequestHash": null,
+        "prevActionHash": null,
+        "argsText": "{\"p\\u0061th\":\"/tmp/a.txt\"}"
+      },
+      "expectedError": {
+        "code": "ACTION_INVALID_SEQ"
+      }
+    },
+    {
+      "id": "ACTION-029",
+      "kind": "action",
+      "description": "seq is a string",
+      "input": {
+        "tenantId": "tenant-a",
+        "agentId": "aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa",
+        "sessionId": "bbbbbbbb-bbbb-4bbb-9bbb-bbbbbbbbbbbb",
+        "seq": "1",
+        "tool": {
+          "server": "files",
+          "name": "read",
+          "schemaHash": "eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee"
+        },
+        "parentRequestHash": null,
+        "prevActionHash": null,
+        "argsText": "{\"p\\u0061th\":\"/tmp/a.txt\"}"
+      },
+      "expectedError": {
+        "code": "ACTION_INVALID_SEQ"
+      }
+    },
+    {
+      "id": "ACTION-030",
+      "kind": "action",
+      "description": "seq 2 with a null prevActionHash",
+      "input": {
+        "tenantId": "tenant-a",
+        "agentId": "aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa",
+        "sessionId": "bbbbbbbb-bbbb-4bbb-9bbb-bbbbbbbbbbbb",
+        "seq": 2,
+        "tool": {
+          "server": "files",
+          "name": "read",
+          "schemaHash": "eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee"
+        },
+        "parentRequestHash": null,
+        "prevActionHash": null,
+        "argsText": "{\"p\\u0061th\":\"/tmp/a.txt\"}"
+      },
+      "expectedError": {
+        "code": "ACTION_INVALID_PREV"
+      }
+    },
+    {
+      "id": "ACTION-031",
+      "kind": "action",
+      "description": "seq 1 with a prevActionHash",
+      "input": {
+        "tenantId": "tenant-a",
+        "agentId": "aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa",
+        "sessionId": "bbbbbbbb-bbbb-4bbb-9bbb-bbbbbbbbbbbb",
+        "seq": 1,
+        "tool": {
+          "server": "files",
+          "name": "read",
+          "schemaHash": "eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee"
+        },
+        "parentRequestHash": null,
+        "prevActionHash": "1111111111111111111111111111111111111111111111111111111111111111",
+        "argsText": "{\"p\\u0061th\":\"/tmp/a.txt\"}"
+      },
+      "expectedError": {
+        "code": "ACTION_INVALID_PREV"
+      }
+    },
+    {
+      "id": "ACTION-032",
+      "kind": "action",
+      "description": "prevActionHash is not 64 hex digits",
+      "input": {
+        "tenantId": "tenant-a",
+        "agentId": "aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa",
+        "sessionId": "bbbbbbbb-bbbb-4bbb-9bbb-bbbbbbbbbbbb",
+        "seq": 2,
+        "tool": {
+          "server": "files",
+          "name": "read",
+          "schemaHash": "eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee"
+        },
+        "parentRequestHash": null,
+        "prevActionHash": "abc",
+        "argsText": "{\"p\\u0061th\":\"/tmp/a.txt\"}"
+      },
+      "expectedError": {
+        "code": "ACTION_INVALID_PREV"
+      }
+    },
+    {
+      "id": "ACTION-033",
+      "kind": "action",
+      "description": "parentRequestHash in upper case",
+      "input": {
+        "tenantId": "tenant-a",
+        "agentId": "aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa",
+        "sessionId": "bbbbbbbb-bbbb-4bbb-9bbb-bbbbbbbbbbbb",
+        "seq": 1,
+        "tool": {
+          "server": "files",
+          "name": "read",
+          "schemaHash": "eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee"
+        },
+        "parentRequestHash": "FFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF",
+        "prevActionHash": null,
+        "argsText": "{\"p\\u0061th\":\"/tmp/a.txt\"}"
+      },
+      "expectedError": {
+        "code": "ACTION_INVALID_PARENT"
+      }
+    },
+    {
+      "id": "ACTION-034",
+      "kind": "action",
+      "description": "tool without schemaHash",
+      "input": {
+        "tenantId": "tenant-a",
+        "agentId": "aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa",
+        "sessionId": "bbbbbbbb-bbbb-4bbb-9bbb-bbbbbbbbbbbb",
+        "seq": 1,
+        "tool": {
+          "server": "files",
+          "name": "read"
+        },
+        "parentRequestHash": null,
+        "prevActionHash": null,
+        "argsText": "{\"p\\u0061th\":\"/tmp/a.txt\"}"
+      },
+      "expectedError": {
+        "code": "ACTION_INVALID_TOOL"
+      }
+    },
+    {
+      "id": "ACTION-035",
+      "kind": "action",
+      "description": "tool with an extra member",
+      "input": {
+        "tenantId": "tenant-a",
+        "agentId": "aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa",
+        "sessionId": "bbbbbbbb-bbbb-4bbb-9bbb-bbbbbbbbbbbb",
+        "seq": 1,
+        "tool": {
+          "server": "files",
+          "name": "read",
+          "schemaHash": "eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee",
+          "extra": 1
+        },
+        "parentRequestHash": null,
+        "prevActionHash": null,
+        "argsText": "{\"p\\u0061th\":\"/tmp/a.txt\"}"
+      },
+      "expectedError": {
+        "code": "ACTION_INVALID_TOOL"
+      }
+    },
+    {
+      "id": "ACTION-036",
+      "kind": "action",
+      "description": "tool server starts with a dot",
+      "input": {
+        "tenantId": "tenant-a",
+        "agentId": "aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa",
+        "sessionId": "bbbbbbbb-bbbb-4bbb-9bbb-bbbbbbbbbbbb",
+        "seq": 1,
+        "tool": {
+          "server": ".files",
+          "name": "read",
+          "schemaHash": "eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee"
+        },
+        "parentRequestHash": null,
+        "prevActionHash": null,
+        "argsText": "{\"p\\u0061th\":\"/tmp/a.txt\"}"
+      },
+      "expectedError": {
+        "code": "ACTION_INVALID_TOOL"
+      }
+    },
+    {
+      "id": "ACTION-037",
+      "kind": "action",
+      "description": "tool schemaHash is not hex",
+      "input": {
+        "tenantId": "tenant-a",
+        "agentId": "aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa",
+        "sessionId": "bbbbbbbb-bbbb-4bbb-9bbb-bbbbbbbbbbbb",
+        "seq": 1,
+        "tool": {
+          "server": "files",
+          "name": "read",
+          "schemaHash": "zz"
+        },
+        "parentRequestHash": null,
+        "prevActionHash": null,
+        "argsText": "{\"p\\u0061th\":\"/tmp/a.txt\"}"
+      },
+      "expectedError": {
+        "code": "ACTION_INVALID_TOOL"
+      }
+    },
+    {
+      "id": "ACTION-038",
+      "kind": "action",
+      "description": "arguments are an array",
+      "input": {
+        "tenantId": "tenant-a",
+        "agentId": "aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa",
+        "sessionId": "bbbbbbbb-bbbb-4bbb-9bbb-bbbbbbbbbbbb",
+        "seq": 1,
+        "tool": {
+          "server": "files",
+          "name": "read",
+          "schemaHash": "eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee"
+        },
+        "parentRequestHash": null,
+        "prevActionHash": null,
+        "argsText": "[1,2]"
+      },
+      "expectedError": {
+        "code": "ACTION_INVALID_ARGS"
+      }
+    },
+    {
+      "id": "ACTION-039",
+      "kind": "action",
+      "description": "arguments are a string",
+      "input": {
+        "tenantId": "tenant-a",
+        "agentId": "aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa",
+        "sessionId": "bbbbbbbb-bbbb-4bbb-9bbb-bbbbbbbbbbbb",
+        "seq": 1,
+        "tool": {
+          "server": "files",
+          "name": "read",
+          "schemaHash": "eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee"
+        },
+        "parentRequestHash": null,
+        "prevActionHash": null,
+        "argsText": "\"x\""
+      },
+      "expectedError": {
+        "code": "ACTION_INVALID_ARGS"
+      }
+    },
+    {
+      "id": "ACTION-040",
+      "kind": "action",
+      "description": "arguments are null",
+      "input": {
+        "tenantId": "tenant-a",
+        "agentId": "aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa",
+        "sessionId": "bbbbbbbb-bbbb-4bbb-9bbb-bbbbbbbbbbbb",
+        "seq": 1,
+        "tool": {
+          "server": "files",
+          "name": "read",
+          "schemaHash": "eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee"
+        },
+        "parentRequestHash": null,
+        "prevActionHash": null,
+        "argsText": "null"
+      },
+      "expectedError": {
+        "code": "ACTION_INVALID_ARGS"
+      }
+    },
+    {
+      "id": "ACTION-041",
+      "kind": "action",
+      "description": "argument text not in Unicode normalization form C",
+      "input": {
+        "tenantId": "tenant-a",
+        "agentId": "aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa",
+        "sessionId": "bbbbbbbb-bbbb-4bbb-9bbb-bbbbbbbbbbbb",
+        "seq": 1,
+        "tool": {
+          "server": "files",
+          "name": "read",
+          "schemaHash": "eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee"
+        },
+        "parentRequestHash": null,
+        "prevActionHash": null,
+        "argsText": "{\"s\":\"e\\u0301\"}"
+      },
+      "expectedError": {
+        "code": "ACTION_ARGS_NOT_CANONICALIZABLE",
+        "jcs": "STRING_NOT_NFC"
+      }
+    },
+    {
+      "id": "ACTION-042",
+      "kind": "action",
+      "description": "integer beyond the safe range",
+      "input": {
+        "tenantId": "tenant-a",
+        "agentId": "aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa",
+        "sessionId": "bbbbbbbb-bbbb-4bbb-9bbb-bbbbbbbbbbbb",
+        "seq": 1,
+        "tool": {
+          "server": "files",
+          "name": "read",
+          "schemaHash": "eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee"
+        },
+        "parentRequestHash": null,
+        "prevActionHash": null,
+        "argsText": "{\"n\":1152921504606846976}"
+      },
+      "expectedError": {
+        "code": "ACTION_ARGS_NOT_CANONICALIZABLE",
+        "jcs": "NUMBER_OUT_OF_RANGE"
+      }
+    },
+    {
+      "id": "ACTION-043",
+      "kind": "action",
+      "description": "lone surrogate in an argument string",
+      "input": {
+        "tenantId": "tenant-a",
+        "agentId": "aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa",
+        "sessionId": "bbbbbbbb-bbbb-4bbb-9bbb-bbbbbbbbbbbb",
+        "seq": 1,
+        "tool": {
+          "server": "files",
+          "name": "read",
+          "schemaHash": "eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee"
+        },
+        "parentRequestHash": null,
+        "prevActionHash": null,
+        "argsText": "{\"s\":\"\\ud800\"}"
+      },
+      "expectedError": {
+        "code": "ACTION_ARGS_NOT_CANONICALIZABLE",
+        "jcs": "LONE_SURROGATE"
+      }
+    },
+    {
+      "id": "ACTION-044",
+      "kind": "action",
+      "description": "forbidden member name __proto__",
+      "input": {
+        "tenantId": "tenant-a",
+        "agentId": "aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa",
+        "sessionId": "bbbbbbbb-bbbb-4bbb-9bbb-bbbbbbbbbbbb",
+        "seq": 1,
+        "tool": {
+          "server": "files",
+          "name": "read",
+          "schemaHash": "eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee"
+        },
+        "parentRequestHash": null,
+        "prevActionHash": null,
+        "argsText": "{\"__proto__\":{\"x\":1}}"
+      },
+      "expectedError": {
+        "code": "ACTION_ARGS_NOT_CANONICALIZABLE",
+        "jcs": "FORBIDDEN_KEY"
+      }
+    },
+    {
+      "id": "ACTION-045",
+      "kind": "action",
+      "description": "nesting deeper than 64 levels",
+      "input": {
+        "tenantId": "tenant-a",
+        "agentId": "aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa",
+        "sessionId": "bbbbbbbb-bbbb-4bbb-9bbb-bbbbbbbbbbbb",
+        "seq": 1,
+        "tool": {
+          "server": "files",
+          "name": "read",
+          "schemaHash": "eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee"
+        },
+        "parentRequestHash": null,
+        "prevActionHash": null,
+        "argsText": "{\"a\":{\"a\":{\"a\":{\"a\":{\"a\":{\"a\":{\"a\":{\"a\":{\"a\":{\"a\":{\"a\":{\"a\":{\"a\":{\"a\":{\"a\":{\"a\":{\"a\":{\"a\":{\"a\":{\"a\":{\"a\":{\"a\":{\"a\":{\"a\":{\"a\":{\"a\":{\"a\":{\"a\":{\"a\":{\"a\":{\"a\":{\"a\":{\"a\":{\"a\":{\"a\":{\"a\":{\"a\":{\"a\":{\"a\":{\"a\":{\"a\":{\"a\":{\"a\":{\"a\":{\"a\":{\"a\":{\"a\":{\"a\":{\"a\":{\"a\":{\"a\":{\"a\":{\"a\":{\"a\":{\"a\":{\"a\":{\"a\":{\"a\":{\"a\":{\"a\":{\"a\":{\"a\":{\"a\":{\"a\":{\"a\":{\"a\":{\"a\":{\"a\":{\"a\":{\"a\":{\"a\":{\"a\":{\"a\":{\"a\":{\"a\":{\"a\":{\"a\":{\"a\":{\"a\":{\"a\":1}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}"
+      },
+      "expectedError": {
+        "code": "ACTION_ARGS_NOT_CANONICALIZABLE",
+        "jcs": "MAX_DEPTH_EXCEEDED"
+      }
+    },
+    {
+      "id": "ACTION-046",
+      "kind": "schema",
+      "description": "empty object schema",
+      "input": {
+        "schemaText": "{\"type\":\"object\"}"
+      },
+      "expected": {
+        "schemaHash": "15f7a77dae99f86a61b9390adbb3670a5cb61799aeb4228e038f4ac70e7205f0"
+      }
+    },
+    {
+      "id": "ACTION-047",
+      "kind": "schema",
+      "description": "object schema with properties and required",
+      "input": {
+        "schemaText": "{\"type\":\"object\",\"required\":[\"path\"],\"properties\":{\"path\":{\"type\":\"string\",\"maxLength\":64}}}"
+      },
+      "expected": {
+        "schemaHash": "134d9e8a3d44f70b6a7becfcc5fa7a8a9f781d050ceb827715323d80a121ec4c"
+      }
+    },
+    {
+      "id": "ACTION-048",
+      "kind": "schema",
+      "description": "member order does not matter",
+      "input": {
+        "schemaText": "{\"properties\":{\"path\":{\"maxLength\":64,\"type\":\"string\"}},\"required\":[\"path\"],\"type\":\"object\"}"
+      },
+      "expected": {
+        "schemaHash": "134d9e8a3d44f70b6a7becfcc5fa7a8a9f781d050ceb827715323d80a121ec4c"
+      }
+    },
+    {
+      "id": "ACTION-049",
+      "kind": "schema",
+      "description": "a different schema is a different hash",
+      "input": {
+        "schemaText": "{\"type\":\"object\",\"required\":[\"path\"],\"properties\":{\"path\":{\"type\":\"string\",\"maxLength\":65}}}"
+      },
+      "expected": {
+        "schemaHash": "656db0ce0243b5a7651bcde8bf9508d571172a185d9baaf619bbe624feec8cfd"
+      }
+    },
+    {
+      "id": "ACTION-050",
+      "kind": "schema",
+      "description": "numeric keywords",
+      "input": {
+        "schemaText": "{\"type\":\"object\",\"properties\":{\"n\":{\"type\":\"integer\",\"minimum\":1,\"maximum\":1e2}}}"
+      },
+      "expected": {
+        "schemaHash": "d3d33dd2dcf5197cb4d229c2316d06dadedebbd89ff332b7497fc7fa4835a8c3"
+      }
+    },
+    {
+      "id": "ACTION-051",
+      "kind": "schema",
+      "description": "non-object schema is refused",
+      "input": {
+        "schemaText": "[]"
+      },
+      "expectedError": {
+        "code": "SCHEMA_INVALID"
+      }
+    }
+  ],
+  "counts": {
+    "cases": 51,
+    "accepted": 26,
+    "refused": 25
+  }
+}

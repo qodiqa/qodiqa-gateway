@@ -1,0 +1,66 @@
+{
+  "policies": [
+    {
+      "id": "POL-001",
+      "type": "REQUIRE_CONSENT",
+      "priority": 10,
+      "enabled": true,
+      "config": {
+        "requireValidArtifact": true
+      }
+    },
+    {
+      "id": "POL-002",
+      "type": "BLOCK_IP",
+      "priority": 20,
+      "enabled": true,
+      "config": {
+        "blocklist": [],
+        "cidrs": []
+      }
+    },
+    {
+      "id": "POL-003",
+      "type": "TIME_WINDOW",
+      "priority": 30,
+      "enabled": false,
+      "config": {
+        "allowedWindows": [
+          {
+            "days": [
+              "MON",
+              "TUE",
+              "WED",
+              "THU",
+              "FRI"
+            ],
+            "start": "00:00",
+            "end": "23:59"
+          }
+        ]
+      }
+    },
+    {
+      "id": "POL-004",
+      "type": "RATE_LIMIT",
+      "priority": 40,
+      "enabled": true,
+      "config": {
+        "windowSeconds": 60,
+        "maxRequests": 100,
+        "keyBy": "userId"
+      }
+    },
+    {
+      "id": "POL-NEW",
+      "type": "RATE_LIMIT",
+      "priority": 50,
+      "enabled": true,
+      "config": {
+        "windowSeconds": 30,
+        "maxRequests": 50,
+        "keyBy": "userId"
+      }
+    }
+  ]
+}

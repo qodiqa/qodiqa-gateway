@@ -1,0 +1,46 @@
+# PostgreSQL egress for the single-node topology.
+#
+# Since this overlay enables the PG mirror (configmap-single-node.yaml),
+# its pod needs a path to PostgreSQL — the same gap finding
+# closed for the distributed overlay, reproduced here with the
+# `topology: single-node` scoping so neither overlay's rule can widen the
+# other's egress.
+#
+# base/networkpolicy.yaml already grants this pod selector (minus the
+# topology label) egress to Redis, the OpenAI API, and DNS — this file is
+# purely additive; egress rules from different NetworkPolicy objects
+# selecting the same pods are unioned by Kubernetes.
+#
+# If your PostgreSQL is an external/managed instance (RDS, Cloud SQL,
+# Azure Database for PostgreSQL) with no in-cluster pod to select, replace
+# `to.podSelector` with an `ipBlock` covering the database's CIDR (or a
+# namespaceSelector + podSelector pair) — see the identical guidance in
+# overlays/distributed/networkpolicy-postgres.yaml. Do not widen to
+# 0.0.0.0/0.
+#
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: qodiqa-egress-postgres-single-node
+  namespace: qodiqa
+  labels:
+    app.kubernetes.io/name:      qodiqa
+    app.kubernetes.io/component: gateway
+    topology:                    single-node
+spec:
+  podSelector:
+    matchLabels:
+      app.kubernetes.io/name:      qodiqa
+      app.kubernetes.io/component: gateway
+      topology:                    single-node
+  policyTypes:
+    - Egress
+  egress:
+    # PostgreSQL (in-cluster Service, or adjust to ipBlock/namespaceSelector — see header comment)
+    - to:
+        - podSelector:
+            matchLabels:
+              app.kubernetes.io/name: postgres
+      ports:
+        - protocol: TCP
+          port:     5432

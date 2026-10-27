@@ -1,0 +1,14 @@
+# Fires qodiqa-audit-log-backup-verify.service every 5 minutes, offset from
+# the backup timer by RandomizedDelaySec so the two don't race — proves the
+# 5-minute RPO is actually being met rather than assuming a timer that was
+# enabled once is still firing.
+[Unit]
+Description=QODIQA audit-chain file backup verification schedule (5 minutes)
+
+[Timer]
+OnCalendar=*:2/5
+Persistent=true
+RandomizedDelaySec=15
+
+[Install]
+WantedBy=timers.target

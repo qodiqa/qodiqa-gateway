@@ -1,0 +1,21 @@
+# PKCS#11 HSM non-secret configuration — src/infra/keys/providers/hsm.js.
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: qodiqa-hsm-config
+  namespace: qodiqa
+  labels:
+    app.kubernetes.io/name:      qodiqa
+    app.kubernetes.io/component: config
+data:
+  # Path INSIDE the container to the vendor PKCS#11 shared library — must
+  # match wherever statefulset-patch.yaml's volumeMount actually places it.
+  # SoftHSM2's default path is shown as a DEVELOPMENT/TEST-ONLY example —
+  # see src/infra/keys/providers/hsm.js's header comment; replace with your
+  # production vendor's library path (e.g. Thales Luna, AWS CloudHSM).
+  HSM_PKCS11_LIB: "/usr/lib/softhsm/libsofthsm2.so"
+  HSM_PKCS11_SLOT: "0"
+  # Path INSIDE the container (on the writable /tmp mount already present in
+  # the base pod spec — the root filesystem is read-only) for the HSM key
+  # metadata index. See hsm.js's KEY_INDEX_PATH_DEFAULT.
+  HSM_KEY_INDEX_PATH: "/tmp/hsm-keys.json"

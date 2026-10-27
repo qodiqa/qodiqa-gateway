@@ -1,0 +1,29 @@
+# dependencies and build output
+node_modules/
+coverage/
+dist/
+*.log
+
+# environment and secrets
+.env
+.env.*
+!.env.example
+*.pem
+*.key
+*.p12
+*.pfx
+
+# local runtime data
+/data/
+/backups/
+
+# python
+__pycache__/
+*.pyc
+.venv/
+
+# editor and operating system
+.vscode/
+.idea/
+.DS_Store
+Thumbs.db

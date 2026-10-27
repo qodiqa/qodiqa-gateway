@@ -1,0 +1,15 @@
+# Fires qodiqa-pg-backup-daily.service. Schedule and timezone are configured
+# here, NOT in the script — mirrors the Kubernetes CronJob's
+# spec.schedule/spec.timeZone split (deploy/kubernetes/base/backup-cronjobs.yaml).
+[Unit]
+Description=QODIQA daily PostgreSQL backup schedule
+
+[Timer]
+OnCalendar=*-*-* 02:00:00
+# Run on next boot if the scheduled time was missed (host was off/rebooting).
+Persistent=true
+# Spreads load if you run this timer across many hosts pointed at one DB.
+RandomizedDelaySec=120
+
+[Install]
+WantedBy=timers.target

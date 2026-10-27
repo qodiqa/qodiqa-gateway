@@ -1,0 +1,11 @@
+{
+  "policies": [
+    { "id": "POL-CONSENT", "type": "REQUIRE_CONSENT", "priority": 1, "enabled": true, "config": { "requireValidArtifact": true } },
+    { "id": "POL-IP-EXACT", "type": "BLOCK_IP", "priority": 10, "enabled": true, "config": { "blocklist": ["192.0.2.50"], "cidrs": [] } },
+    { "id": "POL-IP-NET", "type": "BLOCK_IP", "priority": 11, "enabled": true, "config": { "blocklist": [], "cidrs": ["10.0.0.0/8"] } },
+    { "id": "POL-IP-OFF", "type": "BLOCK_IP", "priority": 12, "enabled": false, "config": { "blocklist": ["198.51.100.7"], "cidrs": [] } },
+    { "id": "POL-HOURS", "type": "TIME_WINDOW", "priority": 20, "enabled": true, "config": { "allowedWindows": [{ "days": ["MON", "TUE", "WED", "THU", "FRI"], "start": "06:00", "end": "20:00" }] } },
+    { "id": "POL-RATE-USER", "type": "RATE_LIMIT", "priority": 30, "enabled": true, "config": { "windowSeconds": 3600, "maxRequests": 6, "keyBy": "userId" } },
+    { "id": "POL-RATE-IP", "type": "RATE_LIMIT", "priority": 31, "enabled": true, "config": { "windowSeconds": 3600, "maxRequests": 5, "keyBy": "ip" } }
+  ]
+}

@@ -1,0 +1,735 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>QODIQA — Execution Trust Infrastructure</title>
+<style>
+:root{
+  --bg:#050608; --bg-1:#08090d; --surface:#0d0f15; --surface-2:#12151e; --surface-3:#171b27;
+  --border:#1c202c; --border-strong:#282e40; --border-soft:#15181f;
+  --text:#eef1f7; --text-dim:#98a1b5; --text-faint:#6b7488; --text-ghost:#3a4258;
+  --accent:#5b8cff; --accent-dim:#3a5bb0; --accent-glow:rgba(91,140,255,.14);
+  --violet:#8b7bff; --cyan:#4fd1c5;
+  --success:#31c48d; --success-dim:rgba(49,196,141,.13);
+  --warning:#e8ab3f; --warning-dim:rgba(232,171,63,.13);
+  --danger:#f0616c; --danger-dim:rgba(240,97,108,.13);
+  --serif:'Iowan Old Style','Palatino Linotype','Book Antiqua',ui-serif,Georgia,serif;
+  --mono:'SFMono-Regular',Consolas,'Cascadia Code','Liberation Mono',Menlo,monospace;
+  --sans:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Helvetica,Arial,sans-serif;
+  --r-sm:6px; --r:10px; --r-lg:16px;
+  --shadow-1:0 1px 2px rgba(0,0,0,.5);
+  --shadow-2:0 16px 40px rgba(0,0,0,.5);
+  color-scheme:dark;
+}
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+html{-webkit-text-size-adjust:100%}
+body{
+  background:
+    radial-gradient(ellipse 1000px 600px at 20% -12%, rgba(91,140,255,.07), transparent 62%),
+    radial-gradient(ellipse 800px 500px at 105% 0%, rgba(139,123,255,.05), transparent 58%),
+    var(--bg);
+  color:var(--text); font-family:var(--sans); font-size:14px; line-height:1.5;
+  min-height:100vh; overflow-x:hidden;
+  font-variant-numeric:tabular-nums;
+}
+::selection{ background:var(--accent-glow); color:var(--text) }
+a{color:inherit}
+button{font-family:inherit}
+:focus-visible{outline:2px solid var(--accent); outline-offset:2px; border-radius:4px}
+[role="button"]{cursor:pointer}
+@media (prefers-reduced-motion:reduce){
+  *,*::before,*::after{animation-duration:.001ms !important; animation-iteration-count:1 !important; transition-duration:.001ms !important}
+}
+::-webkit-scrollbar{width:9px;height:9px}
+::-webkit-scrollbar-track{background:transparent}
+::-webkit-scrollbar-thumb{background:var(--border-strong);border-radius:99px;border:2px solid var(--bg)}
+::-webkit-scrollbar-thumb:hover{background:var(--text-ghost)}
+.mono{font-family:var(--mono); font-variant-numeric:tabular-nums}
+.serif{font-family:var(--serif)}
+.vh{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0)}
+
+/* ---------- Topbar ---------- */
+.topbar{
+  position:sticky; top:0; z-index:60;
+  display:flex; align-items:center; gap:16px;
+  padding:0 22px; height:58px;
+  background:rgba(6,7,10,.88); backdrop-filter:blur(16px) saturate(140%);
+  border-bottom:1px solid var(--border-soft);
+}
+.brand{display:flex; align-items:center; gap:10px; flex-shrink:0}
+.brand-mark{width:24px;height:24px;color:var(--text);flex-shrink:0}
+.brand-name{font-weight:700; font-size:14.5px; letter-spacing:.06em}
+.brand-tag{font-size:9.5px; color:var(--text-faint); letter-spacing:.16em; text-transform:uppercase; margin-top:1px}
+.brand-text{display:flex; flex-direction:column; line-height:1.15}
+.env-pill{
+  display:flex; align-items:center; gap:6px; font-size:10.5px; color:var(--text-faint);
+  border:1px solid var(--border); padding:3px 9px 3px 7px; border-radius:99px;
+  flex-shrink:0; white-space:nowrap;
+}
+.env-pill .dot{width:5px;height:5px;border-radius:50%;background:var(--accent)}
+.search-wrap{flex:1; max-width:460px; position:relative}
+.search-box{
+  display:flex; align-items:center; gap:8px; width:100%;
+  background:var(--surface); border:1px solid var(--border); border-radius:var(--r-sm);
+  padding:7px 11px; color:var(--text-dim); transition:border-color .15s, box-shadow .15s;
+}
+.search-box:focus-within{ border-color:var(--accent-dim); box-shadow:0 0 0 3px var(--accent-glow) }
+.search-box svg{width:14px;height:14px;flex-shrink:0;opacity:.6}
+.search-box input{ background:none; border:none; outline:none; color:var(--text); font-size:12.5px; width:100%}
+.search-box input::placeholder{color:var(--text-faint)}
+.kbd{font-family:var(--mono); font-size:10px; color:var(--text-faint); background:var(--surface-2); border:1px solid var(--border); border-radius:4px; padding:1px 6px; flex-shrink:0}
+.search-results{
+  position:absolute; top:calc(100% + 8px); left:0; right:0; max-height:60vh; overflow:auto;
+  background:var(--surface-2); border:1px solid var(--border-strong); border-radius:var(--r); box-shadow:var(--shadow-2);
+  display:none; padding:6px; z-index:80;
+}
+.search-results.open{display:block}
+.sr-item{ display:flex; align-items:center; gap:10px; padding:9px 10px; border-radius:var(--r-sm); cursor:pointer}
+.sr-item:hover, .sr-item.sel{background:var(--surface-3)}
+.sr-item svg{width:14px;height:14px;color:var(--text-faint);flex-shrink:0}
+.sr-main{display:flex; flex-direction:column; min-width:0}
+.sr-title{font-size:12.5px; color:var(--text); white-space:nowrap; overflow:hidden; text-overflow:ellipsis}
+.sr-sub{font-size:10.5px; color:var(--text-faint)}
+.sr-tag{margin-left:auto; font-size:9.5px; color:var(--text-faint); border:1px solid var(--border); padding:2px 6px; border-radius:99px; flex-shrink:0}
+.sr-empty{padding:18px; text-align:center; color:var(--text-faint); font-size:12.5px}
+.topbar-right{display:flex; align-items:center; gap:16px; margin-left:auto; flex-shrink:0}
+.clock{font-family:var(--mono); font-size:11.5px; color:var(--text-faint); white-space:nowrap}
+.status-chip{display:flex; align-items:center; gap:7px; font-size:11.5px; color:var(--text-dim)}
+.status-chip .dot{width:6px;height:6px;border-radius:50%;background:var(--success); box-shadow:0 0 6px var(--success); animation:pulse-dot 2.4s infinite}
+@keyframes pulse-dot{0%,100%{opacity:1}50%{opacity:.3}}
+
+/* ---------- Tabs ---------- */
+.tabbar{
+  position:sticky; top:58px; z-index:55;
+  display:flex; gap:2px; padding:0 22px; overflow-x:auto; scrollbar-width:none;
+  background:rgba(6,7,10,.82); backdrop-filter:blur(16px);
+  border-bottom:1px solid var(--border-soft);
+}
+.tabbar::-webkit-scrollbar{display:none}
+.tab-btn{
+  display:flex; align-items:center; gap:6px; white-space:nowrap;
+  background:none; border:none; color:var(--text-faint); cursor:pointer;
+  padding:12px 13px; font-size:12.5px; font-weight:500; position:relative; transition:color .15s;
+}
+.tab-btn svg{width:13px;height:13px; opacity:.6}
+.tab-btn:hover{color:var(--text-dim)}
+.tab-btn.active{color:var(--text)}
+.tab-btn.active svg{opacity:1}
+.tab-btn.active::after{content:"";position:absolute;left:9px;right:9px;bottom:-1px;height:2px;background:linear-gradient(90deg,var(--accent),var(--violet));border-radius:2px}
+.tab-live{width:5px;height:5px;border-radius:50%;background:var(--success);box-shadow:0 0 6px var(--success);animation:pulse-dot 2.4s infinite;margin-left:2px}
+
+/* ---------- Layout ---------- */
+main{max-width:1400px; margin:0 auto; padding:0 22px 90px}
+.panel{display:none; animation:fadein .3s ease}
+.panel.active{display:block}
+@keyframes fadein{from{opacity:0; transform:translateY(5px)} to{opacity:1; transform:translateY(0)}}
+.section{margin-bottom:56px}
+.section-head{display:flex; align-items:baseline; justify-content:space-between; gap:16px; margin-bottom:18px; flex-wrap:wrap}
+.section-head h2{font-size:15px; font-weight:700; letter-spacing:-.005em}
+.section-head .eyebrow{display:block; font-size:10.5px; letter-spacing:.16em; text-transform:uppercase; color:var(--accent); margin-bottom:7px; font-weight:700}
+.section-note{font-size:11.5px; color:var(--text-faint); max-width:480px; line-height:1.6}
+
+/* ---------- Hero ---------- */
+.hero{ position:relative; overflow:hidden; padding:52px 0 0; margin-bottom:32px}
+.hero::before{
+  content:""; position:absolute; inset:-10% -6% auto -6%; height:150%;
+  background-image:
+    linear-gradient(var(--border-soft) 1px, transparent 1px),
+    linear-gradient(90deg, var(--border-soft) 1px, transparent 1px);
+  background-size:56px 56px;
+  mask-image:radial-gradient(ellipse 65% 70% at 22% 15%, black, transparent 72%);
+  -webkit-mask-image:radial-gradient(ellipse 65% 70% at 22% 15%, black, transparent 72%);
+  pointer-events:none;
+}
+.hero-inner{position:relative}
+.hero-badge{display:inline-flex;align-items:center;gap:7px;font-size:11px;color:var(--accent);background:var(--accent-glow);border:1px solid rgba(91,140,255,.28);padding:5px 12px;border-radius:99px;margin-bottom:24px;font-weight:600;letter-spacing:.02em}
+.hero-badge svg{width:12px;height:12px}
+.hero h1{font-size:clamp(32px,4.6vw,52px); font-weight:800; letter-spacing:-.025em; line-height:1.03; margin-bottom:16px}
+.hero h1 span{background:linear-gradient(120deg,var(--accent),var(--violet) 55%,var(--cyan)); -webkit-background-clip:text; background-clip:text; color:transparent}
+.hero .sub{font-size:16px; color:var(--text-dim); font-weight:500; margin-bottom:20px; max-width:640px}
+.hero p.desc{max-width:640px; font-size:13.5px; color:var(--text-dim); line-height:1.75; margin-bottom:32px}
+.hero-cta{display:flex; gap:10px; flex-wrap:wrap; margin-bottom:40px}
+.btn{
+  display:inline-flex; align-items:center; gap:8px; font-size:12.5px; font-weight:600; cursor:pointer;
+  padding:10px 18px; border-radius:var(--r-sm); border:1px solid var(--border-strong); background:var(--surface-2); color:var(--text);
+  transition:transform .12s, border-color .15s, background .15s;
+}
+.btn svg{width:13px;height:13px}
+.btn:hover{border-color:var(--text-ghost); background:var(--surface-3)}
+.btn:active{transform:scale(.97)}
+.btn-primary{background:var(--text); border-color:transparent; color:#08090d}
+.btn-primary:hover{background:#fff}
+.btn-sm{padding:6px 12px; font-size:11.5px}
+.btn-ghost{background:none; border-color:var(--border)}
+.btn:disabled{opacity:.45; cursor:not-allowed; transform:none}
+
+/* ---------- Live Trust widget (hero) ---------- */
+.live-trust{
+  border:1px solid var(--border-strong); border-radius:var(--r-lg);
+  background:linear-gradient(180deg, rgba(18,21,30,.9), rgba(13,15,21,.9));
+  backdrop-filter:blur(8px);
+  padding:0; overflow:hidden; box-shadow:var(--shadow-2);
+}
+.lt-head{display:flex; align-items:center; justify-content:space-between; padding:16px 22px; border-bottom:1px solid var(--border)}
+.lt-head-l{display:flex; align-items:center; gap:10px}
+.lt-head-l .tab-live{margin:0}
+.lt-head-title{font-size:11px; font-weight:700; letter-spacing:.1em; text-transform:uppercase; color:var(--text-dim)}
+.lt-head-sub{font-size:11px; color:var(--text-faint)}
+.lt-body{display:grid; grid-template-columns:280px 1fr; min-height:220px}
+@media (max-width:860px){ .lt-body{grid-template-columns:1fr} }
+.lt-ledger{border-right:1px solid var(--border); padding:8px; overflow-y:auto; max-height:360px}
+@media (max-width:860px){ .lt-ledger{border-right:none; border-bottom:1px solid var(--border); max-height:none} }
+.lt-exec{
+  display:flex; flex-direction:column; gap:3px; padding:11px 12px; border-radius:var(--r-sm); cursor:pointer;
+  border-left:2px solid transparent; transition:background .15s;
+}
+.lt-exec:hover{background:var(--surface)}
+.lt-exec.active{background:var(--surface-2); border-left-color:var(--accent)}
+.lt-exec-top{display:flex; justify-content:space-between; align-items:center; gap:8px}
+.lt-exec-id{font-family:var(--mono); font-size:11px; color:var(--text-dim)}
+.verdict-chip{font-size:9.5px; font-weight:700; padding:2px 7px; border-radius:99px; letter-spacing:.04em; flex-shrink:0}
+.v-execute{color:var(--success); background:var(--success-dim)}
+.v-block{color:var(--danger); background:var(--danger-dim)}
+.lt-exec-meta{font-size:10.5px; color:var(--text-faint)}
+.lt-main{padding:22px; display:flex; gap:26px; align-items:center; flex-wrap:wrap}
+.stamp-wrap{display:flex; flex-direction:column; align-items:center; gap:8px; flex-shrink:0}
+.stamp-svg{width:76px;height:76px}
+.stamp-svg.stamp-ok{color:var(--success)}
+.stamp-svg.stamp-block{color:var(--danger)}
+.stamp-word{font-family:var(--serif); font-size:15px; font-weight:600; letter-spacing:.01em}
+.stamp-check, .stamp-x1, .stamp-x2{stroke-dasharray:80; stroke-dashoffset:80; animation:draw .55s ease forwards .1s}
+@keyframes draw{to{stroke-dashoffset:0}}
+.lt-detail{flex:1; min-width:220px}
+.lt-reason{font-size:13.5px; color:var(--text); font-weight:600; margin-bottom:4px}
+.lt-meta-row{font-size:11.5px; color:var(--text-faint); margin-bottom:14px}
+.mini-rail{display:flex; gap:3px; margin-bottom:10px}
+.mini-tick{flex:1; height:5px; border-radius:3px; background:var(--surface-3)}
+.mini-tick.pass{background:var(--success)}
+.mini-tick.blocked{background:var(--danger)}
+.mini-caption{font-size:10.5px; color:var(--text-faint); display:flex; justify-content:space-between}
+.lt-foot{padding:12px 22px; border-top:1px solid var(--border); display:flex; justify-content:space-between; align-items:center; gap:12px; flex-wrap:wrap}
+.lt-foot-note{font-size:11px; color:var(--text-faint)}
+
+/* ---------- Grids & Cards ---------- */
+.grid{display:grid; gap:14px}
+.grid-metrics{grid-template-columns:repeat(auto-fit,minmax(150px,1fr))}
+.grid-2{grid-template-columns:repeat(2,1fr)}
+.grid-sub{grid-template-columns:repeat(auto-fill,minmax(270px,1fr))}
+@media (max-width:640px){ .grid-2{grid-template-columns:1fr} }
+
+.card{
+  background:var(--surface); border:1px solid var(--border); border-radius:var(--r); padding:16px;
+  transition:border-color .15s, transform .15s, box-shadow .15s;
+}
+.card-hover:hover{border-color:var(--border-strong); transform:translateY(-1px); box-shadow:var(--shadow-1); cursor:pointer}
+
+/* systems ledger table */
+.sys-table{width:100%; border-collapse:collapse; background:var(--surface); border:1px solid var(--border); border-radius:var(--r); overflow:hidden}
+.sys-table td{padding:12px 16px; border-top:1px solid var(--border-soft); font-size:12.5px; vertical-align:middle}
+.sys-table tr:first-child td{border-top:none}
+.sys-table tr:hover td{background:var(--surface-2)}
+.sys-dot-cell{width:20px}
+.sys-dot{width:8px;height:8px;border-radius:50%;display:inline-block}
+.sys-name{font-weight:600; font-size:12.5px}
+.sys-sub{font-size:11px; color:var(--text-faint); margin-top:2px}
+.sys-state-cell{text-align:right; white-space:nowrap}
+.state-pill{display:inline-flex; align-items:center; gap:6px; font-size:10.5px; font-weight:700; padding:3px 10px; border-radius:99px; letter-spacing:.02em}
+.state-pill .dot{width:6px;height:6px;border-radius:50%}
+.st-ok{color:var(--success); background:var(--success-dim)}
+.st-ok .dot{background:var(--success)}
+.st-optional{color:var(--text-dim); background:var(--surface-3)}
+.st-optional .dot{background:var(--accent)}
+.st-config{color:var(--warning); background:var(--warning-dim)}
+.st-config .dot{background:var(--warning)}
+
+/* metric ledger strip */
+.metric-strip{display:grid; grid-template-columns:repeat(auto-fit,minmax(150px,1fr)); gap:1px; background:var(--border-soft); border:1px solid var(--border); border-radius:var(--r); overflow:hidden}
+.metric-cell{background:var(--surface); padding:20px 22px}
+.metric-value{font-family:var(--serif); font-size:26px; font-weight:600; letter-spacing:-.01em; color:var(--text); margin-bottom:5px; line-height:1}
+.metric-label{font-size:10.5px; color:var(--text-faint); text-transform:uppercase; letter-spacing:.08em}
+
+.legend{display:flex; gap:18px; flex-wrap:wrap; margin-top:14px; font-size:11px; color:var(--text-faint)}
+.legend span{display:inline-flex; align-items:center; gap:6px}
+.legend .dot{width:7px;height:7px;border-radius:50%}
+
+/* ---------- Trust Explorer (mission control) ---------- */
+.mc-layout{display:grid; grid-template-columns:250px 1fr 340px; gap:18px; align-items:start}
+@media (max-width:1180px){ .mc-layout{grid-template-columns:250px 1fr} .mc-layout .evidence-col{grid-column:1 / -1} }
+@media (max-width:860px){ .mc-layout{grid-template-columns:1fr} .mc-layout .evidence-col{grid-column:auto} }
+
+.mc-panel{background:var(--surface); border:1px solid var(--border); border-radius:var(--r-lg); overflow:hidden}
+.mc-panel-head{padding:14px 18px; border-bottom:1px solid var(--border); font-size:11px; font-weight:700; letter-spacing:.08em; text-transform:uppercase; color:var(--text-faint)}
+
+.exec-list{display:flex; flex-direction:column; padding:6px}
+.exec-item{
+  text-align:left; width:100%; padding:12px 12px; border-radius:var(--r-sm); border:none; border-left:2px solid transparent;
+  background:none; cursor:pointer; transition:background .15s;
+}
+.exec-item:hover{background:var(--surface-2)}
+.exec-item.active{background:var(--surface-2); border-left-color:var(--accent)}
+.exec-item-top{display:flex; justify-content:space-between; align-items:center; margin-bottom:5px; gap:8px}
+.exec-id{font-family:var(--mono); font-size:11px; color:var(--text-dim)}
+.exec-meta{font-size:10.5px; color:var(--text-faint); line-height:1.5}
+
+.stamp-header{display:flex; align-items:center; gap:18px; padding:20px 20px 18px; border-bottom:1px solid var(--border)}
+.stamp-header .stamp-svg{width:56px;height:56px; flex-shrink:0}
+.stamp-header-body{min-width:0}
+.stamp-header-verdict{font-family:var(--serif); font-size:20px; font-weight:600; margin-bottom:3px}
+.stamp-header-reason{font-size:12px; color:var(--text-dim)}
+.stamp-header-meta{font-size:11px; color:var(--text-faint); margin-top:6px}
+
+.rail{position:relative; padding:18px 20px 20px}
+.rail::before{content:"";position:absolute;left:90px;top:20px;bottom:20px;width:1px;background:var(--border-strong)}
+.rail-node{display:flex; gap:14px; padding:8px 0; position:relative}
+.rail-time{width:44px; flex-shrink:0; font-size:10px; color:var(--text-ghost); padding-top:6px; text-align:right}
+.rail-dot{width:24px;height:24px;border-radius:50%;background:var(--surface-3);border:1px solid var(--border-strong);display:flex;align-items:center;justify-content:center;flex-shrink:0;z-index:1;color:var(--text-faint)}
+.rail-dot svg{width:11px;height:11px}
+.rail-node.pass .rail-dot{background:var(--success-dim); border-color:transparent; color:var(--success)}
+.rail-node.blocked .rail-dot{background:var(--danger-dim); border-color:transparent; color:var(--danger); box-shadow:0 0 0 5px var(--danger-dim)}
+.rail-node.skip{opacity:.32}
+.rail-content{flex:1; min-width:0; padding:5px 10px; border-radius:var(--r-sm); transition:background .15s}
+.rail-node:hover .rail-content{background:var(--surface-2)}
+.rail-node.sel .rail-content{background:var(--surface-2); box-shadow:inset 0 0 0 1px var(--border-strong)}
+.rail-title{font-size:12.5px; font-weight:600; color:var(--text)}
+.rail-module{font-size:10.5px; color:var(--text-faint); margin-top:2px}
+
+.stage-detail{margin:0 20px 20px; padding:16px 18px; border-radius:var(--r); background:var(--surface-2); border:1px solid var(--border)}
+.stage-detail h4{font-size:12.5px; margin-bottom:4px; display:flex; align-items:center; gap:8px}
+.stage-detail .module{font-family:var(--mono); font-size:10.5px; color:var(--accent); background:var(--accent-glow); padding:1px 8px; border-radius:99px}
+.stage-detail p{font-size:12.5px; color:var(--text-dim); line-height:1.65; margin-top:8px}
+
+.evidence-col{display:flex; flex-direction:column; gap:14px}
+.evidence-toolbar{padding:10px 14px}
+.evidence-search{display:flex; align-items:center; gap:8px; background:var(--surface-2); border:1px solid var(--border); border-radius:var(--r-sm); padding:7px 10px}
+.evidence-search svg{width:13px;height:13px; color:var(--text-faint)}
+.evidence-search input{background:none; border:none; outline:none; color:var(--text); font-size:12.5px; width:100%}
+
+.ledger-group{border-bottom:1px solid var(--border-soft); padding:14px 18px}
+.ledger-group:last-of-type{border-bottom:none}
+.ledger-group-head{display:flex; justify-content:space-between; align-items:center; margin-bottom:4px}
+.ledger-group-title{font-size:11.5px; font-weight:700}
+.ledger-badge{font-size:9.5px; font-weight:700; padding:2px 8px; border-radius:99px; letter-spacing:.03em; flex-shrink:0}
+.lb-verified{color:var(--success); background:var(--success-dim)}
+.lb-pending{color:var(--text-faint); background:var(--surface-3)}
+.ledger-row{display:flex; justify-content:space-between; align-items:baseline; gap:14px; padding:8px 0; border-top:1px solid var(--border-soft)}
+.ledger-row:first-of-type{border-top:none}
+.ledger-label{font-size:10px; letter-spacing:.05em; text-transform:uppercase; color:var(--text-faint); flex-shrink:0; padding-top:1px}
+.ledger-value-wrap{display:flex; align-items:center; gap:6px; min-width:0; justify-content:flex-end}
+.ledger-value{font-family:var(--mono); font-size:11.5px; color:var(--text); word-break:break-all; text-align:right}
+.ledger-value.pill{padding:2px 8px; border-radius:99px; font-size:10.5px}
+.ev-copy{background:none;border:none;color:var(--text-ghost);cursor:pointer;padding:2px;display:flex; border-radius:4px; flex-shrink:0; opacity:.4; transition:opacity .12s}
+.ledger-row:hover .ev-copy, .ledger-row:focus-within .ev-copy{opacity:1}
+.ev-copy:hover{color:var(--accent); background:var(--surface-3)}
+.ev-copy svg{width:11px;height:11px}
+.ledger-empty{padding:24px; text-align:center; color:var(--text-faint); font-size:12px}
+.verify-note{padding:14px 18px; font-size:11px; color:var(--text-faint); line-height:1.7; border-top:1px solid var(--border-soft)}
+.verify-note b{color:var(--text-dim)}
+
+/* ---------- Studio ---------- */
+.studio-layout{display:grid; grid-template-columns:400px 1fr; gap:18px; align-items:start}
+@media (max-width:960px){ .studio-layout{grid-template-columns:1fr} }
+.studio-panel{background:var(--surface); border:1px solid var(--border); border-radius:var(--r-lg); padding:20px}
+.field-label{font-size:10.5px; color:var(--text-faint); text-transform:uppercase; letter-spacing:.07em; margin-bottom:8px; display:block}
+.select, textarea.ta{
+  width:100%; background:var(--surface-2); border:1px solid var(--border); border-radius:var(--r-sm); color:var(--text);
+  padding:10px 12px; font-size:13px; font-family:inherit; outline:none; transition:border-color .15s;
+}
+.select:focus, textarea.ta:focus{border-color:var(--accent-dim); box-shadow:0 0 0 3px var(--accent-glow)}
+textarea.ta{resize:vertical; min-height:88px; line-height:1.6}
+.provider-grid{display:grid; grid-template-columns:repeat(3,1fr); gap:8px; margin-bottom:16px}
+@media (max-width:420px){.provider-grid{grid-template-columns:repeat(2,1fr)}}
+.provider-pick{
+  border:1px solid var(--border); background:var(--surface-2); border-radius:var(--r-sm); padding:9px 6px; text-align:center;
+  cursor:pointer; font-size:11px; color:var(--text-dim); transition:all .15s;
+}
+.provider-pick.sel{border-color:var(--accent-dim); background:rgba(91,140,255,.1); color:var(--text)}
+.studio-console{margin-top:16px; border:1px solid var(--border); border-radius:var(--r); overflow:hidden}
+.studio-console-head{display:flex; justify-content:space-between; padding:8px 12px; background:var(--surface-2); border-bottom:1px solid var(--border); font-size:10px; color:var(--text-faint); text-transform:uppercase; letter-spacing:.06em}
+.studio-rail{max-height:340px; overflow-y:auto}
+.studio-rail .rail{padding:12px 14px 14px}
+.studio-rail .rail::before{left:74px}
+.studio-rail .rail-time{width:36px}
+.studio-rail .rail-dot{width:20px;height:20px}
+.studio-rail .rail-node.pending .rail-dot{background:var(--surface-3)}
+.studio-log{background:#000; padding:10px 14px; font-family:var(--mono); font-size:10.5px; color:var(--success); max-height:100px; overflow-y:auto; line-height:1.7; border-top:1px solid var(--border)}
+.studio-log .l-line{opacity:0; animation:login .25s forwards}
+.studio-log .l-info{color:var(--text-dim)}
+@keyframes login{to{opacity:1}}
+.result-tabs{display:flex; gap:2px; margin-bottom:14px; flex-wrap:wrap; border-bottom:1px solid var(--border)}
+.rtab{background:none;border:none;color:var(--text-faint);font-size:11.5px;padding:8px 11px;cursor:pointer;border-bottom:2px solid transparent}
+.rtab.active{color:var(--text); border-color:var(--accent)}
+.response-box{background:var(--surface-2); border:1px solid var(--border); border-radius:var(--r-sm); padding:14px; font-size:13px; color:var(--text-dim); line-height:1.7; white-space:pre-wrap}
+.result-ledger{background:var(--surface-2); border:1px solid var(--border); border-radius:var(--r)}
+.empty-state{text-align:center; padding:60px 20px; color:var(--text-faint); font-size:12.5px}
+.empty-state svg{width:30px;height:30px;margin-bottom:12px; opacity:.35}
+
+/* ---------- Manifest (subsystems) ---------- */
+.manifest{display:grid; grid-template-columns:1fr 1fr; column-gap:36px}
+@media (max-width:820px){ .manifest{grid-template-columns:1fr} }
+.manifest-item{display:grid; grid-template-columns:44px 1fr; gap:16px; padding:20px 6px; border-top:1px solid var(--border-soft); cursor:pointer; transition:background .15s}
+.manifest-item:first-child{border-top:none}
+.manifest-item:hover, .manifest-item:focus-visible{background:var(--surface)}
+.manifest-index{font-family:var(--serif); font-size:20px; color:var(--text-ghost); font-weight:600; line-height:1.3}
+.manifest-body h3{font-size:13.5px;font-weight:700;margin-bottom:6px}
+.manifest-ref{font-family:var(--mono);font-size:10px;color:var(--accent); background:var(--accent-glow); padding:2px 8px;border-radius:5px; display:inline-block; margin-bottom:8px}
+.manifest-desc{font-size:12px;color:var(--text-dim);line-height:1.6}
+
+/* ---------- Trust ledger (security) ---------- */
+.trust-ledger{display:flex;flex-direction:column; max-width:900px}
+.tl-item{display:flex; gap:14px; padding:16px 4px; border-top:1px solid var(--border-soft)}
+.tl-item:first-child{border-top:none}
+.tl-check{width:22px;height:22px;border-radius:50%;background:var(--success-dim);color:var(--success);display:flex;align-items:center;justify-content:center;flex-shrink:0;margin-top:1px}
+.tl-check svg{width:12px;height:12px}
+.tl-body h4{font-size:13px;font-weight:700;margin-bottom:4px}
+.tl-body p{font-size:12px;color:var(--text-dim);line-height:1.65}
+
+/* ---------- Architecture ---------- */
+.arch-toolbar{display:flex; gap:8px; margin-bottom:14px}
+.arch-wrap{background:var(--surface); border:1px solid var(--border); border-radius:var(--r-lg); padding:10px; overflow:auto; max-height:70vh}
+.arch-inner{transform-origin:top left; transition:transform .15s}
+
+/* ---------- Providers ---------- */
+.provider-table{width:100%; border-collapse:collapse; background:var(--surface); border:1px solid var(--border); border-radius:var(--r); overflow:hidden}
+.provider-table th{text-align:left; font-size:10px; text-transform:uppercase; letter-spacing:.06em; color:var(--text-faint); background:var(--surface-2); padding:10px 14px}
+.provider-table td{padding:13px 14px; font-size:12px; border-top:1px solid var(--border-soft); vertical-align:middle}
+.provider-name{font-weight:700; font-size:12.5px}
+.provider-class{font-size:10.5px; color:var(--text-faint); margin-top:2px}
+.provider-note{color:var(--text-dim); font-size:11.5px; max-width:340px; line-height:1.5}
+.provider-env{font-family:var(--mono); font-size:10.5px; color:var(--text-faint)}
+.lat-bar{width:90px; height:4px; background:var(--surface-3); border-radius:3px; overflow:hidden; margin-bottom:4px}
+.lat-fill{height:100%; border-radius:3px; background:var(--accent)}
+.lat-fill.fast{background:var(--success)}
+.lat-text{font-size:10.5px; color:var(--text-faint)}
+
+/* ---------- Developer ---------- */
+.dev-card{padding:18px}
+.dev-idx{font-family:var(--serif); font-size:16px; color:var(--text-ghost); font-weight:600; margin-bottom:8px}
+.dev-name{font-size:13px; font-weight:700; margin-bottom:5px}
+.dev-desc{font-size:11.5px; color:var(--text-dim); line-height:1.55}
+.dev-path{display:flex; align-items:center; gap:8px; margin-top:12px; background:var(--surface-2); border:1px solid var(--border); border-radius:var(--r-sm); padding:7px 10px}
+.dev-path code{font-family:var(--mono); font-size:10.5px; color:var(--text-dim); flex:1; overflow:hidden; text-overflow:ellipsis; white-space:nowrap}
+.dev-path button{background:none;border:none;color:var(--text-ghost);cursor:pointer;display:flex}
+.dev-path button:hover{color:var(--accent)}
+.dev-path button svg{width:12px;height:12px}
+.endpoint-table{width:100%; border-collapse:collapse; font-size:12px}
+.endpoint-table td{padding:9px 12px; border-top:1px solid var(--border-soft)}
+.endpoint-table .m{font-family:var(--mono); color:var(--accent); font-weight:700; font-size:11px}
+.endpoint-table .p{font-family:var(--mono); color:var(--text)}
+.endpoint-table .d{color:var(--text-faint)}
+
+/* ---------- Modal ---------- */
+.modal-backdrop{position:fixed; inset:0; background:rgba(2,3,5,.72); backdrop-filter:blur(4px); z-index:100; display:flex; align-items:center; justify-content:center; padding:24px; animation:fadein .15s ease}
+.modal{background:var(--surface-2); border:1px solid var(--border-strong); border-radius:var(--r-lg); max-width:620px; width:100%; max-height:82vh; overflow:auto; box-shadow:var(--shadow-2)}
+.modal-head{display:flex; justify-content:space-between; align-items:center; padding:18px 22px; border-bottom:1px solid var(--border); position:sticky; top:0; background:var(--surface-2)}
+.modal-head h3{font-size:14.5px}
+.modal-close{background:none; border:none; color:var(--text-faint); cursor:pointer; padding:4px}
+.modal-close svg{width:17px;height:17px}
+.modal-body{padding:22px}
+.modal-body p{font-size:13px; color:var(--text-dim); line-height:1.7; margin-bottom:12px}
+.modal-body .module{font-family:var(--mono); font-size:10.5px; color:var(--accent); background:var(--accent-glow); padding:3px 9px; border-radius:99px; display:inline-block; margin-bottom:14px}
+
+/* ---------- Footer ---------- */
+footer{border-top:1px solid var(--border-soft); padding:30px 22px; text-align:center; color:var(--text-faint); font-size:11px}
+footer b{color:var(--text-dim)}
+
+.hl-flash{animation:flash 1.4s ease}
+@keyframes flash{0%{box-shadow:inset 0 0 0 1px var(--accent), 0 0 0 3px var(--accent-glow)}100%{box-shadow:none}}
+
+@media (max-width:720px){
+  .search-wrap{max-width:none}
+  .clock{display:none}
+  main{padding:0 14px 70px}
+}
+@media (max-width:520px){
+  .topbar{gap:10px; padding:0 14px}
+  .brand-tag{display:none}
+  .env-pill span:not(.dot){display:none}
+}
+</style>
+</head>
+<body>
+
+<svg class="vh" aria-hidden="true"><defs>
+<symbol id="i-mark" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2.5l8.5 4.9v9.2L12 21.5l-8.5-4.9V7.4L12 2.5z"/><path d="M8.7 12.1l2.3 2.3 4.6-4.9"/></symbol>
+<symbol id="i-shield" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3l7 3v6c0 4.5-3 7.5-7 9-4-1.5-7-4.5-7-9V6l7-3z"/></symbol>
+<symbol id="i-shield-check" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3l7 3v6c0 4.5-3 7.5-7 9-4-1.5-7-4.5-7-9V6l7-3z"/><path d="M9 12l2 2 4-4"/></symbol>
+<symbol id="i-lock" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="5" y="11" width="14" height="9" rx="2"/><path d="M8 11V7a4 4 0 018 0v4"/></symbol>
+<symbol id="i-key" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="8" cy="15" r="4"/><path d="M11 12l9-9M17 6l2 2M14 9l2 2"/></symbol>
+<symbol id="i-hash" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M5 9h14M5 15h14M10 4L8 20M16 4l-2 16"/></symbol>
+<symbol id="i-db" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><ellipse cx="12" cy="5" rx="8" ry="3"/><path d="M4 5v14c0 1.7 3.6 3 8 3s8-1.3 8-3V5"/><path d="M4 12c0 1.7 3.6 3 8 3s8-1.3 8-3"/></symbol>
+<symbol id="i-activity" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M3 12h4l2 8 4-16 2 8h6"/></symbol>
+<symbol id="i-layers" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3l9 5-9 5-9-5 9-5z"/><path d="M3 13l9 5 9-5"/></symbol>
+<symbol id="i-eye" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M2 12s3.6-7 10-7 10 7 10 7-3.6 7-10 7-10-7-10-7z"/><circle cx="12" cy="12" r="3"/></symbol>
+<symbol id="i-alert" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3l10 18H2L12 3z"/><path d="M12 10v4M12 17.5v.1"/></symbol>
+<symbol id="i-check" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 12l6 6L20 6"/></symbol>
+<symbol id="i-x" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 6l12 12M18 6L6 18"/></symbol>
+<symbol id="i-clock" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 3"/></symbol>
+<symbol id="i-search" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="7"/><path d="M21 21l-4.3-4.3"/></symbol>
+<symbol id="i-terminal" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M4 5h16v14H4z"/><path d="M7 9l3 3-3 3M13 15h4"/></symbol>
+<symbol id="i-book" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M4 5.5A2.5 2.5 0 016.5 3H20v16H6.5A2.5 2.5 0 004 16.5v-11z"/><path d="M4 16.5A2.5 2.5 0 016.5 19H20"/></symbol>
+<symbol id="i-globe" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M3 12h18M12 3c2.5 2.5 4 5.7 4 9s-1.5 6.5-4 9c-2.5-2.5-4-5.7-4-9s1.5-6.5 4-9z"/></symbol>
+<symbol id="i-server" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="6" rx="1.5"/><rect x="3" y="14" width="18" height="6" rx="1.5"/><path d="M7 7h.01M7 17h.01"/></symbol>
+<symbol id="i-zap" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M13 2L4 14h7l-1 8 9-12h-7l1-8z"/></symbol>
+<symbol id="i-list" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M9 6h11M9 12h11M9 18h11"/><path d="M4 6h.01M4 12h.01M4 18h.01"/></symbol>
+<symbol id="i-radio" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="2"/><path d="M8.5 8.5a5 5 0 000 7M15.5 8.5a5 5 0 010 7M5.5 5.5a9 9 0 000 13M18.5 5.5a9 9 0 010 13"/></symbol>
+<symbol id="i-box" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3l8 4.5v9L12 21l-8-4.5v-9L12 3z"/><path d="M4 7.5L12 12l8-4.5M12 12v9"/></symbol>
+<symbol id="i-users" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="9" cy="8" r="3.2"/><path d="M3 20c0-3.3 2.7-6 6-6s6 2.7 6 6"/><circle cx="17.5" cy="9.5" r="2.4"/><path d="M15.4 14c2.6.3 4.6 2.5 4.6 5.2"/></symbol>
+<symbol id="i-sliders" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M4 6h9M17 6h3M4 12h3M9 12h11M4 18h13M19 18h1"/><circle cx="15" cy="6" r="2"/><circle cx="7" cy="12" r="2"/><circle cx="17" cy="18" r="2"/></symbol>
+<symbol id="i-file" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M7 3h7l5 5v13H7z"/><path d="M14 3v5h5"/></symbol>
+<symbol id="i-copy" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="12" height="12" rx="2"/><path d="M5 15V5a2 2 0 012-2h10"/></symbol>
+<symbol id="i-play" viewBox="0 0 24 24" fill="currentColor" stroke="none"><path d="M7 4l14 8-14 8V4z"/></symbol>
+<symbol id="i-refresh" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M4 4v6h6M20 20v-6h-6"/><path d="M5 14a8 8 0 0014 3.5M19 10A8 8 0 005 6.5"/></symbol>
+<symbol id="i-bar" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M5 21V10M12 21V4M19 21v-7"/></symbol>
+<symbol id="i-cloud" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M7 18h11a4 4 0 000-8 6 6 0 00-11.6 1.5A3.5 3.5 0 007 18z"/></symbol>
+<symbol id="i-map" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M4 12h4M4 12v6h4v-6M4 12l4-4M20 12h-4M20 12v6h-4v-6M20 12l-4-4M12 3v6M12 21v-6M9 6h6M9 18h6"/></symbol>
+<symbol id="i-plus" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 5v14M5 12h14"/></symbol>
+<symbol id="i-minus" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14"/></symbol>
+</defs></svg>
+
+<header class="topbar">
+  <div class="brand">
+    <svg class="brand-mark" viewBox="0 0 24 24" fill="none"><use href="#i-mark"/></svg>
+    <div class="brand-text">
+      <span class="brand-name">QODIQA</span>
+      <span class="brand-tag">Execution Trust Infra</span>
+    </div>
+  </div>
+  <div class="env-pill" title="No live QODIQA deployment is connected to this console. Evidence is generated locally so the verification model can be inspected end-to-end.">
+    <span class="dot"></span><span>Reference Environment</span>
+  </div>
+  <div class="search-wrap">
+    <div class="search-box">
+      <svg viewBox="0 0 24 24" fill="none"><use href="#i-search"/></svg>
+      <label for="global-search" class="vh">Search subsystems, providers, docs</label>
+      <input id="global-search" type="text" placeholder="Search subsystems, providers, docs…" autocomplete="off">
+      <span class="kbd">/</span>
+    </div>
+    <div class="search-results" id="search-results"></div>
+  </div>
+  <div class="topbar-right">
+    <span class="clock mono" id="clock">--:--:--</span>
+    <span class="status-chip"><span class="dot"></span>Checking status…</span>
+  </div>
+</header>
+
+<nav aria-label="Console sections">
+<div class="tabbar" id="tabbar" role="tablist" aria-label="Console sections">
+  <button class="tab-btn active" id="tab-overview" role="tab" aria-selected="true" aria-controls="panel-overview" tabindex="0" data-tab="overview"><svg viewBox="0 0 24 24" fill="none"><use href="#i-activity"/></svg>Overview</button>
+  <button class="tab-btn" id="tab-trust" role="tab" aria-selected="false" aria-controls="panel-trust" tabindex="-1" data-tab="trust"><svg viewBox="0 0 24 24" fill="none"><use href="#i-eye"/></svg>Trust Explorer<span class="tab-live"></span></button>
+  <button class="tab-btn" id="tab-studio" role="tab" aria-selected="false" aria-controls="panel-studio" tabindex="-1" data-tab="studio"><svg viewBox="0 0 24 24" fill="none"><use href="#i-zap"/></svg>Execution Studio</button>
+  <button class="tab-btn" id="tab-subsystems" role="tab" aria-selected="false" aria-controls="panel-subsystems" tabindex="-1" data-tab="subsystems"><svg viewBox="0 0 24 24" fill="none"><use href="#i-layers"/></svg>Subsystems</button>
+  <button class="tab-btn" id="tab-security" role="tab" aria-selected="false" aria-controls="panel-security" tabindex="-1" data-tab="security"><svg viewBox="0 0 24 24" fill="none"><use href="#i-shield"/></svg>Security Center</button>
+  <button class="tab-btn" id="tab-architecture" role="tab" aria-selected="false" aria-controls="panel-architecture" tabindex="-1" data-tab="architecture"><svg viewBox="0 0 24 24" fill="none"><use href="#i-map"/></svg>Architecture</button>
+  <button class="tab-btn" id="tab-providers" role="tab" aria-selected="false" aria-controls="panel-providers" tabindex="-1" data-tab="providers"><svg viewBox="0 0 24 24" fill="none"><use href="#i-cloud"/></svg>Providers</button>
+  <button class="tab-btn" id="tab-developer" role="tab" aria-selected="false" aria-controls="panel-developer" tabindex="-1" data-tab="developer"><svg viewBox="0 0 24 24" fill="none"><use href="#i-terminal"/></svg>Developer</button>
+</div>
+</nav>
+
+<main>
+
+<!-- ============ OVERVIEW ============ -->
+<section class="panel active" id="panel-overview" role="tabpanel" aria-labelledby="tab-overview" tabindex="0">
+  <div class="hero">
+    <div class="hero-inner">
+      <span class="hero-badge"><svg viewBox="0 0 24 24" fill="none"><use href="#i-shield-check"/></svg>Cryptographically enforced, not merely observed</span>
+      <h1>QODIQA<br><span>Execution Trust Infrastructure</span></h1>
+      <div class="sub">Not AI chat. Not a gateway. Not observability. The layer that decides whether an AI execution is allowed to happen — and proves it afterward.</div>
+      <p class="desc">QODIQA verifies every AI execution before it happens, enforcing cryptographic integrity, policy compliance, consent validation, replay protection, transparency logging and immutable audit — while generating verifiable cryptographic evidence for every decision it makes.</p>
+      <div class="hero-cta">
+        <button class="btn btn-primary" data-goto="trust"><svg viewBox="0 0 24 24" fill="none"><use href="#i-eye"/></svg>Open Trust Explorer</button>
+        <button class="btn" data-goto="studio"><svg viewBox="0 0 24 24" fill="none"><use href="#i-play"/></svg>Run Execution Studio</button>
+        <button class="btn btn-ghost" data-goto="architecture"><svg viewBox="0 0 24 24" fill="none"><use href="#i-map"/></svg>View Architecture</button>
+      </div>
+
+      <div class="live-trust">
+        <div class="lt-head">
+          <div class="lt-head-l"><span class="tab-live"></span><span class="lt-head-title">Live verification ledger</span></div>
+          <span class="lt-head-sub">Select an execution to inspect its proof</span>
+        </div>
+        <div class="lt-body">
+          <div class="lt-ledger" id="hero-exec-list"></div>
+          <div class="lt-main" id="hero-exec-main"></div>
+        </div>
+        <div class="lt-foot">
+          <span class="lt-foot-note">Every field below is independently checkable — nothing is taken on faith.</span>
+          <button class="btn btn-sm" data-goto="trust">Open full explorer →</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="section">
+    <div class="section-head">
+      <div><span class="eyebrow">Live status</span><h2>System Health</h2></div>
+      <div class="section-note">Every enforced request passes through all of these subsystems in sequence. A red state anywhere fails the request closed.</div>
+    </div>
+    <table class="sys-table" id="status-grid"></table>
+    <div class="legend">
+      <span><i class="dot" style="background:var(--success)"></i>Operational</span>
+      <span><i class="dot" style="background:var(--accent)"></i>Optional component (not enabled in this deployment)</span>
+      <span><i class="dot" style="background:var(--warning)"></i>Configuration required</span>
+    </div>
+  </div>
+
+  <div class="section">
+    <div class="section-head">
+      <div><span class="eyebrow">Platform metrics</span><h2>What's actually implemented</h2></div>
+    </div>
+    <div class="metric-strip" id="metrics-grid"></div>
+  </div>
+</section>
+
+<!-- ============ TRUST EXPLORER ============ -->
+<section class="panel" id="panel-trust" role="tabpanel" aria-labelledby="tab-trust" tabindex="0">
+  <div class="section-head">
+    <div><span class="eyebrow">Trust Explorer</span><h2>Pick an execution. See every proof behind the decision.</h2></div>
+    <div class="section-note">The executions below are reference cases spanning each decision path — a clean pass and three distinct block reasons. Evidence is generated locally in this environment, structurally identical to what a connected deployment's artifacts carry.</div>
+  </div>
+  <div class="mc-layout">
+    <div class="mc-panel">
+      <div class="mc-panel-head">Execution ledger</div>
+      <div class="exec-list" id="exec-list"></div>
+    </div>
+
+    <div class="mc-panel">
+      <div class="stamp-header" id="stamp-header"></div>
+      <div class="rail" id="trust-rail"></div>
+      <div class="stage-detail" id="stage-detail"></div>
+    </div>
+
+    <div class="mc-panel evidence-col">
+      <div class="mc-panel-head">Cryptographic evidence</div>
+      <div class="evidence-toolbar">
+        <div class="evidence-search">
+          <svg viewBox="0 0 24 24" fill="none"><use href="#i-search"/></svg>
+          <label for="evidence-search" class="vh">Filter evidence fields</label>
+          <input id="evidence-search" placeholder="Filter evidence fields…">
+        </div>
+      </div>
+      <div id="evidence-ledger"></div>
+      <div class="verify-note">
+        <b>Independently verifiable</b> via <span class="mono">GET /audit/:artifactId</span>, <span class="mono">GET /audit/chain/integrity</span>, or the bundled zero-dependency verifiers — <span class="mono">node tools/verify/verify.external.js</span> / <span class="mono">python tools/verify/verify_external.py</span>. See docs/api/overview.md.
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ============ EXECUTION STUDIO ============ -->
+<section class="panel" id="panel-studio" role="tabpanel" aria-labelledby="tab-studio" tabindex="0">
+  <div class="section-head">
+    <div><span class="eyebrow">Execution Studio</span><h2>Run a real execution through the gateway</h2></div>
+    <div class="section-note">This workspace calls the actual <span class="mono">POST /sign</span> and <span class="mono">POST /ai/chat</span> endpoints on this server — the same endpoints the JS/Python SDKs use. Nothing here is fabricated: signature verification, replay protection, consent, policy, audit and transparency all run for real, and the AI response comes from the provider named in the artifact. If any stage blocks the request, the exact reason returned by the gateway is shown — never a placeholder.</div>
+  </div>
+  <div class="studio-layout">
+    <div class="studio-panel">
+      <label class="field-label" for="studio-sign-token">Gateway signing token</label>
+      <input class="select" id="studio-sign-token" type="password" placeholder="Paste the token printed by `npm run dev` (kept in this tab's memory only)" autocomplete="off" spellcheck="false">
+      <div class="section-note" style="margin:8px 0 16px">Never stored, never persisted, never sent anywhere but this same-origin server's own <span class="mono">/sign</span> endpoint. Cleared on reload. This console does not embed or ship any signing credential.</div>
+      <label class="field-label">Provider</label>
+      <div class="provider-grid" id="studio-providers"></div>
+      <label class="field-label" for="studio-model">Model <span style="text-transform:none; letter-spacing:0; color:var(--text-ghost)">(optional — leave blank for the gateway default)</span></label>
+      <input class="select" id="studio-model" type="text" placeholder="e.g. qwen2.5:7b" style="margin-bottom:16px">
+      <label class="field-label" for="studio-prompt">Prompt</label>
+      <textarea class="ta" id="studio-prompt" placeholder="Explain what Ed25519 is.">Explain what Ed25519 is.</textarea>
+      <div style="margin-top:14px; display:flex; gap:10px">
+        <button class="btn btn-primary" id="studio-run"><svg viewBox="0 0 24 24" fill="none"><use href="#i-play"/></svg>Execute through QODIQA</button>
+        <button class="btn btn-ghost" id="studio-reset"><svg viewBox="0 0 24 24" fill="none"><use href="#i-refresh"/></svg>Reset</button>
+      </div>
+      <div class="studio-console">
+        <div class="studio-console-head"><span>Enforcement pipeline</span><span id="studio-progress">Idle</span></div>
+        <div class="studio-rail"><div class="rail" id="studio-rail"></div></div>
+        <div class="studio-log" id="studio-log"><div class="l-line l-info">Awaiting execution…</div></div>
+      </div>
+    </div>
+    <div class="studio-panel">
+      <div class="result-tabs" id="studio-result-tabs" style="display:none">
+        <button class="rtab active" data-rtab="response">Response</button>
+        <button class="rtab" data-rtab="identity">Identity</button>
+        <button class="rtab" data-rtab="crypto">Cryptography</button>
+        <button class="rtab" data-rtab="consent">Consent &amp; Policy</button>
+        <button class="rtab" data-rtab="transparency">Transparency &amp; Audit</button>
+        <button class="rtab" data-rtab="ledger">Full Ledger</button>
+      </div>
+      <div id="studio-result-body">
+        <div class="empty-state">
+          <svg viewBox="0 0 24 24" fill="none"><use href="#i-zap"/></svg>
+          <div>Run an execution to see the response, artifact, proofs, audit and transparency evidence appear here.</div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ============ SUBSYSTEMS ============ -->
+<section class="panel" id="panel-subsystems" role="tabpanel" aria-labelledby="tab-subsystems" tabindex="0">
+  <div class="section-head">
+    <div><span class="eyebrow">Platform</span><h2>15 core subsystems</h2></div>
+    <div class="section-note">Every entry maps to a real module in the codebase. Click one for the full explanation.</div>
+  </div>
+  <div class="manifest" id="subsystems-grid"></div>
+</section>
+
+<!-- ============ SECURITY CENTER ============ -->
+<section class="panel" id="panel-security" role="tabpanel" aria-labelledby="tab-security" tabindex="0">
+  <div class="section-head">
+    <div><span class="eyebrow">Security Center</span><h2>How QODIQA earns trust</h2></div>
+  </div>
+  <div class="trust-ledger" id="security-grid"></div>
+</section>
+
+<!-- ============ ARCHITECTURE ============ -->
+<section class="panel" id="panel-architecture" role="tabpanel" aria-labelledby="tab-architecture" tabindex="0">
+  <div class="section-head">
+    <div><span class="eyebrow">Architecture</span><h2>Request to verified response</h2></div>
+    <div class="section-note">Zoom and scroll to inspect. Every box is a real component named in the codebase.</div>
+  </div>
+  <div class="arch-toolbar">
+    <button class="btn btn-sm" id="arch-zoom-in"><svg viewBox="0 0 24 24" fill="none"><use href="#i-plus"/></svg>Zoom in</button>
+    <button class="btn btn-sm" id="arch-zoom-out"><svg viewBox="0 0 24 24" fill="none"><use href="#i-minus"/></svg>Zoom out</button>
+    <button class="btn btn-sm btn-ghost" id="arch-zoom-reset"><svg viewBox="0 0 24 24" fill="none"><use href="#i-refresh"/></svg>Reset</button>
+  </div>
+  <div class="arch-wrap"><div class="arch-inner" id="arch-inner"></div></div>
+</section>
+
+<!-- ============ PROVIDERS ============ -->
+<section class="panel" id="panel-providers" role="tabpanel" aria-labelledby="tab-providers" tabindex="0">
+  <div class="section-head">
+    <div><span class="eyebrow">AI Gateway</span><h2>Provider connectivity</h2></div>
+    <div class="section-note">Status, latency and availability reflect reference telemetry generated locally in this environment. Dispatch itself is real in a connected deployment, routed via services/providers/router.js.</div>
+  </div>
+  <div style="overflow:auto">
+    <table class="provider-table" id="providers-table">
+      <thead><tr><th>Provider</th><th>Env var</th><th>Notes</th><th>Latency</th><th>Availability</th><th>Status</th></tr></thead>
+      <tbody id="providers-tbody"></tbody>
+    </table>
+  </div>
+</section>
+
+<!-- ============ DEVELOPER ============ -->
+<section class="panel" id="panel-developer" role="tabpanel" aria-labelledby="tab-developer" tabindex="0">
+  <div class="section-head">
+    <div><span class="eyebrow">Developer Center</span><h2>Build against QODIQA</h2></div>
+  </div>
+  <div class="grid grid-sub" id="developer-grid" style="margin-bottom:36px"></div>
+
+  <div class="section-head"><div><h2 style="font-size:13.5px">Key API surface</h2></div></div>
+  <div class="card" style="padding:0; overflow:auto">
+    <table class="endpoint-table" id="endpoint-table"></table>
+  </div>
+</section>
+
+</main>
+
+<footer>
+  QODIQA — Execution Trust Infrastructure · Evidence in this console is generated locally in the absence of a connected deployment · <b>15</b> subsystems
+</footer>
+
+<div id="modal-root"></div>
+
+<!-- shared frontend infrastructure -->
+<script src="/js/common/adminAuth.js" defer></script>
+<script src="/js/common/esc.js" defer></script>
+<script src="/js/console.js" defer></script>
+</body>
+</html>

@@ -1,0 +1,55 @@
+# Strategic-merge patch onto overlays/single-node/statefulset.yaml's `qodiqa`
+# container. Only `command` and additive `env` entries are patched — `env`
+# has a Kubernetes-API merge key (`name`), so this APPENDS to the existing
+# entries (QODIQA_KEY_ENCRYPTION_KEY, etc. from
+# base/secret.yaml are untouched) rather than replacing the list.
+apiVersion: apps/v1
+kind: StatefulSet
+metadata:
+  name: qodiqa
+  namespace: qodiqa
+spec:
+  template:
+    spec:
+      containers:
+        - name: qodiqa
+          # the shipped default topologies run the Dockerfile's
+          # `CMD ["node", "server.js"]`, which never calls
+          # keyProviderFactory.initialize() — QODIQA_KMS_PROVIDER is silently
+          # ignored. start.js is the documented entry point that actually
+          # wires the external provider in before server.js's startup
+          # validation runs.
+          command: ["node", "start.js"]
+          env:
+            - name: QODIQA_KMS_PROVIDER
+              value: "vault-transit"
+
+            - name: VAULT_ADDR
+              valueFrom:
+                configMapKeyRef: { name: qodiqa-vault-transit-config, key: VAULT_ADDR }
+            - name: VAULT_NAMESPACE
+              valueFrom:
+                configMapKeyRef: { name: qodiqa-vault-transit-config, key: VAULT_NAMESPACE, optional: true }
+            - name: VAULT_KEK_PATH
+              valueFrom:
+                configMapKeyRef: { name: qodiqa-vault-transit-config, key: VAULT_KEK_PATH }
+            - name: VAULT_KEK_MOUNT
+              valueFrom:
+                configMapKeyRef: { name: qodiqa-vault-transit-config, key: VAULT_KEK_MOUNT }
+            - name: VAULT_TRANSIT_MOUNT
+              valueFrom:
+                configMapKeyRef: { name: qodiqa-vault-transit-config, key: VAULT_TRANSIT_MOUNT }
+
+            # AppRole (preferred — src/infra/keys/providers/vault.js tries
+            # this before falling back to VAULT_TOKEN).
+            - name: VAULT_ROLE_ID
+              valueFrom:
+                secretKeyRef: { name: qodiqa-vault-transit-secrets, key: vault-role-id, optional: true }
+            - name: VAULT_SECRET_ID
+              valueFrom:
+                secretKeyRef: { name: qodiqa-vault-transit-secrets, key: vault-secret-id, optional: true }
+            # Static-token fallback — only consulted by vault.js when the
+            # AppRole pair above is absent.
+            - name: VAULT_TOKEN
+              valueFrom:
+                secretKeyRef: { name: qodiqa-vault-transit-secrets, key: vault-token, optional: true }

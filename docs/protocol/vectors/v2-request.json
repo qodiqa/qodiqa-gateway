@@ -1,0 +1,2328 @@
+{
+ "format": "qodiqa-vectors/1",
+ "family": "v2-request",
+ "generatedBy": "scripts/protocol/gen-v2-vectors.js",
+ "specVersion": "v2-freeze-1",
+ "mode": "compute",
+ "nowMs": 0,
+ "inputSchema": {
+  "type": "object",
+  "required": [
+   "method",
+   "target",
+   "headers",
+   "bind",
+   "body"
+  ],
+  "properties": {
+   "method": {
+    "oneOf": [
+     {
+      "type": "string",
+      "pattern": "^([0-9a-f]{2})*$",
+      "description": "lower-case hex"
+     },
+     {
+      "type": "object",
+      "required": [
+       "repeat"
+      ],
+      "additionalProperties": false,
+      "properties": {
+       "repeat": {
+        "type": "object",
+        "required": [
+         "prefix",
+         "unit",
+         "count",
+         "suffix"
+        ],
+        "properties": {
+         "prefix": {
+          "type": "string"
+         },
+         "unit": {
+          "type": "string"
+         },
+         "count": {
+          "type": "integer",
+          "minimum": 0
+         },
+         "suffix": {
+          "type": "string"
+         }
+        }
+       }
+      },
+      "description": "prefix + unit x count + suffix (UTF-8 text)"
+     }
+    ]
+   },
+   "target": {
+    "oneOf": [
+     {
+      "type": "string",
+      "pattern": "^([0-9a-f]{2})*$",
+      "description": "lower-case hex"
+     },
+     {
+      "type": "object",
+      "required": [
+       "repeat"
+      ],
+      "additionalProperties": false,
+      "properties": {
+       "repeat": {
+        "type": "object",
+        "required": [
+         "prefix",
+         "unit",
+         "count",
+         "suffix"
+        ],
+        "properties": {
+         "prefix": {
+          "type": "string"
+         },
+         "unit": {
+          "type": "string"
+         },
+         "count": {
+          "type": "integer",
+          "minimum": 0
+         },
+         "suffix": {
+          "type": "string"
+         }
+        }
+       }
+      },
+      "description": "prefix + unit x count + suffix (UTF-8 text)"
+     }
+    ],
+    "description": "the raw request-target bytes"
+   },
+   "headers": {
+    "type": "array",
+    "items": {
+     "type": "array",
+     "minItems": 2,
+     "maxItems": 2,
+     "items": {
+      "oneOf": [
+       {
+        "type": "string",
+        "pattern": "^([0-9a-f]{2})*$",
+        "description": "lower-case hex"
+       },
+       {
+        "type": "object",
+        "required": [
+         "repeat"
+        ],
+        "additionalProperties": false,
+        "properties": {
+         "repeat": {
+          "type": "object",
+          "required": [
+           "prefix",
+           "unit",
+           "count",
+           "suffix"
+          ],
+          "properties": {
+           "prefix": {
+            "type": "string"
+           },
+           "unit": {
+            "type": "string"
+           },
+           "count": {
+            "type": "integer",
+            "minimum": 0
+           },
+           "suffix": {
+            "type": "string"
+           }
+          }
+         }
+        },
+        "description": "prefix + unit x count + suffix (UTF-8 text)"
+       }
+      ]
+     }
+    },
+    "description": "the received field lines in order: [name bytes, value bytes]"
+   },
+   "bind": {
+    "type": "array",
+    "items": {
+     "type": "string"
+    },
+    "description": "qodiqa.bind.headers of the artifact"
+   },
+   "body": {
+    "oneOf": [
+     {
+      "type": "null"
+     },
+     {
+      "oneOf": [
+       {
+        "type": "string",
+        "pattern": "^([0-9a-f]{2})*$",
+        "description": "lower-case hex"
+       },
+       {
+        "type": "object",
+        "required": [
+         "repeat"
+        ],
+        "additionalProperties": false,
+        "properties": {
+         "repeat": {
+          "type": "object",
+          "required": [
+           "prefix",
+           "unit",
+           "count",
+           "suffix"
+          ],
+          "properties": {
+           "prefix": {
+            "type": "string"
+           },
+           "unit": {
+            "type": "string"
+           },
+           "count": {
+            "type": "integer",
+            "minimum": 0
+           },
+           "suffix": {
+            "type": "string"
+           }
+          }
+         }
+        },
+        "description": "prefix + unit x count + suffix (UTF-8 text)"
+       }
+      ]
+     }
+    ],
+    "description": "null = no body at all; \"\" = zero bytes"
+   }
+  },
+  "description": "expected.value is the requestHash(V2) (hex); expectedError.code is REQUEST_MISMATCH, with detail = the JCS-P1 code when the refusal is a canonicalization failure of a string or of the document"
+ },
+ "keys": [],
+ "cases": [
+  {
+   "id": "V2-REQ-001",
+   "description": "baseline: POST, no query, absent body (is {})",
+   "input": {
+    "method": "504f5354",
+    "target": "2f76312f61692f63686174",
+    "headers": [],
+    "bind": [],
+    "body": null
+   },
+   "expected": {
+    "outcome": "ok",
+    "value": "b5bd7e2b8dff15abd4f97efdf229e75e45a11a6aa475dcc62c06666a402835da",
+    "document": "{\"body\":{},\"headers\":{},\"method\":\"POST\",\"path\":\"/v1/ai/chat\",\"query\":[],\"v\":2}"
+   }
+  },
+  {
+   "id": "V2-REQ-002",
+   "description": "a chat body",
+   "input": {
+    "method": "504f5354",
+    "target": "2f76312f61692f63686174",
+    "headers": [],
+    "bind": [],
+    "body": "7b226d6f64656c223a226d222c226d65737361676573223a5b7b22726f6c65223a2275736572222c22636f6e74656e74223a226869227d5d7d"
+   },
+   "expected": {
+    "outcome": "ok",
+    "value": "2650fb19bc8a1eebae961ed28095948518a610596302c9d4209806b49d9981f3",
+    "document": "{\"body\":{\"messages\":[{\"content\":\"hi\",\"role\":\"user\"}],\"model\":\"m\"},\"headers\":{},\"method\":\"POST\",\"path\":\"/v1/ai/chat\",\"query\":[],\"v\":2}"
+   }
+  },
+  {
+   "id": "V2-REQ-003",
+   "description": "empty body bytes are {}",
+   "input": {
+    "method": "504f5354",
+    "target": "2f76312f61692f63686174",
+    "headers": [],
+    "bind": [],
+    "body": ""
+   },
+   "expected": {
+    "outcome": "ok",
+    "value": "b5bd7e2b8dff15abd4f97efdf229e75e45a11a6aa475dcc62c06666a402835da",
+    "document": "{\"body\":{},\"headers\":{},\"method\":\"POST\",\"path\":\"/v1/ai/chat\",\"query\":[],\"v\":2}"
+   }
+  },
+  {
+   "id": "V2-REQ-004",
+   "description": "body {} explicit is the same document as no body",
+   "input": {
+    "method": "504f5354",
+    "target": "2f76312f61692f63686174",
+    "headers": [],
+    "bind": [],
+    "body": "7b7d"
+   },
+   "expected": {
+    "outcome": "ok",
+    "value": "b5bd7e2b8dff15abd4f97efdf229e75e45a11a6aa475dcc62c06666a402835da",
+    "document": "{\"body\":{},\"headers\":{},\"method\":\"POST\",\"path\":\"/v1/ai/chat\",\"query\":[],\"v\":2}"
+   }
+  },
+  {
+   "id": "V2-REQ-005",
+   "description": "whitespace-only body is invalid JSON",
+   "input": {
+    "method": "504f5354",
+    "target": "2f76312f61692f63686174",
+    "headers": [],
+    "bind": [],
+    "body": "2020"
+   },
+   "expectedError": {
+    "code": "REQUEST_MISMATCH",
+    "detail": "INVALID_JSON"
+   }
+  },
+  {
+   "id": "V2-REQ-006",
+   "description": "body null literal is not an object",
+   "input": {
+    "method": "504f5354",
+    "target": "2f76312f61692f63686174",
+    "headers": [],
+    "bind": [],
+    "body": "6e756c6c"
+   },
+   "expectedError": {
+    "code": "REQUEST_MISMATCH"
+   }
+  },
+  {
+   "id": "V2-REQ-007",
+   "description": "body array is not an object",
+   "input": {
+    "method": "504f5354",
+    "target": "2f76312f61692f63686174",
+    "headers": [],
+    "bind": [],
+    "body": "5b315d"
+   },
+   "expectedError": {
+    "code": "REQUEST_MISMATCH"
+   }
+  },
+  {
+   "id": "V2-REQ-008",
+   "description": "body with a duplicate key",
+   "input": {
+    "method": "504f5354",
+    "target": "2f76312f61692f63686174",
+    "headers": [],
+    "bind": [],
+    "body": "7b2261223a312c2261223a327d"
+   },
+   "expectedError": {
+    "code": "REQUEST_MISMATCH",
+    "detail": "DUPLICATE_KEY"
+   }
+  },
+  {
+   "id": "V2-REQ-009",
+   "description": "body decimals",
+   "input": {
+    "method": "504f5354",
+    "target": "2f76312f61692f63686174",
+    "headers": [],
+    "bind": [],
+    "body": "7b2274656d7065726174757265223a302e372c226e223a312e307d"
+   },
+   "expected": {
+    "outcome": "ok",
+    "value": "7d28ed836fd89f80090ae383a4b884be3dd3b09ce6eea10e9cada802f64e79c7",
+    "document": "{\"body\":{\"n\":1,\"temperature\":0.7},\"headers\":{},\"method\":\"POST\",\"path\":\"/v1/ai/chat\",\"query\":[],\"v\":2}"
+   }
+  },
+  {
+   "id": "V2-REQ-010",
+   "description": "body 1.0 and 1 hash alike",
+   "input": {
+    "method": "504f5354",
+    "target": "2f76312f61692f63686174",
+    "headers": [],
+    "bind": [],
+    "body": "7b2274656d7065726174757265223a302e372c226e223a317d"
+   },
+   "expected": {
+    "outcome": "ok",
+    "value": "7d28ed836fd89f80090ae383a4b884be3dd3b09ce6eea10e9cada802f64e79c7",
+    "document": "{\"body\":{\"n\":1,\"temperature\":0.7},\"headers\":{},\"method\":\"POST\",\"path\":\"/v1/ai/chat\",\"query\":[],\"v\":2}"
+   }
+  },
+  {
+   "id": "V2-REQ-011",
+   "description": "body with invalid UTF-8",
+   "input": {
+    "method": "504f5354",
+    "target": "2f76312f61692f63686174",
+    "headers": [],
+    "bind": [],
+    "body": "7b22ff223a317d"
+   },
+   "expectedError": {
+    "code": "REQUEST_MISMATCH",
+    "detail": "INVALID_UTF8"
+   }
+  },
+  {
+   "id": "V2-REQ-012",
+   "description": "body starting with a BOM",
+   "input": {
+    "method": "504f5354",
+    "target": "2f76312f61692f63686174",
+    "headers": [],
+    "bind": [],
+    "body": "efbbbf7b7d"
+   },
+   "expectedError": {
+    "code": "REQUEST_MISMATCH",
+    "detail": "INVALID_UTF8"
+   }
+  },
+  {
+   "id": "V2-REQ-013",
+   "description": "body key order does not matter",
+   "input": {
+    "method": "504f5354",
+    "target": "2f76312f61692f63686174",
+    "headers": [],
+    "bind": [],
+    "body": "7b2262223a322c2261223a317d"
+   },
+   "expected": {
+    "outcome": "ok",
+    "value": "f0c2211b56fbe31d7fb3ba5d832da770e49e663a6dd2293745b33da9563ef0dc",
+    "document": "{\"body\":{\"a\":1,\"b\":2},\"headers\":{},\"method\":\"POST\",\"path\":\"/v1/ai/chat\",\"query\":[],\"v\":2}"
+   }
+  },
+  {
+   "id": "V2-REQ-014",
+   "description": "body with a number beyond 2^53-1",
+   "input": {
+    "method": "504f5354",
+    "target": "2f76312f61692f63686174",
+    "headers": [],
+    "bind": [],
+    "body": "7b226e223a393030373139393235343734303939337d"
+   },
+   "expectedError": {
+    "code": "REQUEST_MISMATCH",
+    "detail": "NUMBER_OUT_OF_RANGE"
+   }
+  },
+  {
+   "id": "V2-REQ-015",
+   "description": "body with a non-NFC string",
+   "input": {
+    "method": "504f5354",
+    "target": "2f76312f61692f63686174",
+    "headers": [],
+    "bind": [],
+    "body": "7b226b223a2265cc81227d"
+   },
+   "expectedError": {
+    "code": "REQUEST_MISMATCH",
+    "detail": "STRING_NOT_NFC"
+   }
+  },
+  {
+   "id": "V2-REQ-016",
+   "description": "body canonical size just over 1 MiB (the whole document counts)",
+   "input": {
+    "method": "504f5354",
+    "target": "2f76312f61692f63686174",
+    "headers": [],
+    "bind": [],
+    "body": {
+     "repeat": {
+      "prefix": "{\"a\":\"",
+      "unit": "x",
+      "count": 1048576,
+      "suffix": "\"}"
+     }
+    }
+   },
+   "expectedError": {
+    "code": "REQUEST_MISMATCH",
+    "detail": "MAX_SIZE_EXCEEDED"
+   }
+  },
+  {
+   "id": "V2-REQ-017",
+   "description": "body well under 1 MiB",
+   "input": {
+    "method": "504f5354",
+    "target": "2f76312f61692f63686174",
+    "headers": [],
+    "bind": [],
+    "body": {
+     "repeat": {
+      "prefix": "{\"a\":\"",
+      "unit": "x",
+      "count": 1048000,
+      "suffix": "\"}"
+     }
+    }
+   },
+   "expected": {
+    "outcome": "ok",
+    "value": "54936054579914df95b7f90a32309a8847339efef7ec1e5c6fd2c371f9f1d6ab"
+   }
+  },
+  {
+   "id": "V2-REQ-018",
+   "description": "method lower-case post is POST",
+   "input": {
+    "method": "706f7374",
+    "target": "2f76312f61692f63686174",
+    "headers": [],
+    "bind": [],
+    "body": null
+   },
+   "expected": {
+    "outcome": "ok",
+    "value": "b5bd7e2b8dff15abd4f97efdf229e75e45a11a6aa475dcc62c06666a402835da",
+    "document": "{\"body\":{},\"headers\":{},\"method\":\"POST\",\"path\":\"/v1/ai/chat\",\"query\":[],\"v\":2}"
+   }
+  },
+  {
+   "id": "V2-REQ-019",
+   "description": "method mixed case Post is POST",
+   "input": {
+    "method": "506f7374",
+    "target": "2f76312f61692f63686174",
+    "headers": [],
+    "bind": [],
+    "body": null
+   },
+   "expected": {
+    "outcome": "ok",
+    "value": "b5bd7e2b8dff15abd4f97efdf229e75e45a11a6aa475dcc62c06666a402835da",
+    "document": "{\"body\":{},\"headers\":{},\"method\":\"POST\",\"path\":\"/v1/ai/chat\",\"query\":[],\"v\":2}"
+   }
+  },
+  {
+   "id": "V2-REQ-020",
+   "description": "method GET",
+   "input": {
+    "method": "474554",
+    "target": "2f76312f61692f63686174",
+    "headers": [],
+    "bind": [],
+    "body": null
+   },
+   "expected": {
+    "outcome": "ok",
+    "value": "87b09f423420799dfa5a23553704495180dd078f07738f8d8bd6865bfd176366",
+    "document": "{\"body\":{},\"headers\":{},\"method\":\"GET\",\"path\":\"/v1/ai/chat\",\"query\":[],\"v\":2}"
+   }
+  },
+  {
+   "id": "V2-REQ-021",
+   "description": "method OPTIONS",
+   "input": {
+    "method": "4f5054494f4e53",
+    "target": "2f76312f61692f63686174",
+    "headers": [],
+    "bind": [],
+    "body": null
+   },
+   "expected": {
+    "outcome": "ok",
+    "value": "1a4e320213a087eaf3568dcf067424438c32305a9777fb49137390b5ea92d25a",
+    "document": "{\"body\":{},\"headers\":{},\"method\":\"OPTIONS\",\"path\":\"/v1/ai/chat\",\"query\":[],\"v\":2}"
+   }
+  },
+  {
+   "id": "V2-REQ-022",
+   "description": "method TRACE is not allowed",
+   "input": {
+    "method": "5452414345",
+    "target": "2f76312f61692f63686174",
+    "headers": [],
+    "bind": [],
+    "body": null
+   },
+   "expectedError": {
+    "code": "REQUEST_MISMATCH"
+   }
+  },
+  {
+   "id": "V2-REQ-023",
+   "description": "method CONNECT is not allowed",
+   "input": {
+    "method": "434f4e4e454354",
+    "target": "2f76312f61692f63686174",
+    "headers": [],
+    "bind": [],
+    "body": null
+   },
+   "expectedError": {
+    "code": "REQUEST_MISMATCH"
+   }
+  },
+  {
+   "id": "V2-REQ-024",
+   "description": "method with a trailing space",
+   "input": {
+    "method": "504f535420",
+    "target": "2f76312f61692f63686174",
+    "headers": [],
+    "bind": [],
+    "body": null
+   },
+   "expectedError": {
+    "code": "REQUEST_MISMATCH"
+   }
+  },
+  {
+   "id": "V2-REQ-025",
+   "description": "method poSt with U+017F is not ASCII",
+   "input": {
+    "method": "506fc5bf74",
+    "target": "2f76312f61692f63686174",
+    "headers": [],
+    "bind": [],
+    "body": null
+   },
+   "expectedError": {
+    "code": "REQUEST_MISMATCH"
+   }
+  },
+  {
+   "id": "V2-REQ-026",
+   "description": "method with sharp s",
+   "input": {
+    "method": "c39f",
+    "target": "2f76312f61692f63686174",
+    "headers": [],
+    "bind": [],
+    "body": null
+   },
+   "expectedError": {
+    "code": "REQUEST_MISMATCH"
+   }
+  },
+  {
+   "id": "V2-REQ-027",
+   "description": "empty method",
+   "input": {
+    "method": "",
+    "target": "2f76312f61692f63686174",
+    "headers": [],
+    "bind": [],
+    "body": null
+   },
+   "expectedError": {
+    "code": "REQUEST_MISMATCH"
+   }
+  },
+  {
+   "id": "V2-REQ-028",
+   "description": "query: nothing after ?",
+   "input": {
+    "method": "504f5354",
+    "target": "2f703f",
+    "headers": [],
+    "bind": [],
+    "body": null
+   },
+   "expected": {
+    "outcome": "ok",
+    "value": "708a9f523037a1e510db113a56b3bdb76a16931a659a0941cc780a76094a106d",
+    "document": "{\"body\":{},\"headers\":{},\"method\":\"POST\",\"path\":\"/p\",\"query\":[],\"v\":2}"
+   }
+  },
+  {
+   "id": "V2-REQ-029",
+   "description": "query: no ? at all",
+   "input": {
+    "method": "504f5354",
+    "target": "2f70",
+    "headers": [],
+    "bind": [],
+    "body": null
+   },
+   "expected": {
+    "outcome": "ok",
+    "value": "708a9f523037a1e510db113a56b3bdb76a16931a659a0941cc780a76094a106d",
+    "document": "{\"body\":{},\"headers\":{},\"method\":\"POST\",\"path\":\"/p\",\"query\":[],\"v\":2}"
+   }
+  },
+  {
+   "id": "V2-REQ-030",
+   "description": "query a=1&b=2",
+   "input": {
+    "method": "504f5354",
+    "target": "2f703f613d3126623d32",
+    "headers": [],
+    "bind": [],
+    "body": null
+   },
+   "expected": {
+    "outcome": "ok",
+    "value": "466d062b9e875118b39b9349d03e66c7e01e8a14f70139d367589c5e53470495",
+    "document": "{\"body\":{},\"headers\":{},\"method\":\"POST\",\"path\":\"/p\",\"query\":[[\"a\",\"1\"],[\"b\",\"2\"]],\"v\":2}"
+   }
+  },
+  {
+   "id": "V2-REQ-031",
+   "description": "query b=2&a=1 sorts to the same document",
+   "input": {
+    "method": "504f5354",
+    "target": "2f703f623d3226613d31",
+    "headers": [],
+    "bind": [],
+    "body": null
+   },
+   "expected": {
+    "outcome": "ok",
+    "value": "466d062b9e875118b39b9349d03e66c7e01e8a14f70139d367589c5e53470495",
+    "document": "{\"body\":{},\"headers\":{},\"method\":\"POST\",\"path\":\"/p\",\"query\":[[\"a\",\"1\"],[\"b\",\"2\"]],\"v\":2}"
+   }
+  },
+  {
+   "id": "V2-REQ-032",
+   "description": "query empty segments are ignored: a=1&&b=2",
+   "input": {
+    "method": "504f5354",
+    "target": "2f703f613d312626623d32",
+    "headers": [],
+    "bind": [],
+    "body": null
+   },
+   "expected": {
+    "outcome": "ok",
+    "value": "466d062b9e875118b39b9349d03e66c7e01e8a14f70139d367589c5e53470495",
+    "document": "{\"body\":{},\"headers\":{},\"method\":\"POST\",\"path\":\"/p\",\"query\":[[\"a\",\"1\"],[\"b\",\"2\"]],\"v\":2}"
+   }
+  },
+  {
+   "id": "V2-REQ-033",
+   "description": "query trailing &",
+   "input": {
+    "method": "504f5354",
+    "target": "2f703f613d3126",
+    "headers": [],
+    "bind": [],
+    "body": null
+   },
+   "expected": {
+    "outcome": "ok",
+    "value": "3b048cb83915775fc436071687cb3de1aa07b943143e751271acb0a1d564b0c3",
+    "document": "{\"body\":{},\"headers\":{},\"method\":\"POST\",\"path\":\"/p\",\"query\":[[\"a\",\"1\"]],\"v\":2}"
+   }
+  },
+  {
+   "id": "V2-REQ-034",
+   "description": "query leading &",
+   "input": {
+    "method": "504f5354",
+    "target": "2f703f26613d31",
+    "headers": [],
+    "bind": [],
+    "body": null
+   },
+   "expected": {
+    "outcome": "ok",
+    "value": "3b048cb83915775fc436071687cb3de1aa07b943143e751271acb0a1d564b0c3",
+    "document": "{\"body\":{},\"headers\":{},\"method\":\"POST\",\"path\":\"/p\",\"query\":[[\"a\",\"1\"]],\"v\":2}"
+   }
+  },
+  {
+   "id": "V2-REQ-035",
+   "description": "query only &",
+   "input": {
+    "method": "504f5354",
+    "target": "2f703f26",
+    "headers": [],
+    "bind": [],
+    "body": null
+   },
+   "expected": {
+    "outcome": "ok",
+    "value": "708a9f523037a1e510db113a56b3bdb76a16931a659a0941cc780a76094a106d",
+    "document": "{\"body\":{},\"headers\":{},\"method\":\"POST\",\"path\":\"/p\",\"query\":[],\"v\":2}"
+   }
+  },
+  {
+   "id": "V2-REQ-036",
+   "description": "query repeated name keeps the order: a=1&a=2",
+   "input": {
+    "method": "504f5354",
+    "target": "2f703f613d3126613d32",
+    "headers": [],
+    "bind": [],
+    "body": null
+   },
+   "expected": {
+    "outcome": "ok",
+    "value": "c45b10278bb983daa8269fe7032911c491fb97eec24e89ff99a3e11c672b4be9",
+    "document": "{\"body\":{},\"headers\":{},\"method\":\"POST\",\"path\":\"/p\",\"query\":[[\"a\",\"1\"],[\"a\",\"2\"]],\"v\":2}"
+   }
+  },
+  {
+   "id": "V2-REQ-037",
+   "description": "query repeated name keeps the order: a=2&a=1 (a different hash)",
+   "input": {
+    "method": "504f5354",
+    "target": "2f703f613d3226613d31",
+    "headers": [],
+    "bind": [],
+    "body": null
+   },
+   "expected": {
+    "outcome": "ok",
+    "value": "3c01e6b09ed6db9a39f7221ccef65f8aef701d07207359757f4d04c002fa5c3a",
+    "document": "{\"body\":{},\"headers\":{},\"method\":\"POST\",\"path\":\"/p\",\"query\":[[\"a\",\"2\"],[\"a\",\"1\"]],\"v\":2}"
+   }
+  },
+  {
+   "id": "V2-REQ-038",
+   "description": "query name without = and name with empty value are the same pair",
+   "input": {
+    "method": "504f5354",
+    "target": "2f703f6126623d",
+    "headers": [],
+    "bind": [],
+    "body": null
+   },
+   "expected": {
+    "outcome": "ok",
+    "value": "f8400e1715cfcaa59279dc4739c3ad44c48eb1aaa1a8086b9a954c9d3efb8c01",
+    "document": "{\"body\":{},\"headers\":{},\"method\":\"POST\",\"path\":\"/p\",\"query\":[[\"a\",\"\"],[\"b\",\"\"]],\"v\":2}"
+   }
+  },
+  {
+   "id": "V2-REQ-039",
+   "description": "query = alone is an empty name with an empty value",
+   "input": {
+    "method": "504f5354",
+    "target": "2f703f3d",
+    "headers": [],
+    "bind": [],
+    "body": null
+   },
+   "expected": {
+    "outcome": "ok",
+    "value": "c2d46ed6d926862bbc55194f13712e197fd597bc6b861d89af90a48087e71c1f",
+    "document": "{\"body\":{},\"headers\":{},\"method\":\"POST\",\"path\":\"/p\",\"query\":[[\"\",\"\"]],\"v\":2}"
+   }
+  },
+  {
+   "id": "V2-REQ-040",
+   "description": "query =v is an empty name",
+   "input": {
+    "method": "504f5354",
+    "target": "2f703f3d76",
+    "headers": [],
+    "bind": [],
+    "body": null
+   },
+   "expected": {
+    "outcome": "ok",
+    "value": "038efb64d0792deb3144bbb469ba75914ec2f039d2b955314dcdcb733bee0326",
+    "document": "{\"body\":{},\"headers\":{},\"method\":\"POST\",\"path\":\"/p\",\"query\":[[\"\",\"v\"]],\"v\":2}"
+   }
+  },
+  {
+   "id": "V2-REQ-041",
+   "description": "query a=b=c splits at the first =",
+   "input": {
+    "method": "504f5354",
+    "target": "2f703f613d623d63",
+    "headers": [],
+    "bind": [],
+    "body": null
+   },
+   "expected": {
+    "outcome": "ok",
+    "value": "da88926d9c06781b57e14dc4abebac5bd4bead1915518b1adffc86d54c239d8d",
+    "document": "{\"body\":{},\"headers\":{},\"method\":\"POST\",\"path\":\"/p\",\"query\":[[\"a\",\"b=c\"]],\"v\":2}"
+   }
+  },
+  {
+   "id": "V2-REQ-042",
+   "description": "query raw + is refused",
+   "input": {
+    "method": "504f5354",
+    "target": "2f703f613d622b63",
+    "headers": [],
+    "bind": [],
+    "body": null
+   },
+   "expectedError": {
+    "code": "REQUEST_MISMATCH"
+   }
+  },
+  {
+   "id": "V2-REQ-043",
+   "description": "query %2B is a plus sign",
+   "input": {
+    "method": "504f5354",
+    "target": "2f703f613d6225324263",
+    "headers": [],
+    "bind": [],
+    "body": null
+   },
+   "expected": {
+    "outcome": "ok",
+    "value": "45045a37af12b11faecde09d7aade5ea4688dd31e652499e55b995031657934d",
+    "document": "{\"body\":{},\"headers\":{},\"method\":\"POST\",\"path\":\"/p\",\"query\":[[\"a\",\"b+c\"]],\"v\":2}"
+   }
+  },
+  {
+   "id": "V2-REQ-044",
+   "description": "query %20 is a space",
+   "input": {
+    "method": "504f5354",
+    "target": "2f703f613d6225323063",
+    "headers": [],
+    "bind": [],
+    "body": null
+   },
+   "expected": {
+    "outcome": "ok",
+    "value": "a16be8eeb47a8fa6dd893d5472943f2859277926c1387ca13b42d83c72654e96",
+    "document": "{\"body\":{},\"headers\":{},\"method\":\"POST\",\"path\":\"/p\",\"query\":[[\"a\",\"b c\"]],\"v\":2}"
+   }
+  },
+  {
+   "id": "V2-REQ-045",
+   "description": "query raw ; is refused",
+   "input": {
+    "method": "504f5354",
+    "target": "2f703f613d313b623d32",
+    "headers": [],
+    "bind": [],
+    "body": null
+   },
+   "expectedError": {
+    "code": "REQUEST_MISMATCH"
+   }
+  },
+  {
+   "id": "V2-REQ-046",
+   "description": "query %3B is a semicolon",
+   "input": {
+    "method": "504f5354",
+    "target": "2f703f613d31253342623d32",
+    "headers": [],
+    "bind": [],
+    "body": null
+   },
+   "expected": {
+    "outcome": "ok",
+    "value": "7d764f6bea286ee0f9ff94045bde80a1220c0179c8394e8977f7f25ef5c0889d",
+    "document": "{\"body\":{},\"headers\":{},\"method\":\"POST\",\"path\":\"/p\",\"query\":[[\"a\",\"1;b=2\"]],\"v\":2}"
+   }
+  },
+  {
+   "id": "V2-REQ-047",
+   "description": "query + in a name is refused",
+   "input": {
+    "method": "504f5354",
+    "target": "2f703f612b623d31",
+    "headers": [],
+    "bind": [],
+    "body": null
+   },
+   "expectedError": {
+    "code": "REQUEST_MISMATCH"
+   }
+  },
+  {
+   "id": "V2-REQ-048",
+   "description": "query %e9 is invalid UTF-8",
+   "input": {
+    "method": "504f5354",
+    "target": "2f703f613d256539",
+    "headers": [],
+    "bind": [],
+    "body": null
+   },
+   "expectedError": {
+    "code": "REQUEST_MISMATCH"
+   }
+  },
+  {
+   "id": "V2-REQ-049",
+   "description": "query %C3%A9 is e acute",
+   "input": {
+    "method": "504f5354",
+    "target": "2f703f613d254333254139",
+    "headers": [],
+    "bind": [],
+    "body": null
+   },
+   "expected": {
+    "outcome": "ok",
+    "value": "af931e4ff0a854cd4cf4da2c06a1fd9da0bda75a423b68cce25b2812d4b4d990",
+    "document": "{\"body\":{},\"headers\":{},\"method\":\"POST\",\"path\":\"/p\",\"query\":[[\"a\",\"é\"]],\"v\":2}"
+   }
+  },
+  {
+   "id": "V2-REQ-050",
+   "description": "query %c3%a9 lower-case hex is the same value",
+   "input": {
+    "method": "504f5354",
+    "target": "2f703f613d256333256139",
+    "headers": [],
+    "bind": [],
+    "body": null
+   },
+   "expected": {
+    "outcome": "ok",
+    "value": "af931e4ff0a854cd4cf4da2c06a1fd9da0bda75a423b68cce25b2812d4b4d990",
+    "document": "{\"body\":{},\"headers\":{},\"method\":\"POST\",\"path\":\"/p\",\"query\":[[\"a\",\"é\"]],\"v\":2}"
+   }
+  },
+  {
+   "id": "V2-REQ-051",
+   "description": "query e + combining acute via % is not NFC",
+   "input": {
+    "method": "504f5354",
+    "target": "2f703f613d65254343253831",
+    "headers": [],
+    "bind": [],
+    "body": null
+   },
+   "expectedError": {
+    "code": "REQUEST_MISMATCH",
+    "detail": "STRING_NOT_NFC"
+   }
+  },
+  {
+   "id": "V2-REQ-052",
+   "description": "query %ED%A0%80 is an encoded surrogate",
+   "input": {
+    "method": "504f5354",
+    "target": "2f703f613d254544254130253830",
+    "headers": [],
+    "bind": [],
+    "body": null
+   },
+   "expectedError": {
+    "code": "REQUEST_MISMATCH"
+   }
+  },
+  {
+   "id": "V2-REQ-053",
+   "description": "query % at the end",
+   "input": {
+    "method": "504f5354",
+    "target": "2f703f613d25",
+    "headers": [],
+    "bind": [],
+    "body": null
+   },
+   "expectedError": {
+    "code": "REQUEST_MISMATCH"
+   }
+  },
+  {
+   "id": "V2-REQ-054",
+   "description": "query %zz",
+   "input": {
+    "method": "504f5354",
+    "target": "2f703f613d257a7a",
+    "headers": [],
+    "bind": [],
+    "body": null
+   },
+   "expectedError": {
+    "code": "REQUEST_MISMATCH"
+   }
+  },
+  {
+   "id": "V2-REQ-055",
+   "description": "query %00 is a NUL character",
+   "input": {
+    "method": "504f5354",
+    "target": "2f703f613d253030",
+    "headers": [],
+    "bind": [],
+    "body": null
+   },
+   "expected": {
+    "outcome": "ok",
+    "value": "97896f0e8674614316d4e639b5239766b518640ef0bc2b1ee8df0954ca36cef9",
+    "document": "{\"body\":{},\"headers\":{},\"method\":\"POST\",\"path\":\"/p\",\"query\":[[\"a\",\"\\u0000\"]],\"v\":2}"
+   }
+  },
+  {
+   "id": "V2-REQ-056",
+   "description": "query raw non-ASCII is refused",
+   "input": {
+    "method": "504f5354",
+    "target": "2f703f613dc3a9",
+    "headers": [],
+    "bind": [],
+    "body": null
+   },
+   "expectedError": {
+    "code": "REQUEST_MISMATCH"
+   }
+  },
+  {
+   "id": "V2-REQ-057",
+   "description": "query ? inside a value is data",
+   "input": {
+    "method": "504f5354",
+    "target": "2f703f613d623f63",
+    "headers": [],
+    "bind": [],
+    "body": null
+   },
+   "expected": {
+    "outcome": "ok",
+    "value": "529196dc5c0e3691a35320060a13fd06a3287266b52a1b69fb17d7216d42fce5",
+    "document": "{\"body\":{},\"headers\":{},\"method\":\"POST\",\"path\":\"/p\",\"query\":[[\"a\",\"b?c\"]],\"v\":2}"
+   }
+  },
+  {
+   "id": "V2-REQ-058",
+   "description": "query names sort by UTF-16: U+1F600 before U+FFFF",
+   "input": {
+    "method": "504f5354",
+    "target": "2f703f2546302539462539382538303d31262545462542462542463d32",
+    "headers": [],
+    "bind": [],
+    "body": null
+   },
+   "expected": {
+    "outcome": "ok",
+    "value": "1de30579ba13ac425f8d215c95f256ab2fcc3274cb87cf797ad248c79660766d",
+    "document": "{\"body\":{},\"headers\":{},\"method\":\"POST\",\"path\":\"/p\",\"query\":[[\"😀\",\"1\"],[\"￿\",\"2\"]],\"v\":2}"
+   }
+  },
+  {
+   "id": "V2-REQ-059",
+   "description": "query names sort case-sensitively",
+   "input": {
+    "method": "504f5354",
+    "target": "2f703f623d3126423d3226613d33",
+    "headers": [],
+    "bind": [],
+    "body": null
+   },
+   "expected": {
+    "outcome": "ok",
+    "value": "ebbe790eb543edb95e1f82cf345fbe1eeb7b0205d1fb14d739ad034e5e16d819",
+    "document": "{\"body\":{},\"headers\":{},\"method\":\"POST\",\"path\":\"/p\",\"query\":[[\"B\",\"2\"],[\"a\",\"3\"],[\"b\",\"1\"]],\"v\":2}"
+   }
+  },
+  {
+   "id": "V2-REQ-060",
+   "description": "query sorts by name only: values keep their order",
+   "input": {
+    "method": "504f5354",
+    "target": "2f703f613d3926623d3126613d31",
+    "headers": [],
+    "bind": [],
+    "body": null
+   },
+   "expected": {
+    "outcome": "ok",
+    "value": "b09e4621939781cd9bbdaad0254e075821dc999a6dcc3eb2bb22f48df4cdaa62",
+    "document": "{\"body\":{},\"headers\":{},\"method\":\"POST\",\"path\":\"/p\",\"query\":[[\"a\",\"9\"],[\"a\",\"1\"],[\"b\",\"1\"]],\"v\":2}"
+   }
+  },
+  {
+   "id": "V2-REQ-061",
+   "description": "fragment in the target is refused",
+   "input": {
+    "method": "504f5354",
+    "target": "2f703f613d312366726167",
+    "headers": [],
+    "bind": [],
+    "body": null
+   },
+   "expectedError": {
+    "code": "REQUEST_MISMATCH"
+   }
+  },
+  {
+   "id": "V2-REQ-062",
+   "description": "fragment before ? is refused",
+   "input": {
+    "method": "504f5354",
+    "target": "2f7023667261673f613d31",
+    "headers": [],
+    "bind": [],
+    "body": null
+   },
+   "expectedError": {
+    "code": "REQUEST_MISMATCH"
+   }
+  },
+  {
+   "id": "V2-REQ-063",
+   "description": "path: doubled slashes, dot segments and a trailing slash are kept",
+   "input": {
+    "method": "504f5354",
+    "target": "2f612f2f622f2e2e2f632f2e2f642f",
+    "headers": [],
+    "bind": [],
+    "body": null
+   },
+   "expected": {
+    "outcome": "ok",
+    "value": "ce3ae1a3c0761ffdd594812507c0a4fd21dd8ed5410b6f5d4867dfe6d4e7f4bd",
+    "document": "{\"body\":{},\"headers\":{},\"method\":\"POST\",\"path\":\"/a//b/../c/./d/\",\"query\":[],\"v\":2}"
+   }
+  },
+  {
+   "id": "V2-REQ-064",
+   "description": "path %2f lower-case is kept as received",
+   "input": {
+    "method": "504f5354",
+    "target": "2f6125326662",
+    "headers": [],
+    "bind": [],
+    "body": null
+   },
+   "expected": {
+    "outcome": "ok",
+    "value": "0a451cbc3f910f6cb01b0d36b8e08e6f6a8e44dbba061959f23ac38fcb103dc1",
+    "document": "{\"body\":{},\"headers\":{},\"method\":\"POST\",\"path\":\"/a%2fb\",\"query\":[],\"v\":2}"
+   }
+  },
+  {
+   "id": "V2-REQ-065",
+   "description": "path %2F upper-case is a different path",
+   "input": {
+    "method": "504f5354",
+    "target": "2f6125324662",
+    "headers": [],
+    "bind": [],
+    "body": null
+   },
+   "expected": {
+    "outcome": "ok",
+    "value": "22e09a633366341d356cbc15f31362472e6867cb90ae1e1b72a7a3d93c7b3877",
+    "document": "{\"body\":{},\"headers\":{},\"method\":\"POST\",\"path\":\"/a%2Fb\",\"query\":[],\"v\":2}"
+   }
+  },
+  {
+   "id": "V2-REQ-066",
+   "description": "path percent-encoded non-ASCII is kept as received",
+   "input": {
+    "method": "504f5354",
+    "target": "2f636166254333254139",
+    "headers": [],
+    "bind": [],
+    "body": null
+   },
+   "expected": {
+    "outcome": "ok",
+    "value": "4b02f3dc9497f9632e229ca011e25efda252ac82ad98e771aeeebcbe922aff7d",
+    "document": "{\"body\":{},\"headers\":{},\"method\":\"POST\",\"path\":\"/caf%C3%A9\",\"query\":[],\"v\":2}"
+   }
+  },
+  {
+   "id": "V2-REQ-067",
+   "description": "path raw non-ASCII is refused",
+   "input": {
+    "method": "504f5354",
+    "target": "2f636166c3a9",
+    "headers": [],
+    "bind": [],
+    "body": null
+   },
+   "expectedError": {
+    "code": "REQUEST_MISMATCH"
+   }
+  },
+  {
+   "id": "V2-REQ-068",
+   "description": "path raw invalid UTF-8 byte is refused",
+   "input": {
+    "method": "504f5354",
+    "target": "2fff",
+    "headers": [],
+    "bind": [],
+    "body": null
+   },
+   "expectedError": {
+    "code": "REQUEST_MISMATCH"
+   }
+  },
+  {
+   "id": "V2-REQ-069",
+   "description": "path with a space is refused",
+   "input": {
+    "method": "504f5354",
+    "target": "2f612062",
+    "headers": [],
+    "bind": [],
+    "body": null
+   },
+   "expectedError": {
+    "code": "REQUEST_MISMATCH"
+   }
+  },
+  {
+   "id": "V2-REQ-070",
+   "description": "path with a control character is refused",
+   "input": {
+    "method": "504f5354",
+    "target": "2f610962",
+    "headers": [],
+    "bind": [],
+    "body": null
+   },
+   "expectedError": {
+    "code": "REQUEST_MISMATCH"
+   }
+  },
+  {
+   "id": "V2-REQ-071",
+   "description": "path with DEL is refused",
+   "input": {
+    "method": "504f5354",
+    "target": "2f617f62",
+    "headers": [],
+    "bind": [],
+    "body": null
+   },
+   "expectedError": {
+    "code": "REQUEST_MISMATCH"
+   }
+  },
+  {
+   "id": "V2-REQ-072",
+   "description": "absolute-form target is refused",
+   "input": {
+    "method": "504f5354",
+    "target": "687474703a2f2f682f76312f783f793d31",
+    "headers": [],
+    "bind": [],
+    "body": null
+   },
+   "expectedError": {
+    "code": "REQUEST_MISMATCH"
+   }
+  },
+  {
+   "id": "V2-REQ-073",
+   "description": "asterisk-form target is refused",
+   "input": {
+    "method": "504f5354",
+    "target": "2a",
+    "headers": [],
+    "bind": [],
+    "body": null
+   },
+   "expectedError": {
+    "code": "REQUEST_MISMATCH"
+   }
+  },
+  {
+   "id": "V2-REQ-074",
+   "description": "empty target is refused",
+   "input": {
+    "method": "504f5354",
+    "target": "",
+    "headers": [],
+    "bind": [],
+    "body": null
+   },
+   "expectedError": {
+    "code": "REQUEST_MISMATCH"
+   }
+  },
+  {
+   "id": "V2-REQ-075",
+   "description": "target without a leading slash is refused",
+   "input": {
+    "method": "504f5354",
+    "target": "76312f78",
+    "headers": [],
+    "bind": [],
+    "body": null
+   },
+   "expectedError": {
+    "code": "REQUEST_MISMATCH"
+   }
+  },
+  {
+   "id": "V2-REQ-076",
+   "description": "headers: a bound header that is absent is null",
+   "input": {
+    "method": "504f5354",
+    "target": "2f76312f61692f63686174",
+    "headers": [],
+    "bind": [
+     "x-a"
+    ],
+    "body": null
+   },
+   "expected": {
+    "outcome": "ok",
+    "value": "7adbddd7cf3e663867ed8ff505b75916e415aed210a738c2f45eb52d95655911",
+    "document": "{\"body\":{},\"headers\":{\"x-a\":null},\"method\":\"POST\",\"path\":\"/v1/ai/chat\",\"query\":[],\"v\":2}"
+   }
+  },
+  {
+   "id": "V2-REQ-077",
+   "description": "headers: a bound header that is present and empty is \"\"",
+   "input": {
+    "method": "504f5354",
+    "target": "2f76312f61692f63686174",
+    "headers": [
+     [
+      "782d61",
+      ""
+     ]
+    ],
+    "bind": [
+     "x-a"
+    ],
+    "body": null
+   },
+   "expected": {
+    "outcome": "ok",
+    "value": "f2c6de78b90c77e4fefab42f5b828a22acf24ce7261cdbb0f17e0d5db76628b5",
+    "document": "{\"body\":{},\"headers\":{\"x-a\":\"\"},\"method\":\"POST\",\"path\":\"/v1/ai/chat\",\"query\":[],\"v\":2}"
+   }
+  },
+  {
+   "id": "V2-REQ-078",
+   "description": "headers: spaces only trim to \"\"",
+   "input": {
+    "method": "504f5354",
+    "target": "2f76312f61692f63686174",
+    "headers": [
+     [
+      "782d61",
+      "202020"
+     ]
+    ],
+    "bind": [
+     "x-a"
+    ],
+    "body": null
+   },
+   "expected": {
+    "outcome": "ok",
+    "value": "f2c6de78b90c77e4fefab42f5b828a22acf24ce7261cdbb0f17e0d5db76628b5",
+    "document": "{\"body\":{},\"headers\":{\"x-a\":\"\"},\"method\":\"POST\",\"path\":\"/v1/ai/chat\",\"query\":[],\"v\":2}"
+   }
+  },
+  {
+   "id": "V2-REQ-079",
+   "description": "headers: leading and trailing SP and HTAB are trimmed",
+   "input": {
+    "method": "504f5354",
+    "target": "2f76312f61692f63686174",
+    "headers": [
+     [
+      "782d61",
+      "20092076200920"
+     ]
+    ],
+    "bind": [
+     "x-a"
+    ],
+    "body": null
+   },
+   "expected": {
+    "outcome": "ok",
+    "value": "e637c637117f9fe3942dd74558f649e233258410fae7f94e079421d00059143a",
+    "document": "{\"body\":{},\"headers\":{\"x-a\":\"v\"},\"method\":\"POST\",\"path\":\"/v1/ai/chat\",\"query\":[],\"v\":2}"
+   }
+  },
+  {
+   "id": "V2-REQ-080",
+   "description": "headers: NBSP is not trimmed",
+   "input": {
+    "method": "504f5354",
+    "target": "2f76312f61692f63686174",
+    "headers": [
+     [
+      "782d61",
+      "c2a076c2a0"
+     ]
+    ],
+    "bind": [
+     "x-a"
+    ],
+    "body": null
+   },
+   "expected": {
+    "outcome": "ok",
+    "value": "c147376d395588d7d56451bcc20cee7b9f0905fbf10a243f12f5cf8ddebb59ec",
+    "document": "{\"body\":{},\"headers\":{\"x-a\":\" v \"},\"method\":\"POST\",\"path\":\"/v1/ai/chat\",\"query\":[],\"v\":2}"
+   }
+  },
+  {
+   "id": "V2-REQ-081",
+   "description": "headers: form feed is not trimmed",
+   "input": {
+    "method": "504f5354",
+    "target": "2f76312f61692f63686174",
+    "headers": [
+     [
+      "782d61",
+      "0c760c"
+     ]
+    ],
+    "bind": [
+     "x-a"
+    ],
+    "body": null
+   },
+   "expected": {
+    "outcome": "ok",
+    "value": "bffaec51a0dc8715d50ce452c54e8e34c0ea5deba91130cae9029591e188c94e",
+    "document": "{\"body\":{},\"headers\":{\"x-a\":\"\\fv\\f\"},\"method\":\"POST\",\"path\":\"/v1/ai/chat\",\"query\":[],\"v\":2}"
+   }
+  },
+  {
+   "id": "V2-REQ-082",
+   "description": "headers: two field lines are joined with \", \" in order received",
+   "input": {
+    "method": "504f5354",
+    "target": "2f76312f61692f63686174",
+    "headers": [
+     [
+      "782d61",
+      "6120"
+     ],
+     [
+      "782d61",
+      "2062"
+     ]
+    ],
+    "bind": [
+     "x-a"
+    ],
+    "body": null
+   },
+   "expected": {
+    "outcome": "ok",
+    "value": "0711e2035c6dc73a1f7839113de03476919b9e8bde1eae065e1a5e0ffd216a40",
+    "document": "{\"body\":{},\"headers\":{\"x-a\":\"a, b\"},\"method\":\"POST\",\"path\":\"/v1/ai/chat\",\"query\":[],\"v\":2}"
+   }
+  },
+  {
+   "id": "V2-REQ-083",
+   "description": "headers: the same two lines in the other order are a different value",
+   "input": {
+    "method": "504f5354",
+    "target": "2f76312f61692f63686174",
+    "headers": [
+     [
+      "782d61",
+      "2062"
+     ],
+     [
+      "782d61",
+      "6120"
+     ]
+    ],
+    "bind": [
+     "x-a"
+    ],
+    "body": null
+   },
+   "expected": {
+    "outcome": "ok",
+    "value": "752516cf95c896808daf11215007c38e7754e872d79308533e14d5774b5611ea",
+    "document": "{\"body\":{},\"headers\":{\"x-a\":\"b, a\"},\"method\":\"POST\",\"path\":\"/v1/ai/chat\",\"query\":[],\"v\":2}"
+   }
+  },
+  {
+   "id": "V2-REQ-084",
+   "description": "headers: received name case does not matter",
+   "input": {
+    "method": "504f5354",
+    "target": "2f76312f61692f63686174",
+    "headers": [
+     [
+      "582d41",
+      "76"
+     ]
+    ],
+    "bind": [
+     "x-a"
+    ],
+    "body": null
+   },
+   "expected": {
+    "outcome": "ok",
+    "value": "e637c637117f9fe3942dd74558f649e233258410fae7f94e079421d00059143a",
+    "document": "{\"body\":{},\"headers\":{\"x-a\":\"v\"},\"method\":\"POST\",\"path\":\"/v1/ai/chat\",\"query\":[],\"v\":2}"
+   }
+  },
+  {
+   "id": "V2-REQ-085",
+   "description": "headers: a name listed twice is refused",
+   "input": {
+    "method": "504f5354",
+    "target": "2f76312f61692f63686174",
+    "headers": [
+     [
+      "782d61",
+      "76"
+     ]
+    ],
+    "bind": [
+     "x-a",
+     "x-a"
+    ],
+    "body": null
+   },
+   "expectedError": {
+    "code": "REQUEST_MISMATCH"
+   }
+  },
+  {
+   "id": "V2-REQ-086",
+   "description": "headers: an upper-case bound name is refused",
+   "input": {
+    "method": "504f5354",
+    "target": "2f76312f61692f63686174",
+    "headers": [
+     [
+      "782d61",
+      "76"
+     ]
+    ],
+    "bind": [
+     "X-A"
+    ],
+    "body": null
+   },
+   "expectedError": {
+    "code": "REQUEST_MISMATCH"
+   }
+  },
+  {
+   "id": "V2-REQ-087",
+   "description": "headers: authorization cannot be bound",
+   "input": {
+    "method": "504f5354",
+    "target": "2f76312f61692f63686174",
+    "headers": [
+     [
+      "617574686f72697a6174696f6e",
+      "76"
+     ]
+    ],
+    "bind": [
+     "authorization"
+    ],
+    "body": null
+   },
+   "expectedError": {
+    "code": "REQUEST_MISMATCH"
+   }
+  },
+  {
+   "id": "V2-REQ-088",
+   "description": "headers: cookie cannot be bound",
+   "input": {
+    "method": "504f5354",
+    "target": "2f76312f61692f63686174",
+    "headers": [
+     [
+      "636f6f6b6965",
+      "76"
+     ]
+    ],
+    "bind": [
+     "cookie"
+    ],
+    "body": null
+   },
+   "expectedError": {
+    "code": "REQUEST_MISMATCH"
+   }
+  },
+  {
+   "id": "V2-REQ-089",
+   "description": "headers: host cannot be bound",
+   "input": {
+    "method": "504f5354",
+    "target": "2f76312f61692f63686174",
+    "headers": [
+     [
+      "686f7374",
+      "68"
+     ]
+    ],
+    "bind": [
+     "host"
+    ],
+    "body": null
+   },
+   "expectedError": {
+    "code": "REQUEST_MISMATCH"
+   }
+  },
+  {
+   "id": "V2-REQ-090",
+   "description": "headers: x-qodiqa-artifact cannot be bound",
+   "input": {
+    "method": "504f5354",
+    "target": "2f76312f61692f63686174",
+    "headers": [],
+    "bind": [
+     "x-qodiqa-artifact"
+    ],
+    "body": null
+   },
+   "expectedError": {
+    "code": "REQUEST_MISMATCH"
+   }
+  },
+  {
+   "id": "V2-REQ-091",
+   "description": "headers: a hop-by-hop name (te) cannot be bound",
+   "input": {
+    "method": "504f5354",
+    "target": "2f76312f61692f63686174",
+    "headers": [],
+    "bind": [
+     "te"
+    ],
+    "body": null
+   },
+   "expectedError": {
+    "code": "REQUEST_MISMATCH"
+   }
+  },
+  {
+   "id": "V2-REQ-092",
+   "description": "headers: 17 names are too many",
+   "input": {
+    "method": "504f5354",
+    "target": "2f76312f61692f63686174",
+    "headers": [],
+    "bind": [
+     "x-h0",
+     "x-h1",
+     "x-h2",
+     "x-h3",
+     "x-h4",
+     "x-h5",
+     "x-h6",
+     "x-h7",
+     "x-h8",
+     "x-h9",
+     "x-h10",
+     "x-h11",
+     "x-h12",
+     "x-h13",
+     "x-h14",
+     "x-h15",
+     "x-h16"
+    ],
+    "body": null
+   },
+   "expectedError": {
+    "code": "REQUEST_MISMATCH"
+   }
+  },
+  {
+   "id": "V2-REQ-093",
+   "description": "headers: 16 names are allowed",
+   "input": {
+    "method": "504f5354",
+    "target": "2f76312f61692f63686174",
+    "headers": [],
+    "bind": [
+     "x-h0",
+     "x-h1",
+     "x-h2",
+     "x-h3",
+     "x-h4",
+     "x-h5",
+     "x-h6",
+     "x-h7",
+     "x-h8",
+     "x-h9",
+     "x-h10",
+     "x-h11",
+     "x-h12",
+     "x-h13",
+     "x-h14",
+     "x-h15"
+    ],
+    "body": null
+   },
+   "expected": {
+    "outcome": "ok",
+    "value": "833f35a274d05294af847131a3454febd14ecace99765b9901f90993c99d4a94",
+    "document": "{\"body\":{},\"headers\":{\"x-h0\":null,\"x-h1\":null,\"x-h10\":null,\"x-h11\":null,\"x-h12\":null,\"x-h13\":null,\"x-h14\":null,\"x-h15\":null,\"x-h2\":null,\"x-h3\":null,\"x-h4\":null,\"x-h5\":null,\"x-h6\":null,\"x-h7\":null,\"x-h8\":null,\"x-h9\":null},\"method\":\"POST\",\"path\":\"/v1/ai/chat\",\"query\":[],\"v\":2}"
+   }
+  },
+  {
+   "id": "V2-REQ-094",
+   "description": "headers: a name of 65 characters is refused",
+   "input": {
+    "method": "504f5354",
+    "target": "2f76312f61692f63686174",
+    "headers": [],
+    "bind": [
+     "x-aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+    ],
+    "body": null
+   },
+   "expected": {
+    "outcome": "ok",
+    "value": "2d117876363f42d451232ce1f7ae8101db79c9e0f3af5182bb4950309d3021ce",
+    "document": "{\"body\":{},\"headers\":{\"x-aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa\":null},\"method\":\"POST\",\"path\":\"/v1/ai/chat\",\"query\":[],\"v\":2}"
+   }
+  },
+  {
+   "id": "V2-REQ-095",
+   "description": "headers: a name of 64 characters is allowed",
+   "input": {
+    "method": "504f5354",
+    "target": "2f76312f61692f63686174",
+    "headers": [],
+    "bind": [
+     "x-aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+    ],
+    "body": null
+   },
+   "expected": {
+    "outcome": "ok",
+    "value": "82cfccc9ea3cffbc21cede3b0cbdcaa8166d8a53e716d194b320d601585b0719",
+    "document": "{\"body\":{},\"headers\":{\"x-aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa\":null},\"method\":\"POST\",\"path\":\"/v1/ai/chat\",\"query\":[],\"v\":2}"
+   }
+  },
+  {
+   "id": "V2-REQ-096",
+   "description": "headers: a name with an underscore is refused",
+   "input": {
+    "method": "504f5354",
+    "target": "2f76312f61692f63686174",
+    "headers": [],
+    "bind": [
+     "x_a"
+    ],
+    "body": null
+   },
+   "expectedError": {
+    "code": "REQUEST_MISMATCH"
+   }
+  },
+  {
+   "id": "V2-REQ-097",
+   "description": "headers: a value with invalid UTF-8",
+   "input": {
+    "method": "504f5354",
+    "target": "2f76312f61692f63686174",
+    "headers": [
+     [
+      "782d61",
+      "ff"
+     ]
+    ],
+    "bind": [
+     "x-a"
+    ],
+    "body": null
+   },
+   "expectedError": {
+    "code": "REQUEST_MISMATCH"
+   }
+  },
+  {
+   "id": "V2-REQ-098",
+   "description": "headers: a non-NFC value",
+   "input": {
+    "method": "504f5354",
+    "target": "2f76312f61692f63686174",
+    "headers": [
+     [
+      "782d61",
+      "65cc81"
+     ]
+    ],
+    "bind": [
+     "x-a"
+    ],
+    "body": null
+   },
+   "expectedError": {
+    "code": "REQUEST_MISMATCH",
+    "detail": "STRING_NOT_NFC"
+   }
+  },
+  {
+   "id": "V2-REQ-099",
+   "description": "headers: an NFC value",
+   "input": {
+    "method": "504f5354",
+    "target": "2f76312f61692f63686174",
+    "headers": [
+     [
+      "782d61",
+      "636166c3a9"
+     ]
+    ],
+    "bind": [
+     "x-a"
+    ],
+    "body": null
+   },
+   "expected": {
+    "outcome": "ok",
+    "value": "93b54691c18fce78078ee4cebb99a6465360d784379f0c989eca23318ed5a454",
+    "document": "{\"body\":{},\"headers\":{\"x-a\":\"café\"},\"method\":\"POST\",\"path\":\"/v1/ai/chat\",\"query\":[],\"v\":2}"
+   }
+  },
+  {
+   "id": "V2-REQ-100",
+   "description": "headers: a comma inside a single line is data",
+   "input": {
+    "method": "504f5354",
+    "target": "2f76312f61692f63686174",
+    "headers": [
+     [
+      "782d61",
+      "612c2062"
+     ]
+    ],
+    "bind": [
+     "x-a"
+    ],
+    "body": null
+   },
+   "expected": {
+    "outcome": "ok",
+    "value": "0711e2035c6dc73a1f7839113de03476919b9e8bde1eae065e1a5e0ffd216a40",
+    "document": "{\"body\":{},\"headers\":{\"x-a\":\"a, b\"},\"method\":\"POST\",\"path\":\"/v1/ai/chat\",\"query\":[],\"v\":2}"
+   }
+  },
+  {
+   "id": "V2-REQ-101",
+   "description": "headers: the order of the bound names does not matter",
+   "input": {
+    "method": "504f5354",
+    "target": "2f76312f61692f63686174",
+    "headers": [
+     [
+      "782d61",
+      "31"
+     ],
+     [
+      "782d62",
+      "32"
+     ]
+    ],
+    "bind": [
+     "x-b",
+     "x-a"
+    ],
+    "body": null
+   },
+   "expected": {
+    "outcome": "ok",
+    "value": "7e4ab66875eda0aa8adb8c7db5129b5e1c021f052394095454c43242c0357587",
+    "document": "{\"body\":{},\"headers\":{\"x-a\":\"1\",\"x-b\":\"2\"},\"method\":\"POST\",\"path\":\"/v1/ai/chat\",\"query\":[],\"v\":2}"
+   }
+  },
+  {
+   "id": "V2-REQ-102",
+   "description": "headers: an unbound header is ignored",
+   "input": {
+    "method": "504f5354",
+    "target": "2f76312f61692f63686174",
+    "headers": [
+     [
+      "782d61",
+      "31"
+     ],
+     [
+      "782d7a7a7a",
+      "32"
+     ]
+    ],
+    "bind": [
+     "x-a"
+    ],
+    "body": null
+   },
+   "expected": {
+    "outcome": "ok",
+    "value": "9549b20826b277c44a6e22726dbb0893d5adef2287802eedc4811727ae7cd9e1",
+    "document": "{\"body\":{},\"headers\":{\"x-a\":\"1\"},\"method\":\"POST\",\"path\":\"/v1/ai/chat\",\"query\":[],\"v\":2}"
+   }
+  },
+  {
+   "id": "V2-REQ-103",
+   "description": "headers: a BOM in a value is the character U+FEFF",
+   "input": {
+    "method": "504f5354",
+    "target": "2f76312f61692f63686174",
+    "headers": [
+     [
+      "782d61",
+      "efbbbf76"
+     ]
+    ],
+    "bind": [
+     "x-a"
+    ],
+    "body": null
+   },
+   "expected": {
+    "outcome": "ok",
+    "value": "3dd0677c7e404e481289ef697602996e03b2990c9a2a643bb682b8fa702bdb4a",
+    "document": "{\"body\":{},\"headers\":{\"x-a\":\"﻿v\"},\"method\":\"POST\",\"path\":\"/v1/ai/chat\",\"query\":[],\"v\":2}"
+   }
+  },
+  {
+   "id": "V2-REQ-104",
+   "description": "headers: a value of astral characters",
+   "input": {
+    "method": "504f5354",
+    "target": "2f76312f61692f63686174",
+    "headers": [
+     [
+      "782d61",
+      "f09f9880"
+     ]
+    ],
+    "bind": [
+     "x-a"
+    ],
+    "body": null
+   },
+   "expected": {
+    "outcome": "ok",
+    "value": "349d2d1dd80d9468060d505b12420cc18117d3acf339b5d3038cc13f2c4c6a59",
+    "document": "{\"body\":{},\"headers\":{\"x-a\":\"😀\"},\"method\":\"POST\",\"path\":\"/v1/ai/chat\",\"query\":[],\"v\":2}"
+   }
+  },
+  {
+   "id": "V2-REQ-105",
+   "description": "a complete request: query, two headers and a body together",
+   "input": {
+    "method": "505554",
+    "target": "2f76312f61692f636861743f73747265616d3d74727565266d6f64656c3d6d26613d3226613d31",
+    "headers": [
+     [
+      "782d7472616365",
+      "20742d3120"
+     ],
+     [
+      "782d74656e616e74",
+      "61636d65"
+     ],
+     [
+      "782d6f74686572",
+      "69676e6f726564"
+     ]
+    ],
+    "bind": [
+     "x-tenant",
+     "x-trace"
+    ],
+    "body": "7b2274656d7065726174757265223a302e372c226d65737361676573223a5b7b22636f6e74656e74223a226869222c22726f6c65223a2275736572227d5d2c226e223a317d"
+   },
+   "expected": {
+    "outcome": "ok",
+    "value": "f5fec7c2a40b384c021ecfd8d64b83d624e9376429ac90051a4842f254b07709",
+    "document": "{\"body\":{\"messages\":[{\"content\":\"hi\",\"role\":\"user\"}],\"n\":1,\"temperature\":0.7},\"headers\":{\"x-tenant\":\"acme\",\"x-trace\":\"t-1\"},\"method\":\"PUT\",\"path\":\"/v1/ai/chat\",\"query\":[[\"a\",\"2\"],[\"a\",\"1\"],[\"model\",\"m\"],[\"stream\",\"true\"]],\"v\":2}"
+   }
+  },
+  {
+   "id": "V2-REQ-106",
+   "description": "headers: a bound name that is a JS prototype word makes a forbidden document key (constructor)",
+   "input": {
+    "method": "504f5354",
+    "target": "2f76312f61692f63686174",
+    "headers": [
+     [
+      "636f6e7374727563746f72",
+      "76"
+     ]
+    ],
+    "bind": [
+     "constructor"
+    ],
+    "body": null
+   },
+   "expectedError": {
+    "code": "REQUEST_MISMATCH",
+    "detail": "FORBIDDEN_KEY"
+   }
+  },
+  {
+   "id": "V2-REQ-107",
+   "description": "headers: a bound name that is a JS prototype word makes a forbidden document key (prototype)",
+   "input": {
+    "method": "504f5354",
+    "target": "2f76312f61692f63686174",
+    "headers": [],
+    "bind": [
+     "prototype"
+    ],
+    "body": null
+   },
+   "expectedError": {
+    "code": "REQUEST_MISMATCH",
+    "detail": "FORBIDDEN_KEY"
+   }
+  },
+  {
+   "id": "V2-REQ-108",
+   "description": "headers: a bound name with underscores (__proto__) fails the name rule",
+   "input": {
+    "method": "504f5354",
+    "target": "2f76312f61692f63686174",
+    "headers": [],
+    "bind": [
+     "__proto__"
+    ],
+    "body": null
+   },
+   "expectedError": {
+    "code": "REQUEST_MISMATCH"
+   }
+  },
+  {
+   "id": "V2-REQ-109",
+   "description": "body nested 63 deep: the whole document is depth 64 (accepted)",
+   "input": {
+    "method": "504f5354",
+    "target": "2f76312f61692f63686174",
+    "headers": [],
+    "bind": [],
+    "body": {
+     "repeat": {
+      "prefix": "",
+      "unit": "{\"a\":",
+      "count": 62,
+      "suffix": "{}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}"
+     }
+    }
+   },
+   "expected": {
+    "outcome": "ok",
+    "value": "f8f4bd971c70e7bcfc4034b8c918acfbe61329afc1a242a326f81196c10fc93d"
+   }
+  },
+  {
+   "id": "V2-REQ-110",
+   "description": "body nested 64 deep: the whole document is depth 65 (refused)",
+   "input": {
+    "method": "504f5354",
+    "target": "2f76312f61692f63686174",
+    "headers": [],
+    "bind": [],
+    "body": {
+     "repeat": {
+      "prefix": "",
+      "unit": "{\"a\":",
+      "count": 63,
+      "suffix": "{}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}"
+     }
+    }
+   },
+   "expectedError": {
+    "code": "REQUEST_MISMATCH",
+    "detail": "MAX_DEPTH_EXCEEDED"
+   }
+  },
+  {
+   "id": "V2-REQ-111",
+   "description": "body with an empty key and a unicode key",
+   "input": {
+    "method": "504f5354",
+    "target": "2f76312f61692f63686174",
+    "headers": [],
+    "bind": [],
+    "body": "7b22223a312c22c3a9223a327d"
+   },
+   "expected": {
+    "outcome": "ok",
+    "value": "325013c0e639cece2c37ddc1f5ca01a4508609ef32d093cb419deec08a67d7c9",
+    "document": "{\"body\":{\"\":1,\"é\":2},\"headers\":{},\"method\":\"POST\",\"path\":\"/v1/ai/chat\",\"query\":[],\"v\":2}"
+   }
+  },
+  {
+   "id": "V2-REQ-112",
+   "description": "body number -0 hashes as 0",
+   "input": {
+    "method": "504f5354",
+    "target": "2f76312f61692f63686174",
+    "headers": [],
+    "bind": [],
+    "body": "7b226e223a2d307d"
+   },
+   "expected": {
+    "outcome": "ok",
+    "value": "277958baa7ef5572c0d52575fb4fd510c1daa85b2716b055685335423f430100",
+    "document": "{\"body\":{\"n\":0},\"headers\":{},\"method\":\"POST\",\"path\":\"/v1/ai/chat\",\"query\":[],\"v\":2}"
+   }
+  },
+  {
+   "id": "V2-REQ-113",
+   "description": "body number 0 hashes alike",
+   "input": {
+    "method": "504f5354",
+    "target": "2f76312f61692f63686174",
+    "headers": [],
+    "bind": [],
+    "body": "7b226e223a307d"
+   },
+   "expected": {
+    "outcome": "ok",
+    "value": "277958baa7ef5572c0d52575fb4fd510c1daa85b2716b055685335423f430100",
+    "document": "{\"body\":{\"n\":0},\"headers\":{},\"method\":\"POST\",\"path\":\"/v1/ai/chat\",\"query\":[],\"v\":2}"
+   }
+  },
+  {
+   "id": "V2-REQ-114",
+   "description": "headers: content-encoding identity is accepted",
+   "input": {
+    "method": "504f5354",
+    "target": "2f76312f61692f63686174",
+    "headers": [
+     [
+      "636f6e74656e742d656e636f64696e67",
+      "6964656e74697479"
+     ]
+    ],
+    "bind": [],
+    "body": "7b2261223a317d"
+   },
+   "expected": {
+    "outcome": "ok",
+    "value": "cffaf9089224c4b52e76cd6cefbe4631dd1cd4b1257480753a023bb993e8f643",
+    "document": "{\"body\":{\"a\":1},\"headers\":{},\"method\":\"POST\",\"path\":\"/v1/ai/chat\",\"query\":[],\"v\":2}"
+   }
+  },
+  {
+   "id": "V2-REQ-115",
+   "description": "headers: content-encoding identity, any case and padding, is accepted",
+   "input": {
+    "method": "504f5354",
+    "target": "2f76312f61692f63686174",
+    "headers": [
+     [
+      "436f6e74656e742d456e636f64696e67",
+      "204944454e5449545920"
+     ]
+    ],
+    "bind": [],
+    "body": "7b2261223a317d"
+   },
+   "expected": {
+    "outcome": "ok",
+    "value": "cffaf9089224c4b52e76cd6cefbe4631dd1cd4b1257480753a023bb993e8f643",
+    "document": "{\"body\":{\"a\":1},\"headers\":{},\"method\":\"POST\",\"path\":\"/v1/ai/chat\",\"query\":[],\"v\":2}"
+   }
+  },
+  {
+   "id": "V2-REQ-116",
+   "description": "headers: content-encoding gzip is refused",
+   "input": {
+    "method": "504f5354",
+    "target": "2f76312f61692f63686174",
+    "headers": [
+     [
+      "636f6e74656e742d656e636f64696e67",
+      "677a6970"
+     ]
+    ],
+    "bind": [],
+    "body": "7b2261223a317d"
+   },
+   "expectedError": {
+    "code": "REQUEST_MISMATCH"
+   }
+  },
+  {
+   "id": "V2-REQ-117",
+   "description": "headers: content-encoding with a second line that is not identity is refused",
+   "input": {
+    "method": "504f5354",
+    "target": "2f76312f61692f63686174",
+    "headers": [
+     [
+      "636f6e74656e742d656e636f64696e67",
+      "6964656e74697479"
+     ],
+     [
+      "436f6e74656e742d456e636f64696e67",
+      "6272"
+     ]
+    ],
+    "bind": [],
+    "body": "7b2261223a317d"
+   },
+   "expectedError": {
+    "code": "REQUEST_MISMATCH"
+   }
+  },
+  {
+   "id": "V2-REQ-118",
+   "description": "headers: an empty content-encoding is refused",
+   "input": {
+    "method": "504f5354",
+    "target": "2f76312f61692f63686174",
+    "headers": [
+     [
+      "636f6e74656e742d656e636f64696e67",
+      ""
+     ]
+    ],
+    "bind": [],
+    "body": "7b2261223a317d"
+   },
+   "expectedError": {
+    "code": "REQUEST_MISMATCH"
+   }
+  },
+  {
+   "id": "V2-REQ-119",
+   "description": "headers: content-encoding is checked even when no header is bound",
+   "input": {
+    "method": "504f5354",
+    "target": "2f76312f61692f63686174",
+    "headers": [
+     [
+      "434f4e54454e542d454e434f44494e47",
+      "6465666c617465"
+     ]
+    ],
+    "bind": [],
+    "body": null
+   },
+   "expectedError": {
+    "code": "REQUEST_MISMATCH"
+   }
+  }
+ ]
+}

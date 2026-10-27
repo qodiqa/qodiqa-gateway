@@ -1,0 +1,7085 @@
+{
+ "about": "Declared route guards. Held to the live app by scripts/security/__tests__/routeGuardRegistry.test.js. Regenerate with scripts/security/writeRouteGuardRegistry.js and review the diff.",
+ "exceptions": [
+  {
+   "id": "probe-no-limit",
+   "gap": "no rate limit (probe",
+   "routes": "^GET \\/(health|health\\/redis|ready)$",
+   "reason": "Liveness/readiness probes are not rate limited (loopback/health-token gated instead)."
+  },
+  {
+   "id": "ops-token-only",
+   "gap": "AUTHENTICATED, NO RBAC PERMISSION",
+   "routes": "^(GET|POST) \\/(metrics|diagnostics)(\\/|$)",
+   "reason": "Ops-token-only by design (docs/security/RBAC_MODEL.md §6); READ_METRICS/READ_DIAGNOSTICS are planned."
+  },
+  {
+   "id": "self-service-mfa",
+   "gap": "AUTHENTICATED, NO RBAC PERMISSION",
+   "routes": "^(GET|POST) \\/rbac\\/me\\/mfa(\\/enroll|\\/confirm)?$",
+   "reason": "An operator manages only their OWN MFA enrolment; enrol is refused once enrolled, reset needs MANAGE_USERS + step-up."
+  },
+  {
+   "id": "signed-artifact-pre-auth",
+   "gap": "WRITES REACHABLE BEFORE CALLER AUTH",
+   "routes": "^POST \\/(v1\\/)?(ai\\/chat(\\/stream)?|verify(\\/v2)?)$",
+   "reason": "Every reject before the artifact signature verifies is counter+sampled-log only (qodiqa_preauth_rejects_total); audit/transparency writes happen only after verification. /verify writes only the lazy keystore bootstrap."
+  },
+  {
+   "id": "lazy-keystore-bootstrap",
+   "gap": "PUBLIC WRITE (files)",
+   "routes": "^GET \\/(\\.well-known\\/qodiqa\\/(keys|transparency-keys|checkpoint-keys)(\\/:keyId)?|public-keys?|keys)$",
+   "reason": "The only write is the keystore creating its first key when none exists (process bootstrap, not caller-controlled, idempotent)."
+  },
+  {
+   "id": "idempotent-merkle-checkpoint",
+   "gap": "PUBLIC WRITE (db)",
+   "routes": "^GET \\/(v1\\/)?transparency\\/proof\\/:transparencyId$",
+   "reason": "Proof lookup persists deterministic Merkle block checkpoints (INSERT … ON CONFLICT DO NOTHING); bounded by the log size, rate limited."
+  },
+  {
+   "id": "ephemeral-unless-authenticated",
+   "gap": "PUBLIC WRITE",
+   "routes": "^(GET \\/(v1\\/)?transparency\\/verify\\/:transparencyId|POST \\/(v1\\/)?portal\\/verify|POST \\/v1\\/attestation\\/(verify|evidence\\/verify|chain\\/verify))$",
+   "reason": "Anonymous calls are ephemeral (nothing persisted); only a caller authenticated through the full admin stack with the write permission persists. A presented-but-invalid credential is refused. Proven in publicVerifyEphemeral.test.js."
+  },
+  {
+   "id": "portal-login",
+   "gap": "PUBLIC WRITE (control-plane)",
+   "routes": "^GET \\/tenant-portal\\/(callback|dev-login)$",
+   "reason": "Tenant-portal login endpoints (OIDC callback; dev stub refused in production by boot rule) create the session user by design; portal-only (QODIQA_PORTAL_ENABLED). The write goes to the control plane (PostgreSQL), no longer to a file."
+  }
+ ],
+ "routes": {
+  "GET /health/redis": {
+   "access": "public",
+   "auth": [],
+   "optionalAuth": [
+    "health-token(optional)"
+   ],
+   "permissions": [],
+   "rateLimitBuckets": [],
+   "ipAllowlist": true,
+   "planeGates": [],
+   "mfaStepUp": null,
+   "exceptions": [
+    "probe-no-limit"
+   ]
+  },
+  "GET /health": {
+   "access": "public",
+   "auth": [],
+   "optionalAuth": [
+    "health-token(optional)"
+   ],
+   "permissions": [],
+   "rateLimitBuckets": [],
+   "ipAllowlist": true,
+   "planeGates": [],
+   "mfaStepUp": null,
+   "exceptions": [
+    "probe-no-limit"
+   ]
+  },
+  "GET /ready": {
+   "access": "public",
+   "auth": [],
+   "optionalAuth": [
+    "health-token(optional)"
+   ],
+   "permissions": [],
+   "rateLimitBuckets": [],
+   "ipAllowlist": true,
+   "planeGates": [],
+   "mfaStepUp": null,
+   "exceptions": [
+    "probe-no-limit"
+   ]
+  },
+  "GET /metrics": {
+   "access": "authenticated",
+   "auth": [
+    "ops-api-key"
+   ],
+   "optionalAuth": [],
+   "permissions": [],
+   "rateLimitBuckets": [
+    "ops_admin"
+   ],
+   "ipAllowlist": true,
+   "planeGates": [
+    "opsPlaneGate"
+   ],
+   "mfaStepUp": null,
+   "exceptions": [
+    "ops-token-only"
+   ]
+  },
+  "GET /diagnostics": {
+   "access": "authenticated",
+   "auth": [
+    "ops-api-key"
+   ],
+   "optionalAuth": [],
+   "permissions": [],
+   "rateLimitBuckets": [
+    "ops_admin"
+   ],
+   "ipAllowlist": true,
+   "planeGates": [
+    "opsPlaneGate"
+   ],
+   "mfaStepUp": null,
+   "exceptions": [
+    "ops-token-only"
+   ]
+  },
+  "GET /diagnostics/profile/memory": {
+   "access": "authenticated",
+   "auth": [
+    "ops-api-key",
+    "ops-api-key"
+   ],
+   "optionalAuth": [],
+   "permissions": [],
+   "rateLimitBuckets": [
+    "ops_admin"
+   ],
+   "ipAllowlist": true,
+   "planeGates": [
+    "opsPlaneGate",
+    "opsPlaneGate",
+    "profilingDiagnosticsGate"
+   ],
+   "mfaStepUp": null,
+   "exceptions": [
+    "ops-token-only"
+   ]
+  },
+  "GET /diagnostics/profile/gc": {
+   "access": "authenticated",
+   "auth": [
+    "ops-api-key",
+    "ops-api-key"
+   ],
+   "optionalAuth": [],
+   "permissions": [],
+   "rateLimitBuckets": [
+    "ops_admin"
+   ],
+   "ipAllowlist": true,
+   "planeGates": [
+    "opsPlaneGate",
+    "opsPlaneGate",
+    "profilingDiagnosticsGate"
+   ],
+   "mfaStepUp": null,
+   "exceptions": [
+    "ops-token-only"
+   ]
+  },
+  "POST /diagnostics/profile/cpu": {
+   "access": "authenticated",
+   "auth": [
+    "ops-api-key",
+    "ops-api-key"
+   ],
+   "optionalAuth": [],
+   "permissions": [],
+   "rateLimitBuckets": [
+    "ops_admin"
+   ],
+   "ipAllowlist": true,
+   "planeGates": [
+    "opsPlaneGate",
+    "opsPlaneGate",
+    "profilingDiagnosticsGate"
+   ],
+   "mfaStepUp": null,
+   "exceptions": [
+    "ops-token-only"
+   ]
+  },
+  "POST /ai/chat/stream": {
+   "access": "authenticated",
+   "auth": [
+    "signed-artifact(in handler)"
+   ],
+   "optionalAuth": [],
+   "permissions": [],
+   "rateLimitBuckets": [
+    "ai_chat_ip"
+   ],
+   "ipAllowlist": false,
+   "planeGates": [],
+   "mfaStepUp": null,
+   "exceptions": [
+    "signed-artifact-pre-auth"
+   ]
+  },
+  "POST /ai/chat": {
+   "access": "authenticated",
+   "auth": [
+    "signed-artifact(in handler)"
+   ],
+   "optionalAuth": [],
+   "permissions": [],
+   "rateLimitBuckets": [
+    "ai_chat_ip"
+   ],
+   "ipAllowlist": false,
+   "planeGates": [],
+   "mfaStepUp": null,
+   "exceptions": [
+    "signed-artifact-pre-auth"
+   ]
+  },
+  "POST /verify/v2": {
+   "access": "authenticated",
+   "auth": [
+    "signed-artifact(in handler)"
+   ],
+   "optionalAuth": [],
+   "permissions": [],
+   "rateLimitBuckets": [
+    "verify_v2"
+   ],
+   "ipAllowlist": false,
+   "planeGates": [],
+   "mfaStepUp": null,
+   "exceptions": [
+    "signed-artifact-pre-auth"
+   ]
+  },
+  "POST /verify": {
+   "access": "authenticated",
+   "auth": [
+    "signed-artifact(in handler)"
+   ],
+   "optionalAuth": [],
+   "permissions": [],
+   "rateLimitBuckets": [
+    "verify_public"
+   ],
+   "ipAllowlist": false,
+   "planeGates": [],
+   "mfaStepUp": null,
+   "exceptions": [
+    "signed-artifact-pre-auth"
+   ]
+  },
+  "POST /sign": {
+   "access": "authenticated",
+   "auth": [
+    "signing-identity"
+   ],
+   "optionalAuth": [],
+   "permissions": [],
+   "rateLimitBuckets": [
+    "sign_auth",
+    "sign"
+   ],
+   "ipAllowlist": false,
+   "planeGates": [],
+   "mfaStepUp": null,
+   "exceptions": []
+  },
+  "POST /v1/actions/authorize": {
+   "access": "authenticated",
+   "auth": [
+    "signing-identity"
+   ],
+   "optionalAuth": [],
+   "permissions": [],
+   "rateLimitBuckets": [
+    "sign_auth",
+    "sign"
+   ],
+   "ipAllowlist": false,
+   "planeGates": [],
+   "mfaStepUp": null,
+   "exceptions": []
+  },
+  "GET /v1/actions/approvals/:approvalId": {
+   "access": "authenticated",
+   "auth": [
+    "signing-identity"
+   ],
+   "optionalAuth": [],
+   "permissions": [],
+   "rateLimitBuckets": [
+    "sign_auth",
+    "sign"
+   ],
+   "ipAllowlist": false,
+   "planeGates": [],
+   "mfaStepUp": null,
+   "exceptions": []
+  },
+  "POST /v1/actions/approvals/:approvalId/cancel": {
+   "access": "authenticated",
+   "auth": [
+    "signing-identity"
+   ],
+   "optionalAuth": [],
+   "permissions": [],
+   "rateLimitBuckets": [
+    "sign_auth",
+    "sign"
+   ],
+   "ipAllowlist": false,
+   "planeGates": [],
+   "mfaStepUp": null,
+   "exceptions": []
+  },
+  "POST /v1/actions/plans": {
+   "access": "authenticated",
+   "auth": [
+    "signing-identity"
+   ],
+   "optionalAuth": [],
+   "permissions": [],
+   "rateLimitBuckets": [
+    "sign_auth",
+    "sign"
+   ],
+   "ipAllowlist": false,
+   "planeGates": [],
+   "mfaStepUp": null,
+   "exceptions": []
+  },
+  "POST /v1/delegations": {
+   "access": "authenticated",
+   "auth": [
+    "signing-identity"
+   ],
+   "optionalAuth": [],
+   "permissions": [],
+   "rateLimitBuckets": [
+    "sign_auth",
+    "sign"
+   ],
+   "ipAllowlist": false,
+   "planeGates": [],
+   "mfaStepUp": null,
+   "exceptions": []
+  },
+  "POST /v1/delegations/verify": {
+   "access": "authenticated",
+   "auth": [
+    "signing-identity"
+   ],
+   "optionalAuth": [],
+   "permissions": [],
+   "rateLimitBuckets": [
+    "sign_auth",
+    "sign"
+   ],
+   "ipAllowlist": false,
+   "planeGates": [],
+   "mfaStepUp": null,
+   "exceptions": []
+  },
+  "GET /v1/delegations/:delegationId": {
+   "access": "authenticated",
+   "auth": [
+    "signing-identity"
+   ],
+   "optionalAuth": [],
+   "permissions": [],
+   "rateLimitBuckets": [
+    "sign_auth",
+    "sign"
+   ],
+   "ipAllowlist": false,
+   "planeGates": [],
+   "mfaStepUp": null,
+   "exceptions": []
+  },
+  "POST /v1/delegations/:delegationId/revoke": {
+   "access": "authenticated",
+   "auth": [
+    "signing-identity"
+   ],
+   "optionalAuth": [],
+   "permissions": [],
+   "rateLimitBuckets": [
+    "sign_auth",
+    "sign"
+   ],
+   "ipAllowlist": false,
+   "planeGates": [],
+   "mfaStepUp": null,
+   "exceptions": []
+  },
+  "POST /v1/tools/call": {
+   "access": "authenticated",
+   "auth": [
+    "signing-identity"
+   ],
+   "optionalAuth": [],
+   "permissions": [],
+   "rateLimitBuckets": [
+    "sign_auth",
+    "sign"
+   ],
+   "ipAllowlist": false,
+   "planeGates": [],
+   "mfaStepUp": null,
+   "exceptions": []
+  },
+  "GET /.well-known/qodiqa/keys": {
+   "access": "public",
+   "auth": [],
+   "optionalAuth": [],
+   "permissions": [],
+   "rateLimitBuckets": [
+    "well_known"
+   ],
+   "ipAllowlist": false,
+   "planeGates": [],
+   "mfaStepUp": null,
+   "exceptions": [
+    "lazy-keystore-bootstrap"
+   ]
+  },
+  "GET /.well-known/qodiqa/keys/archived": {
+   "access": "public",
+   "auth": [],
+   "optionalAuth": [],
+   "permissions": [],
+   "rateLimitBuckets": [
+    "well_known_archived"
+   ],
+   "ipAllowlist": false,
+   "planeGates": [],
+   "mfaStepUp": null,
+   "exceptions": []
+  },
+  "GET /.well-known/qodiqa/keys/:keyId": {
+   "access": "public",
+   "auth": [],
+   "optionalAuth": [],
+   "permissions": [],
+   "rateLimitBuckets": [
+    "well_known"
+   ],
+   "ipAllowlist": false,
+   "planeGates": [],
+   "mfaStepUp": null,
+   "exceptions": [
+    "lazy-keystore-bootstrap"
+   ]
+  },
+  "GET /.well-known/qodiqa/transparency-keys": {
+   "access": "public",
+   "auth": [],
+   "optionalAuth": [],
+   "permissions": [],
+   "rateLimitBuckets": [
+    "well_known"
+   ],
+   "ipAllowlist": false,
+   "planeGates": [],
+   "mfaStepUp": null,
+   "exceptions": [
+    "lazy-keystore-bootstrap"
+   ]
+  },
+  "GET /.well-known/qodiqa/transparency-keys/:keyId": {
+   "access": "public",
+   "auth": [],
+   "optionalAuth": [],
+   "permissions": [],
+   "rateLimitBuckets": [
+    "well_known"
+   ],
+   "ipAllowlist": false,
+   "planeGates": [],
+   "mfaStepUp": null,
+   "exceptions": [
+    "lazy-keystore-bootstrap"
+   ]
+  },
+  "GET /.well-known/qodiqa/checkpoint-keys": {
+   "access": "public",
+   "auth": [],
+   "optionalAuth": [],
+   "permissions": [],
+   "rateLimitBuckets": [
+    "well_known"
+   ],
+   "ipAllowlist": false,
+   "planeGates": [],
+   "mfaStepUp": null,
+   "exceptions": [
+    "lazy-keystore-bootstrap"
+   ]
+  },
+  "GET /.well-known/qodiqa/checkpoint-keys/:keyId": {
+   "access": "public",
+   "auth": [],
+   "optionalAuth": [],
+   "permissions": [],
+   "rateLimitBuckets": [
+    "well_known"
+   ],
+   "ipAllowlist": false,
+   "planeGates": [],
+   "mfaStepUp": null,
+   "exceptions": [
+    "lazy-keystore-bootstrap"
+   ]
+  },
+  "GET /public-key": {
+   "access": "public",
+   "auth": [],
+   "optionalAuth": [],
+   "permissions": [],
+   "rateLimitBuckets": [
+    "public_keys"
+   ],
+   "ipAllowlist": false,
+   "planeGates": [],
+   "mfaStepUp": null,
+   "exceptions": [
+    "lazy-keystore-bootstrap"
+   ]
+  },
+  "GET /public-keys": {
+   "access": "public",
+   "auth": [],
+   "optionalAuth": [],
+   "permissions": [],
+   "rateLimitBuckets": [
+    "public_keys"
+   ],
+   "ipAllowlist": false,
+   "planeGates": [],
+   "mfaStepUp": null,
+   "exceptions": [
+    "lazy-keystore-bootstrap"
+   ]
+  },
+  "GET /keys": {
+   "access": "public",
+   "auth": [],
+   "optionalAuth": [],
+   "permissions": [],
+   "rateLimitBuckets": [
+    "keys"
+   ],
+   "ipAllowlist": false,
+   "planeGates": [],
+   "mfaStepUp": null,
+   "exceptions": [
+    "lazy-keystore-bootstrap"
+   ]
+  },
+  "GET /audit/chain/integrity": {
+   "access": "authenticated",
+   "auth": [
+    "ops-api-key"
+   ],
+   "optionalAuth": [],
+   "permissions": [
+    "READ_AUDIT"
+   ],
+   "rateLimitBuckets": [
+    "ops_admin",
+    "audit"
+   ],
+   "ipAllowlist": true,
+   "planeGates": [
+    "opsPlaneGate"
+   ],
+   "mfaStepUp": "all mutations",
+   "exceptions": []
+  },
+  "GET /audit/chain/verifier/status": {
+   "access": "authenticated",
+   "auth": [
+    "ops-api-key"
+   ],
+   "optionalAuth": [],
+   "permissions": [
+    "READ_AUDIT"
+   ],
+   "rateLimitBuckets": [
+    "ops_admin",
+    "audit"
+   ],
+   "ipAllowlist": true,
+   "planeGates": [
+    "opsPlaneGate"
+   ],
+   "mfaStepUp": "all mutations",
+   "exceptions": []
+  },
+  "POST /audit/chain/verifier/verify": {
+   "access": "authenticated",
+   "auth": [
+    "ops-api-key"
+   ],
+   "optionalAuth": [],
+   "permissions": [
+    "READ_AUDIT"
+   ],
+   "rateLimitBuckets": [
+    "ops_admin",
+    "audit_verifier_manual"
+   ],
+   "ipAllowlist": true,
+   "planeGates": [
+    "opsPlaneGate"
+   ],
+   "mfaStepUp": "all mutations",
+   "exceptions": []
+  },
+  "GET /audit/:artifactId": {
+   "access": "authenticated",
+   "auth": [
+    "ops-api-key"
+   ],
+   "optionalAuth": [],
+   "permissions": [
+    "READ_AUDIT"
+   ],
+   "rateLimitBuckets": [
+    "ops_admin",
+    "audit"
+   ],
+   "ipAllowlist": true,
+   "planeGates": [
+    "opsPlaneGate"
+   ],
+   "mfaStepUp": "all mutations",
+   "exceptions": []
+  },
+  "GET /audit-viewer/chain-summary": {
+   "access": "authenticated",
+   "auth": [
+    "ops-api-key"
+   ],
+   "optionalAuth": [],
+   "permissions": [
+    "READ_AUDIT"
+   ],
+   "rateLimitBuckets": [
+    "ops_admin",
+    "audit_viewer"
+   ],
+   "ipAllowlist": true,
+   "planeGates": [
+    "opsPlaneGate"
+   ],
+   "mfaStepUp": "all mutations",
+   "exceptions": []
+  },
+  "GET /audit-viewer/search": {
+   "access": "authenticated",
+   "auth": [
+    "ops-api-key"
+   ],
+   "optionalAuth": [],
+   "permissions": [
+    "READ_AUDIT"
+   ],
+   "rateLimitBuckets": [
+    "ops_admin",
+    "audit_viewer"
+   ],
+   "ipAllowlist": true,
+   "planeGates": [
+    "opsPlaneGate"
+   ],
+   "mfaStepUp": "all mutations",
+   "exceptions": []
+  },
+  "GET /audit-viewer/timeline": {
+   "access": "authenticated",
+   "auth": [
+    "ops-api-key"
+   ],
+   "optionalAuth": [],
+   "permissions": [
+    "READ_AUDIT"
+   ],
+   "rateLimitBuckets": [
+    "ops_admin",
+    "audit_viewer"
+   ],
+   "ipAllowlist": true,
+   "planeGates": [
+    "opsPlaneGate"
+   ],
+   "mfaStepUp": "all mutations",
+   "exceptions": []
+  },
+  "GET /audit-viewer/export": {
+   "access": "authenticated",
+   "auth": [
+    "ops-api-key"
+   ],
+   "optionalAuth": [],
+   "permissions": [
+    "READ_AUDIT"
+   ],
+   "rateLimitBuckets": [
+    "ops_admin",
+    "audit_viewer"
+   ],
+   "ipAllowlist": true,
+   "planeGates": [
+    "opsPlaneGate"
+   ],
+   "mfaStepUp": "all mutations",
+   "exceptions": []
+  },
+  "GET /audit-viewer/artifact/:artifactId": {
+   "access": "authenticated",
+   "auth": [
+    "ops-api-key"
+   ],
+   "optionalAuth": [],
+   "permissions": [
+    "READ_AUDIT"
+   ],
+   "rateLimitBuckets": [
+    "ops_admin",
+    "audit_viewer"
+   ],
+   "ipAllowlist": true,
+   "planeGates": [
+    "opsPlaneGate"
+   ],
+   "mfaStepUp": "all mutations",
+   "exceptions": []
+  },
+  "GET /audit-viewer/signature/:artifactId": {
+   "access": "authenticated",
+   "auth": [
+    "ops-api-key"
+   ],
+   "optionalAuth": [],
+   "permissions": [
+    "READ_AUDIT"
+   ],
+   "rateLimitBuckets": [
+    "ops_admin",
+    "audit_viewer"
+   ],
+   "ipAllowlist": true,
+   "planeGates": [
+    "opsPlaneGate"
+   ],
+   "mfaStepUp": "all mutations",
+   "exceptions": []
+  },
+  "GET /audit-viewer/replay/:artifactId": {
+   "access": "authenticated",
+   "auth": [
+    "ops-api-key"
+   ],
+   "optionalAuth": [],
+   "permissions": [
+    "READ_AUDIT"
+   ],
+   "rateLimitBuckets": [
+    "ops_admin",
+    "audit_viewer"
+   ],
+   "ipAllowlist": true,
+   "planeGates": [
+    "opsPlaneGate"
+   ],
+   "mfaStepUp": "all mutations",
+   "exceptions": []
+  },
+  "GET /audit-viewer/lineage/:artifactId": {
+   "access": "authenticated",
+   "auth": [
+    "ops-api-key"
+   ],
+   "optionalAuth": [],
+   "permissions": [
+    "READ_AUDIT"
+   ],
+   "rateLimitBuckets": [
+    "ops_admin",
+    "audit_viewer"
+   ],
+   "ipAllowlist": true,
+   "planeGates": [
+    "opsPlaneGate"
+   ],
+   "mfaStepUp": "all mutations",
+   "exceptions": []
+  },
+  "GET /audit-viewer/chain/:artifactId": {
+   "access": "authenticated",
+   "auth": [
+    "ops-api-key"
+   ],
+   "optionalAuth": [],
+   "permissions": [
+    "READ_AUDIT"
+   ],
+   "rateLimitBuckets": [
+    "ops_admin",
+    "audit_viewer"
+   ],
+   "ipAllowlist": true,
+   "planeGates": [
+    "opsPlaneGate"
+   ],
+   "mfaStepUp": "all mutations",
+   "exceptions": []
+  },
+  "GET /audit-viewer/investigation": {
+   "access": "authenticated",
+   "auth": [
+    "ops-api-key"
+   ],
+   "optionalAuth": [],
+   "permissions": [
+    "READ_AUDIT"
+   ],
+   "rateLimitBuckets": [
+    "ops_admin",
+    "audit_viewer"
+   ],
+   "ipAllowlist": true,
+   "planeGates": [
+    "opsPlaneGate"
+   ],
+   "mfaStepUp": "all mutations",
+   "exceptions": []
+  },
+  "POST /audit-viewer/investigation": {
+   "access": "authenticated",
+   "auth": [
+    "ops-api-key"
+   ],
+   "optionalAuth": [],
+   "permissions": [
+    "READ_AUDIT"
+   ],
+   "rateLimitBuckets": [
+    "ops_admin",
+    "audit_viewer"
+   ],
+   "ipAllowlist": true,
+   "planeGates": [
+    "opsPlaneGate"
+   ],
+   "mfaStepUp": "all mutations",
+   "exceptions": []
+  },
+  "GET /audit-viewer/investigation/:id": {
+   "access": "authenticated",
+   "auth": [
+    "ops-api-key"
+   ],
+   "optionalAuth": [],
+   "permissions": [
+    "READ_AUDIT"
+   ],
+   "rateLimitBuckets": [
+    "ops_admin",
+    "audit_viewer"
+   ],
+   "ipAllowlist": true,
+   "planeGates": [
+    "opsPlaneGate"
+   ],
+   "mfaStepUp": "all mutations",
+   "exceptions": []
+  },
+  "POST /v1/agents": {
+   "access": "authenticated",
+   "auth": [
+    "ops-api-key"
+   ],
+   "optionalAuth": [],
+   "permissions": [
+    "MANAGE_AGENTS"
+   ],
+   "rateLimitBuckets": [
+    "ops_admin"
+   ],
+   "ipAllowlist": true,
+   "planeGates": [
+    "opsPlaneGate"
+   ],
+   "mfaStepUp": "all mutations",
+   "exceptions": []
+  },
+  "GET /v1/agents": {
+   "access": "authenticated",
+   "auth": [
+    "ops-api-key"
+   ],
+   "optionalAuth": [],
+   "permissions": [
+    "READ_AGENTS"
+   ],
+   "rateLimitBuckets": [
+    "ops_admin"
+   ],
+   "ipAllowlist": true,
+   "planeGates": [
+    "opsPlaneGate"
+   ],
+   "mfaStepUp": "all mutations",
+   "exceptions": []
+  },
+  "GET /v1/agents/:agentId": {
+   "access": "authenticated",
+   "auth": [
+    "ops-api-key"
+   ],
+   "optionalAuth": [],
+   "permissions": [
+    "READ_AGENTS"
+   ],
+   "rateLimitBuckets": [
+    "ops_admin"
+   ],
+   "ipAllowlist": true,
+   "planeGates": [
+    "opsPlaneGate"
+   ],
+   "mfaStepUp": "all mutations",
+   "exceptions": []
+  },
+  "PATCH /v1/agents/:agentId": {
+   "access": "authenticated",
+   "auth": [
+    "ops-api-key"
+   ],
+   "optionalAuth": [],
+   "permissions": [
+    "MANAGE_AGENTS"
+   ],
+   "rateLimitBuckets": [
+    "ops_admin"
+   ],
+   "ipAllowlist": true,
+   "planeGates": [
+    "opsPlaneGate"
+   ],
+   "mfaStepUp": "all mutations",
+   "exceptions": []
+  },
+  "POST /v1/sessions": {
+   "access": "authenticated",
+   "auth": [
+    "ops-api-key"
+   ],
+   "optionalAuth": [],
+   "permissions": [
+    "MANAGE_AGENT_SESSIONS"
+   ],
+   "rateLimitBuckets": [
+    "ops_admin"
+   ],
+   "ipAllowlist": true,
+   "planeGates": [
+    "opsPlaneGate"
+   ],
+   "mfaStepUp": "all mutations",
+   "exceptions": []
+  },
+  "GET /v1/sessions": {
+   "access": "authenticated",
+   "auth": [
+    "ops-api-key"
+   ],
+   "optionalAuth": [],
+   "permissions": [
+    "READ_AGENTS"
+   ],
+   "rateLimitBuckets": [
+    "ops_admin"
+   ],
+   "ipAllowlist": true,
+   "planeGates": [
+    "opsPlaneGate"
+   ],
+   "mfaStepUp": "all mutations",
+   "exceptions": []
+  },
+  "GET /v1/sessions/:sessionId": {
+   "access": "authenticated",
+   "auth": [
+    "ops-api-key"
+   ],
+   "optionalAuth": [],
+   "permissions": [
+    "READ_AGENTS"
+   ],
+   "rateLimitBuckets": [
+    "ops_admin"
+   ],
+   "ipAllowlist": true,
+   "planeGates": [
+    "opsPlaneGate"
+   ],
+   "mfaStepUp": "all mutations",
+   "exceptions": []
+  },
+  "POST /v1/sessions/:sessionId/end": {
+   "access": "authenticated",
+   "auth": [
+    "ops-api-key"
+   ],
+   "optionalAuth": [],
+   "permissions": [
+    "MANAGE_AGENT_SESSIONS"
+   ],
+   "rateLimitBuckets": [
+    "ops_admin"
+   ],
+   "ipAllowlist": true,
+   "planeGates": [
+    "opsPlaneGate"
+   ],
+   "mfaStepUp": "all mutations",
+   "exceptions": []
+  },
+  "POST /v1/sessions/:sessionId/kill": {
+   "access": "authenticated",
+   "auth": [
+    "ops-api-key"
+   ],
+   "optionalAuth": [],
+   "permissions": [
+    "MANAGE_AGENT_SESSIONS"
+   ],
+   "rateLimitBuckets": [
+    "ops_admin"
+   ],
+   "ipAllowlist": true,
+   "planeGates": [
+    "opsPlaneGate"
+   ],
+   "mfaStepUp": "all mutations",
+   "exceptions": []
+  },
+  "POST /v1/tool-registry": {
+   "access": "authenticated",
+   "auth": [
+    "ops-api-key"
+   ],
+   "optionalAuth": [],
+   "permissions": [
+    "MANAGE_TOOLS"
+   ],
+   "rateLimitBuckets": [
+    "ops_admin"
+   ],
+   "ipAllowlist": true,
+   "planeGates": [
+    "opsPlaneGate"
+   ],
+   "mfaStepUp": "all mutations",
+   "exceptions": []
+  },
+  "GET /v1/tool-registry": {
+   "access": "authenticated",
+   "auth": [
+    "ops-api-key"
+   ],
+   "optionalAuth": [],
+   "permissions": [
+    "READ_TOOLS"
+   ],
+   "rateLimitBuckets": [
+    "ops_admin"
+   ],
+   "ipAllowlist": true,
+   "planeGates": [
+    "opsPlaneGate"
+   ],
+   "mfaStepUp": "all mutations",
+   "exceptions": []
+  },
+  "GET /v1/tool-registry/entry": {
+   "access": "authenticated",
+   "auth": [
+    "ops-api-key"
+   ],
+   "optionalAuth": [],
+   "permissions": [
+    "READ_TOOLS"
+   ],
+   "rateLimitBuckets": [
+    "ops_admin"
+   ],
+   "ipAllowlist": true,
+   "planeGates": [
+    "opsPlaneGate"
+   ],
+   "mfaStepUp": "all mutations",
+   "exceptions": []
+  },
+  "POST /v1/tool-registry/approve": {
+   "access": "authenticated",
+   "auth": [
+    "ops-api-key"
+   ],
+   "optionalAuth": [],
+   "permissions": [
+    "MANAGE_TOOLS"
+   ],
+   "rateLimitBuckets": [
+    "ops_admin"
+   ],
+   "ipAllowlist": true,
+   "planeGates": [
+    "opsPlaneGate"
+   ],
+   "mfaStepUp": "all mutations",
+   "exceptions": []
+  },
+  "POST /v1/tool-registry/disable": {
+   "access": "authenticated",
+   "auth": [
+    "ops-api-key"
+   ],
+   "optionalAuth": [],
+   "permissions": [
+    "MANAGE_TOOLS"
+   ],
+   "rateLimitBuckets": [
+    "ops_admin"
+   ],
+   "ipAllowlist": true,
+   "planeGates": [
+    "opsPlaneGate"
+   ],
+   "mfaStepUp": "all mutations",
+   "exceptions": []
+  },
+  "POST /v1/tool-registry/policy": {
+   "access": "authenticated",
+   "auth": [
+    "ops-api-key"
+   ],
+   "optionalAuth": [],
+   "permissions": [
+    "MANAGE_TOOLS"
+   ],
+   "rateLimitBuckets": [
+    "ops_admin"
+   ],
+   "ipAllowlist": true,
+   "planeGates": [
+    "opsPlaneGate"
+   ],
+   "mfaStepUp": "all mutations",
+   "exceptions": []
+  },
+  "POST /v1/mcp/servers": {
+   "access": "authenticated",
+   "auth": [
+    "ops-api-key"
+   ],
+   "optionalAuth": [],
+   "permissions": [
+    "MANAGE_MCP_SERVERS"
+   ],
+   "rateLimitBuckets": [
+    "ops_admin"
+   ],
+   "ipAllowlist": true,
+   "planeGates": [
+    "opsPlaneGate"
+   ],
+   "mfaStepUp": "all mutations",
+   "exceptions": []
+  },
+  "GET /v1/mcp/servers": {
+   "access": "authenticated",
+   "auth": [
+    "ops-api-key"
+   ],
+   "optionalAuth": [],
+   "permissions": [
+    "READ_MCP_SERVERS"
+   ],
+   "rateLimitBuckets": [
+    "ops_admin"
+   ],
+   "ipAllowlist": true,
+   "planeGates": [
+    "opsPlaneGate"
+   ],
+   "mfaStepUp": "all mutations",
+   "exceptions": []
+  },
+  "GET /v1/mcp/servers/:serverId": {
+   "access": "authenticated",
+   "auth": [
+    "ops-api-key"
+   ],
+   "optionalAuth": [],
+   "permissions": [
+    "READ_MCP_SERVERS"
+   ],
+   "rateLimitBuckets": [
+    "ops_admin"
+   ],
+   "ipAllowlist": true,
+   "planeGates": [
+    "opsPlaneGate"
+   ],
+   "mfaStepUp": "all mutations",
+   "exceptions": []
+  },
+  "POST /v1/mcp/servers/:serverId/disable": {
+   "access": "authenticated",
+   "auth": [
+    "ops-api-key"
+   ],
+   "optionalAuth": [],
+   "permissions": [
+    "MANAGE_MCP_SERVERS"
+   ],
+   "rateLimitBuckets": [
+    "ops_admin"
+   ],
+   "ipAllowlist": true,
+   "planeGates": [
+    "opsPlaneGate"
+   ],
+   "mfaStepUp": "all mutations",
+   "exceptions": []
+  },
+  "POST /v1/mcp/servers/:serverId/enable": {
+   "access": "authenticated",
+   "auth": [
+    "ops-api-key"
+   ],
+   "optionalAuth": [],
+   "permissions": [
+    "MANAGE_MCP_SERVERS"
+   ],
+   "rateLimitBuckets": [
+    "ops_admin"
+   ],
+   "ipAllowlist": true,
+   "planeGates": [
+    "opsPlaneGate"
+   ],
+   "mfaStepUp": "all mutations",
+   "exceptions": []
+  },
+  "POST /v1/mcp/servers/:serverId/identity": {
+   "access": "authenticated",
+   "auth": [
+    "ops-api-key"
+   ],
+   "optionalAuth": [],
+   "permissions": [
+    "MANAGE_MCP_SERVERS"
+   ],
+   "rateLimitBuckets": [
+    "ops_admin"
+   ],
+   "ipAllowlist": true,
+   "planeGates": [
+    "opsPlaneGate"
+   ],
+   "mfaStepUp": "all mutations",
+   "exceptions": []
+  },
+  "POST /v1/mcp/servers/:serverId/tools/refresh": {
+   "access": "authenticated",
+   "auth": [
+    "ops-api-key"
+   ],
+   "optionalAuth": [],
+   "permissions": [
+    "MANAGE_MCP_SERVERS"
+   ],
+   "rateLimitBuckets": [
+    "ops_admin"
+   ],
+   "ipAllowlist": true,
+   "planeGates": [
+    "opsPlaneGate"
+   ],
+   "mfaStepUp": "all mutations",
+   "exceptions": []
+  },
+  "GET /v1/approvals": {
+   "access": "authenticated",
+   "auth": [
+    "ops-api-key"
+   ],
+   "optionalAuth": [],
+   "permissions": [
+    "READ_APPROVALS"
+   ],
+   "rateLimitBuckets": [
+    "ops_admin"
+   ],
+   "ipAllowlist": true,
+   "planeGates": [
+    "opsPlaneGate"
+   ],
+   "mfaStepUp": "all mutations",
+   "exceptions": []
+  },
+  "GET /v1/approvals/:approvalId": {
+   "access": "authenticated",
+   "auth": [
+    "ops-api-key"
+   ],
+   "optionalAuth": [],
+   "permissions": [
+    "READ_APPROVALS"
+   ],
+   "rateLimitBuckets": [
+    "ops_admin"
+   ],
+   "ipAllowlist": true,
+   "planeGates": [
+    "opsPlaneGate"
+   ],
+   "mfaStepUp": "all mutations",
+   "exceptions": []
+  },
+  "POST /v1/approvals/:approvalId/decision": {
+   "access": "authenticated",
+   "auth": [
+    "ops-api-key"
+   ],
+   "optionalAuth": [],
+   "permissions": [
+    "DECIDE_APPROVALS"
+   ],
+   "rateLimitBuckets": [
+    "ops_admin"
+   ],
+   "ipAllowlist": true,
+   "planeGates": [
+    "opsPlaneGate"
+   ],
+   "mfaStepUp": "all mutations",
+   "exceptions": []
+  },
+  "GET /v1/proofs/:requestId": {
+   "access": "authenticated",
+   "auth": [
+    "ops-api-key"
+   ],
+   "optionalAuth": [],
+   "permissions": [
+    "READ_AUDIT_PROOFS",
+    "READ_AUDIT_PROOFS"
+   ],
+   "rateLimitBuckets": [
+    "ops_admin"
+   ],
+   "ipAllowlist": true,
+   "planeGates": [
+    "opsPlaneGate"
+   ],
+   "mfaStepUp": "all mutations",
+   "exceptions": []
+  },
+  "GET /policy-ui/dashboard": {
+   "access": "authenticated",
+   "auth": [
+    "ops-api-key"
+   ],
+   "optionalAuth": [],
+   "permissions": [
+    "READ_POLICIES"
+   ],
+   "rateLimitBuckets": [
+    "ops_admin",
+    "policy_management"
+   ],
+   "ipAllowlist": true,
+   "planeGates": [
+    "opsPlaneGate"
+   ],
+   "mfaStepUp": "all mutations",
+   "exceptions": []
+  },
+  "GET /policy-ui/policies": {
+   "access": "authenticated",
+   "auth": [
+    "ops-api-key"
+   ],
+   "optionalAuth": [],
+   "permissions": [
+    "READ_POLICIES"
+   ],
+   "rateLimitBuckets": [
+    "ops_admin",
+    "policy_management"
+   ],
+   "ipAllowlist": true,
+   "planeGates": [
+    "opsPlaneGate"
+   ],
+   "mfaStepUp": "all mutations",
+   "exceptions": []
+  },
+  "GET /policy-ui/policies/validate": {
+   "access": "authenticated",
+   "auth": [
+    "ops-api-key"
+   ],
+   "optionalAuth": [],
+   "permissions": [
+    "READ_POLICIES"
+   ],
+   "rateLimitBuckets": [
+    "ops_admin",
+    "policy_management"
+   ],
+   "ipAllowlist": true,
+   "planeGates": [
+    "opsPlaneGate"
+   ],
+   "mfaStepUp": "all mutations",
+   "exceptions": []
+  },
+  "POST /policy-ui/policies/validate": {
+   "access": "authenticated",
+   "auth": [
+    "ops-api-key"
+   ],
+   "optionalAuth": [],
+   "permissions": [
+    "READ_POLICIES"
+   ],
+   "rateLimitBuckets": [
+    "ops_admin",
+    "policy_management"
+   ],
+   "ipAllowlist": true,
+   "planeGates": [
+    "opsPlaneGate"
+   ],
+   "mfaStepUp": "all mutations",
+   "exceptions": []
+  },
+  "GET /policy-ui/policies/:policyId": {
+   "access": "authenticated",
+   "auth": [
+    "ops-api-key"
+   ],
+   "optionalAuth": [],
+   "permissions": [
+    "READ_POLICIES"
+   ],
+   "rateLimitBuckets": [
+    "ops_admin",
+    "policy_management"
+   ],
+   "ipAllowlist": true,
+   "planeGates": [
+    "opsPlaneGate"
+   ],
+   "mfaStepUp": "all mutations",
+   "exceptions": []
+  },
+  "POST /policy-ui/policies": {
+   "access": "authenticated",
+   "auth": [
+    "ops-api-key"
+   ],
+   "optionalAuth": [],
+   "permissions": [
+    "MANAGE_POLICIES"
+   ],
+   "rateLimitBuckets": [
+    "ops_admin",
+    "policy_management"
+   ],
+   "ipAllowlist": true,
+   "planeGates": [
+    "opsPlaneGate"
+   ],
+   "mfaStepUp": "all mutations",
+   "exceptions": []
+  },
+  "PUT /policy-ui/policies/:policyId": {
+   "access": "authenticated",
+   "auth": [
+    "ops-api-key"
+   ],
+   "optionalAuth": [],
+   "permissions": [
+    "MANAGE_POLICIES"
+   ],
+   "rateLimitBuckets": [
+    "ops_admin",
+    "policy_management"
+   ],
+   "ipAllowlist": true,
+   "planeGates": [
+    "opsPlaneGate"
+   ],
+   "mfaStepUp": "all mutations",
+   "exceptions": []
+  },
+  "POST /policy-ui/policies/:policyId/enable": {
+   "access": "authenticated",
+   "auth": [
+    "ops-api-key"
+   ],
+   "optionalAuth": [],
+   "permissions": [
+    "MANAGE_POLICIES"
+   ],
+   "rateLimitBuckets": [
+    "ops_admin",
+    "policy_management"
+   ],
+   "ipAllowlist": true,
+   "planeGates": [
+    "opsPlaneGate"
+   ],
+   "mfaStepUp": "all mutations",
+   "exceptions": []
+  },
+  "POST /policy-ui/policies/:policyId/disable": {
+   "access": "authenticated",
+   "auth": [
+    "ops-api-key"
+   ],
+   "optionalAuth": [],
+   "permissions": [
+    "MANAGE_POLICIES"
+   ],
+   "rateLimitBuckets": [
+    "ops_admin",
+    "policy_management"
+   ],
+   "ipAllowlist": true,
+   "planeGates": [
+    "opsPlaneGate"
+   ],
+   "mfaStepUp": "all mutations",
+   "exceptions": []
+  },
+  "GET /policy-ui/policies/:policyId/versions": {
+   "access": "authenticated",
+   "auth": [
+    "ops-api-key"
+   ],
+   "optionalAuth": [],
+   "permissions": [
+    "READ_POLICIES"
+   ],
+   "rateLimitBuckets": [
+    "ops_admin",
+    "policy_management"
+   ],
+   "ipAllowlist": true,
+   "planeGates": [
+    "opsPlaneGate"
+   ],
+   "mfaStepUp": "all mutations",
+   "exceptions": []
+  },
+  "GET /policy-ui/policies/:policyId/versions/:v": {
+   "access": "authenticated",
+   "auth": [
+    "ops-api-key"
+   ],
+   "optionalAuth": [],
+   "permissions": [
+    "READ_POLICIES"
+   ],
+   "rateLimitBuckets": [
+    "ops_admin",
+    "policy_management"
+   ],
+   "ipAllowlist": true,
+   "planeGates": [
+    "opsPlaneGate"
+   ],
+   "mfaStepUp": "all mutations",
+   "exceptions": []
+  },
+  "GET /policy-ui/policies/:policyId/diff": {
+   "access": "authenticated",
+   "auth": [
+    "ops-api-key"
+   ],
+   "optionalAuth": [],
+   "permissions": [
+    "READ_POLICIES"
+   ],
+   "rateLimitBuckets": [
+    "ops_admin",
+    "policy_management"
+   ],
+   "ipAllowlist": true,
+   "planeGates": [
+    "opsPlaneGate"
+   ],
+   "mfaStepUp": "all mutations",
+   "exceptions": []
+  },
+  "POST /policy-ui/policies/:policyId/rollback": {
+   "access": "authenticated",
+   "auth": [
+    "ops-api-key"
+   ],
+   "optionalAuth": [],
+   "permissions": [
+    "MANAGE_POLICIES"
+   ],
+   "rateLimitBuckets": [
+    "ops_admin",
+    "policy_management"
+   ],
+   "ipAllowlist": true,
+   "planeGates": [
+    "opsPlaneGate"
+   ],
+   "mfaStepUp": "all mutations",
+   "exceptions": []
+  },
+  "GET /policy-ui/policies/:policyId/history": {
+   "access": "authenticated",
+   "auth": [
+    "ops-api-key"
+   ],
+   "optionalAuth": [],
+   "permissions": [
+    "READ_POLICIES"
+   ],
+   "rateLimitBuckets": [
+    "ops_admin",
+    "policy_management"
+   ],
+   "ipAllowlist": true,
+   "planeGates": [
+    "opsPlaneGate"
+   ],
+   "mfaStepUp": "all mutations",
+   "exceptions": []
+  },
+  "GET /provenance/policies/search/history": {
+   "access": "authenticated",
+   "auth": [
+    "ops-api-key"
+   ],
+   "optionalAuth": [],
+   "permissions": [
+    "READ_POLICY_PROVENANCE",
+    "READ_POLICY_PROVENANCE"
+   ],
+   "rateLimitBuckets": [
+    "ops_admin",
+    "policy_provenance"
+   ],
+   "ipAllowlist": true,
+   "planeGates": [
+    "opsPlaneGate"
+   ],
+   "mfaStepUp": "all mutations",
+   "exceptions": []
+  },
+  "GET /provenance/policies/:policyId/history": {
+   "access": "authenticated",
+   "auth": [
+    "ops-api-key"
+   ],
+   "optionalAuth": [],
+   "permissions": [
+    "READ_POLICY_PROVENANCE",
+    "READ_POLICY_PROVENANCE"
+   ],
+   "rateLimitBuckets": [
+    "ops_admin",
+    "policy_provenance"
+   ],
+   "ipAllowlist": true,
+   "planeGates": [
+    "opsPlaneGate"
+   ],
+   "mfaStepUp": "all mutations",
+   "exceptions": []
+  },
+  "GET /provenance/policies/:policyId/version/:version": {
+   "access": "authenticated",
+   "auth": [
+    "ops-api-key"
+   ],
+   "optionalAuth": [],
+   "permissions": [
+    "READ_POLICY_PROVENANCE",
+    "READ_POLICY_PROVENANCE"
+   ],
+   "rateLimitBuckets": [
+    "ops_admin",
+    "policy_provenance"
+   ],
+   "ipAllowlist": true,
+   "planeGates": [
+    "opsPlaneGate"
+   ],
+   "mfaStepUp": "all mutations",
+   "exceptions": []
+  },
+  "GET /provenance/policies/:policyId/reconstruct/:timestamp": {
+   "access": "authenticated",
+   "auth": [
+    "ops-api-key"
+   ],
+   "optionalAuth": [],
+   "permissions": [
+    "READ_POLICY_PROVENANCE",
+    "INVESTIGATE_POLICIES"
+   ],
+   "rateLimitBuckets": [
+    "ops_admin",
+    "policy_provenance"
+   ],
+   "ipAllowlist": true,
+   "planeGates": [
+    "opsPlaneGate"
+   ],
+   "mfaStepUp": "all mutations",
+   "exceptions": []
+  },
+  "GET /provenance/policies/:policyId/timeline": {
+   "access": "authenticated",
+   "auth": [
+    "ops-api-key"
+   ],
+   "optionalAuth": [],
+   "permissions": [
+    "READ_POLICY_PROVENANCE",
+    "READ_POLICY_PROVENANCE"
+   ],
+   "rateLimitBuckets": [
+    "ops_admin",
+    "policy_provenance"
+   ],
+   "ipAllowlist": true,
+   "planeGates": [
+    "opsPlaneGate"
+   ],
+   "mfaStepUp": "all mutations",
+   "exceptions": []
+  },
+  "GET /provenance/policies/:policyId/diff/:versionA/:versionB": {
+   "access": "authenticated",
+   "auth": [
+    "ops-api-key"
+   ],
+   "optionalAuth": [],
+   "permissions": [
+    "READ_POLICY_PROVENANCE",
+    "READ_POLICY_PROVENANCE"
+   ],
+   "rateLimitBuckets": [
+    "ops_admin",
+    "policy_provenance"
+   ],
+   "ipAllowlist": true,
+   "planeGates": [
+    "opsPlaneGate"
+   ],
+   "mfaStepUp": "all mutations",
+   "exceptions": []
+  },
+  "GET /provenance/policies/:policyId/lineage": {
+   "access": "authenticated",
+   "auth": [
+    "ops-api-key"
+   ],
+   "optionalAuth": [],
+   "permissions": [
+    "READ_POLICY_PROVENANCE",
+    "READ_POLICY_PROVENANCE"
+   ],
+   "rateLimitBuckets": [
+    "ops_admin",
+    "policy_provenance"
+   ],
+   "ipAllowlist": true,
+   "planeGates": [
+    "opsPlaneGate"
+   ],
+   "mfaStepUp": "all mutations",
+   "exceptions": []
+  },
+  "POST /provenance/policies/:policyId/integrity": {
+   "access": "authenticated",
+   "auth": [
+    "ops-api-key"
+   ],
+   "optionalAuth": [],
+   "permissions": [
+    "READ_POLICY_PROVENANCE",
+    "INVESTIGATE_POLICIES"
+   ],
+   "rateLimitBuckets": [
+    "ops_admin",
+    "policy_provenance"
+   ],
+   "ipAllowlist": true,
+   "planeGates": [
+    "opsPlaneGate"
+   ],
+   "mfaStepUp": "all mutations",
+   "exceptions": []
+  },
+  "GET /provenance/policies/:policyId/report": {
+   "access": "authenticated",
+   "auth": [
+    "ops-api-key"
+   ],
+   "optionalAuth": [],
+   "permissions": [
+    "READ_POLICY_PROVENANCE",
+    "INVESTIGATE_POLICIES"
+   ],
+   "rateLimitBuckets": [
+    "ops_admin",
+    "policy_provenance"
+   ],
+   "ipAllowlist": true,
+   "planeGates": [
+    "opsPlaneGate"
+   ],
+   "mfaStepUp": "all mutations",
+   "exceptions": []
+  },
+  "GET /provenance/dashboard/stats": {
+   "access": "authenticated",
+   "auth": [
+    "ops-api-key"
+   ],
+   "optionalAuth": [],
+   "permissions": [
+    "READ_POLICY_PROVENANCE",
+    "READ_POLICY_PROVENANCE"
+   ],
+   "rateLimitBuckets": [
+    "ops_admin",
+    "policy_provenance"
+   ],
+   "ipAllowlist": true,
+   "planeGates": [
+    "opsPlaneGate"
+   ],
+   "mfaStepUp": "all mutations",
+   "exceptions": []
+  },
+  "GET /provenance/dashboard/timeline": {
+   "access": "authenticated",
+   "auth": [
+    "ops-api-key"
+   ],
+   "optionalAuth": [],
+   "permissions": [
+    "READ_POLICY_PROVENANCE",
+    "READ_POLICY_PROVENANCE"
+   ],
+   "rateLimitBuckets": [
+    "ops_admin",
+    "policy_provenance"
+   ],
+   "ipAllowlist": true,
+   "planeGates": [
+    "opsPlaneGate"
+   ],
+   "mfaStepUp": "all mutations",
+   "exceptions": []
+  },
+  "GET /provenance/dashboard/investigator": {
+   "access": "authenticated",
+   "auth": [
+    "ops-api-key"
+   ],
+   "optionalAuth": [],
+   "permissions": [
+    "READ_POLICY_PROVENANCE",
+    "INVESTIGATE_POLICIES"
+   ],
+   "rateLimitBuckets": [
+    "ops_admin",
+    "policy_provenance"
+   ],
+   "ipAllowlist": true,
+   "planeGates": [
+    "opsPlaneGate"
+   ],
+   "mfaStepUp": "all mutations",
+   "exceptions": []
+  },
+  "GET /provenance/dashboard/comparison": {
+   "access": "authenticated",
+   "auth": [
+    "ops-api-key"
+   ],
+   "optionalAuth": [],
+   "permissions": [
+    "READ_POLICY_PROVENANCE",
+    "READ_POLICY_PROVENANCE"
+   ],
+   "rateLimitBuckets": [
+    "ops_admin",
+    "policy_provenance"
+   ],
+   "ipAllowlist": true,
+   "planeGates": [
+    "opsPlaneGate"
+   ],
+   "mfaStepUp": "all mutations",
+   "exceptions": []
+  },
+  "GET /evidence-chain/records/search": {
+   "access": "authenticated",
+   "auth": [
+    "ops-api-key"
+   ],
+   "optionalAuth": [],
+   "permissions": [
+    "READ_EVIDENCE_CHAIN",
+    "READ_EVIDENCE_CHAIN"
+   ],
+   "rateLimitBuckets": [
+    "ops_admin",
+    "evidence_chain"
+   ],
+   "ipAllowlist": true,
+   "planeGates": [
+    "opsPlaneGate"
+   ],
+   "mfaStepUp": "all mutations",
+   "exceptions": []
+  },
+  "GET /evidence-chain/records/by-artifact/:artifactId": {
+   "access": "authenticated",
+   "auth": [
+    "ops-api-key"
+   ],
+   "optionalAuth": [],
+   "permissions": [
+    "READ_EVIDENCE_CHAIN",
+    "READ_EVIDENCE_CHAIN"
+   ],
+   "rateLimitBuckets": [
+    "ops_admin",
+    "evidence_chain"
+   ],
+   "ipAllowlist": true,
+   "planeGates": [
+    "opsPlaneGate"
+   ],
+   "mfaStepUp": "all mutations",
+   "exceptions": []
+  },
+  "GET /evidence-chain/records/:evidenceId": {
+   "access": "authenticated",
+   "auth": [
+    "ops-api-key"
+   ],
+   "optionalAuth": [],
+   "permissions": [
+    "READ_EVIDENCE_CHAIN",
+    "READ_EVIDENCE_CHAIN"
+   ],
+   "rateLimitBuckets": [
+    "ops_admin",
+    "evidence_chain"
+   ],
+   "ipAllowlist": true,
+   "planeGates": [
+    "opsPlaneGate"
+   ],
+   "mfaStepUp": "all mutations",
+   "exceptions": []
+  },
+  "GET /evidence-chain/chain": {
+   "access": "authenticated",
+   "auth": [
+    "ops-api-key"
+   ],
+   "optionalAuth": [],
+   "permissions": [
+    "READ_EVIDENCE_CHAIN",
+    "READ_EVIDENCE_CHAIN"
+   ],
+   "rateLimitBuckets": [
+    "ops_admin",
+    "evidence_chain"
+   ],
+   "ipAllowlist": true,
+   "planeGates": [
+    "opsPlaneGate"
+   ],
+   "mfaStepUp": "all mutations",
+   "exceptions": []
+  },
+  "POST /evidence-chain/chain/verify-range": {
+   "access": "authenticated",
+   "auth": [
+    "ops-api-key"
+   ],
+   "optionalAuth": [],
+   "permissions": [
+    "READ_EVIDENCE_CHAIN",
+    "VERIFY_EVIDENCE_CHAIN"
+   ],
+   "rateLimitBuckets": [
+    "ops_admin",
+    "evidence_chain"
+   ],
+   "ipAllowlist": true,
+   "planeGates": [
+    "opsPlaneGate"
+   ],
+   "mfaStepUp": "all mutations",
+   "exceptions": []
+  },
+  "POST /evidence-chain/records/:evidenceId/verify": {
+   "access": "authenticated",
+   "auth": [
+    "ops-api-key"
+   ],
+   "optionalAuth": [],
+   "permissions": [
+    "READ_EVIDENCE_CHAIN",
+    "VERIFY_EVIDENCE_CHAIN"
+   ],
+   "rateLimitBuckets": [
+    "ops_admin",
+    "evidence_chain"
+   ],
+   "ipAllowlist": true,
+   "planeGates": [
+    "opsPlaneGate"
+   ],
+   "mfaStepUp": "all mutations",
+   "exceptions": []
+  },
+  "GET /evidence-chain/records/:evidenceId/verifications": {
+   "access": "authenticated",
+   "auth": [
+    "ops-api-key"
+   ],
+   "optionalAuth": [],
+   "permissions": [
+    "READ_EVIDENCE_CHAIN",
+    "READ_EVIDENCE_CHAIN"
+   ],
+   "rateLimitBuckets": [
+    "ops_admin",
+    "evidence_chain"
+   ],
+   "ipAllowlist": true,
+   "planeGates": [
+    "opsPlaneGate"
+   ],
+   "mfaStepUp": "all mutations",
+   "exceptions": []
+  },
+  "GET /evidence-chain/records/:evidenceId/report": {
+   "access": "authenticated",
+   "auth": [
+    "ops-api-key"
+   ],
+   "optionalAuth": [],
+   "permissions": [
+    "READ_EVIDENCE_CHAIN",
+    "READ_EVIDENCE_CHAIN"
+   ],
+   "rateLimitBuckets": [
+    "ops_admin",
+    "evidence_chain"
+   ],
+   "ipAllowlist": true,
+   "planeGates": [
+    "opsPlaneGate"
+   ],
+   "mfaStepUp": "all mutations",
+   "exceptions": []
+  },
+  "GET /evidence-chain/export/csv": {
+   "access": "authenticated",
+   "auth": [
+    "ops-api-key"
+   ],
+   "optionalAuth": [],
+   "permissions": [
+    "READ_EVIDENCE_CHAIN",
+    "READ_EVIDENCE_CHAIN"
+   ],
+   "rateLimitBuckets": [
+    "ops_admin",
+    "evidence_chain"
+   ],
+   "ipAllowlist": true,
+   "planeGates": [
+    "opsPlaneGate"
+   ],
+   "mfaStepUp": "all mutations",
+   "exceptions": []
+  },
+  "GET /evidence-chain/dashboard": {
+   "access": "authenticated",
+   "auth": [
+    "ops-api-key"
+   ],
+   "optionalAuth": [],
+   "permissions": [
+    "READ_EVIDENCE_CHAIN",
+    "READ_EVIDENCE_CHAIN"
+   ],
+   "rateLimitBuckets": [
+    "ops_admin",
+    "evidence_chain"
+   ],
+   "ipAllowlist": true,
+   "planeGates": [
+    "opsPlaneGate"
+   ],
+   "mfaStepUp": "all mutations",
+   "exceptions": []
+  },
+  "GET /evidence/package/:artifactId": {
+   "access": "authenticated",
+   "auth": [
+    "ops-api-key"
+   ],
+   "optionalAuth": [],
+   "permissions": [
+    "GENERATE_EVIDENCE"
+   ],
+   "rateLimitBuckets": [
+    "ops_admin",
+    "evidence"
+   ],
+   "ipAllowlist": true,
+   "planeGates": [
+    "opsPlaneGate"
+   ],
+   "mfaStepUp": "all mutations",
+   "exceptions": []
+  },
+  "GET /evidence/package/:artifactId/json": {
+   "access": "authenticated",
+   "auth": [
+    "ops-api-key"
+   ],
+   "optionalAuth": [],
+   "permissions": [
+    "GENERATE_EVIDENCE"
+   ],
+   "rateLimitBuckets": [
+    "ops_admin",
+    "evidence"
+   ],
+   "ipAllowlist": true,
+   "planeGates": [
+    "opsPlaneGate"
+   ],
+   "mfaStepUp": "all mutations",
+   "exceptions": []
+  },
+  "GET /evidence/package/:artifactId/pdf": {
+   "access": "authenticated",
+   "auth": [
+    "ops-api-key"
+   ],
+   "optionalAuth": [],
+   "permissions": [
+    "GENERATE_EVIDENCE"
+   ],
+   "rateLimitBuckets": [
+    "ops_admin",
+    "evidence"
+   ],
+   "ipAllowlist": true,
+   "planeGates": [
+    "opsPlaneGate"
+   ],
+   "mfaStepUp": "all mutations",
+   "exceptions": []
+  },
+  "GET /evidence/package/:artifactId/audit": {
+   "access": "authenticated",
+   "auth": [
+    "ops-api-key"
+   ],
+   "optionalAuth": [],
+   "permissions": [
+    "GENERATE_EVIDENCE"
+   ],
+   "rateLimitBuckets": [
+    "ops_admin",
+    "evidence"
+   ],
+   "ipAllowlist": true,
+   "planeGates": [
+    "opsPlaneGate"
+   ],
+   "mfaStepUp": "all mutations",
+   "exceptions": []
+  },
+  "GET /evidence/package/:artifactId/verify": {
+   "access": "authenticated",
+   "auth": [
+    "ops-api-key"
+   ],
+   "optionalAuth": [],
+   "permissions": [
+    "GENERATE_EVIDENCE"
+   ],
+   "rateLimitBuckets": [
+    "ops_admin",
+    "evidence"
+   ],
+   "ipAllowlist": true,
+   "planeGates": [
+    "opsPlaneGate"
+   ],
+   "mfaStepUp": "all mutations",
+   "exceptions": []
+  },
+  "GET /evidence/package/:artifactId/bundle": {
+   "access": "authenticated",
+   "auth": [
+    "ops-api-key"
+   ],
+   "optionalAuth": [],
+   "permissions": [
+    "GENERATE_EVIDENCE"
+   ],
+   "rateLimitBuckets": [
+    "ops_admin",
+    "evidence"
+   ],
+   "ipAllowlist": true,
+   "planeGates": [
+    "opsPlaneGate"
+   ],
+   "mfaStepUp": "all mutations",
+   "exceptions": []
+  },
+  "GET /transparency/entry/:transparencyId": {
+   "access": "public",
+   "auth": [],
+   "optionalAuth": [],
+   "permissions": [],
+   "rateLimitBuckets": [
+    "transparency"
+   ],
+   "ipAllowlist": false,
+   "planeGates": [],
+   "mfaStepUp": null,
+   "exceptions": []
+  },
+  "GET /transparency/receipt/:requestId": {
+   "access": "public",
+   "auth": [],
+   "optionalAuth": [],
+   "permissions": [],
+   "rateLimitBuckets": [
+    "transparency"
+   ],
+   "ipAllowlist": false,
+   "planeGates": [],
+   "mfaStepUp": null,
+   "exceptions": []
+  },
+  "GET /transparency/entries": {
+   "access": "public",
+   "auth": [],
+   "optionalAuth": [],
+   "permissions": [],
+   "rateLimitBuckets": [
+    "transparency"
+   ],
+   "ipAllowlist": false,
+   "planeGates": [],
+   "mfaStepUp": null,
+   "exceptions": []
+  },
+  "GET /transparency/root": {
+   "access": "public",
+   "auth": [],
+   "optionalAuth": [],
+   "permissions": [],
+   "rateLimitBuckets": [
+    "transparency"
+   ],
+   "ipAllowlist": false,
+   "planeGates": [],
+   "mfaStepUp": null,
+   "exceptions": []
+  },
+  "GET /transparency/roots": {
+   "access": "public",
+   "auth": [],
+   "optionalAuth": [],
+   "permissions": [],
+   "rateLimitBuckets": [
+    "transparency"
+   ],
+   "ipAllowlist": false,
+   "planeGates": [],
+   "mfaStepUp": null,
+   "exceptions": []
+  },
+  "GET /transparency/verify/:transparencyId": {
+   "access": "public",
+   "auth": [],
+   "optionalAuth": [
+    "ops-api-key(optional)[READ_TRANSPARENCY_LOG]"
+   ],
+   "permissions": [],
+   "rateLimitBuckets": [
+    "transparency",
+    "public_verify"
+   ],
+   "ipAllowlist": false,
+   "planeGates": [],
+   "mfaStepUp": null,
+   "exceptions": [
+    "ephemeral-unless-authenticated"
+   ]
+  },
+  "GET /transparency/proof/:transparencyId": {
+   "access": "public",
+   "auth": [],
+   "optionalAuth": [],
+   "permissions": [],
+   "rateLimitBuckets": [
+    "transparency"
+   ],
+   "ipAllowlist": false,
+   "planeGates": [],
+   "mfaStepUp": null,
+   "exceptions": [
+    "idempotent-merkle-checkpoint"
+   ]
+  },
+  "GET /transparency/consistency/:fromRootId/:toRootId": {
+   "access": "public",
+   "auth": [],
+   "optionalAuth": [],
+   "permissions": [],
+   "rateLimitBuckets": [
+    "transparency"
+   ],
+   "ipAllowlist": false,
+   "planeGates": [],
+   "mfaStepUp": null,
+   "exceptions": []
+  },
+  "GET /transparency/admin/stats": {
+   "access": "authenticated",
+   "auth": [
+    "ops-api-key"
+   ],
+   "optionalAuth": [],
+   "permissions": [
+    "READ_TRANSPARENCY_LOG"
+   ],
+   "rateLimitBuckets": [
+    "ops_admin",
+    "transparency_admin"
+   ],
+   "ipAllowlist": true,
+   "planeGates": [
+    "opsPlaneGate"
+   ],
+   "mfaStepUp": "all mutations",
+   "exceptions": []
+  },
+  "GET /transparency/admin/chain/validate": {
+   "access": "authenticated",
+   "auth": [
+    "ops-api-key"
+   ],
+   "optionalAuth": [],
+   "permissions": [
+    "READ_TRANSPARENCY_LOG"
+   ],
+   "rateLimitBuckets": [
+    "ops_admin",
+    "transparency_admin"
+   ],
+   "ipAllowlist": true,
+   "planeGates": [
+    "opsPlaneGate"
+   ],
+   "mfaStepUp": "all mutations",
+   "exceptions": []
+  },
+  "POST /transparency/register": {
+   "access": "authenticated",
+   "auth": [
+    "ops-api-key"
+   ],
+   "optionalAuth": [],
+   "permissions": [
+    "MANAGE_TRANSPARENCY_LOG"
+   ],
+   "rateLimitBuckets": [
+    "ops_admin",
+    "transparency_admin"
+   ],
+   "ipAllowlist": true,
+   "planeGates": [
+    "opsPlaneGate"
+   ],
+   "mfaStepUp": "all mutations",
+   "exceptions": []
+  },
+  "POST /transparency/admin/roots/generate": {
+   "access": "authenticated",
+   "auth": [
+    "ops-api-key"
+   ],
+   "optionalAuth": [],
+   "permissions": [
+    "MANAGE_TRANSPARENCY_LOG"
+   ],
+   "rateLimitBuckets": [
+    "ops_admin",
+    "transparency_admin"
+   ],
+   "ipAllowlist": true,
+   "planeGates": [
+    "opsPlaneGate"
+   ],
+   "mfaStepUp": "all mutations",
+   "exceptions": []
+  },
+  "POST /portal/verify": {
+   "access": "public",
+   "auth": [],
+   "optionalAuth": [
+    "ops-api-key(optional)[MANAGE_VERIFICATION_PORTAL]"
+   ],
+   "permissions": [],
+   "rateLimitBuckets": [
+    "portal",
+    "public_verify"
+   ],
+   "ipAllowlist": false,
+   "planeGates": [],
+   "mfaStepUp": null,
+   "exceptions": [
+    "ephemeral-unless-authenticated"
+   ]
+  },
+  "GET /portal/result/:verificationId": {
+   "access": "public",
+   "auth": [],
+   "optionalAuth": [],
+   "permissions": [],
+   "rateLimitBuckets": [
+    "portal"
+   ],
+   "ipAllowlist": false,
+   "planeGates": [],
+   "mfaStepUp": null,
+   "exceptions": []
+  },
+  "GET /portal/report/:verificationId": {
+   "access": "public",
+   "auth": [],
+   "optionalAuth": [],
+   "permissions": [],
+   "rateLimitBuckets": [
+    "portal"
+   ],
+   "ipAllowlist": false,
+   "planeGates": [],
+   "mfaStepUp": null,
+   "exceptions": []
+  },
+  "GET /portal/admin/history": {
+   "access": "authenticated",
+   "auth": [
+    "ops-api-key"
+   ],
+   "optionalAuth": [],
+   "permissions": [
+    "READ_VERIFICATION_PORTAL"
+   ],
+   "rateLimitBuckets": [
+    "ops_admin",
+    "portal_admin"
+   ],
+   "ipAllowlist": true,
+   "planeGates": [
+    "opsPlaneGate"
+   ],
+   "mfaStepUp": null,
+   "exceptions": []
+  },
+  "GET /portal/admin/stats": {
+   "access": "authenticated",
+   "auth": [
+    "ops-api-key"
+   ],
+   "optionalAuth": [],
+   "permissions": [
+    "READ_VERIFICATION_PORTAL"
+   ],
+   "rateLimitBuckets": [
+    "ops_admin",
+    "portal_admin"
+   ],
+   "ipAllowlist": true,
+   "planeGates": [
+    "opsPlaneGate"
+   ],
+   "mfaStepUp": null,
+   "exceptions": []
+  },
+  "GET /portal/evidence/:verificationId": {
+   "access": "authenticated",
+   "auth": [
+    "ops-api-key"
+   ],
+   "optionalAuth": [],
+   "permissions": [
+    "READ_VERIFICATION_PORTAL"
+   ],
+   "rateLimitBuckets": [
+    "ops_admin",
+    "portal_admin"
+   ],
+   "ipAllowlist": true,
+   "planeGates": [
+    "opsPlaneGate"
+   ],
+   "mfaStepUp": null,
+   "exceptions": []
+  },
+  "POST /v1/attestation/verify": {
+   "access": "public",
+   "auth": [],
+   "optionalAuth": [
+    "ops-api-key(optional)[MANAGE_ATTESTATIONS]"
+   ],
+   "permissions": [],
+   "rateLimitBuckets": [
+    "attestation",
+    "public_verify"
+   ],
+   "ipAllowlist": false,
+   "planeGates": [],
+   "mfaStepUp": null,
+   "exceptions": [
+    "ephemeral-unless-authenticated"
+   ]
+  },
+  "POST /v1/attestation/evidence/verify": {
+   "access": "public",
+   "auth": [],
+   "optionalAuth": [
+    "ops-api-key(optional)[MANAGE_ATTESTATIONS]"
+   ],
+   "permissions": [],
+   "rateLimitBuckets": [
+    "attestation",
+    "public_verify"
+   ],
+   "ipAllowlist": false,
+   "planeGates": [],
+   "mfaStepUp": null,
+   "exceptions": [
+    "ephemeral-unless-authenticated"
+   ]
+  },
+  "GET /v1/attestation/:attestationId": {
+   "access": "public",
+   "auth": [],
+   "optionalAuth": [],
+   "permissions": [],
+   "rateLimitBuckets": [
+    "attestation"
+   ],
+   "ipAllowlist": false,
+   "planeGates": [],
+   "mfaStepUp": null,
+   "exceptions": []
+  },
+  "POST /v1/attestation/chain/verify": {
+   "access": "authenticated",
+   "auth": [
+    "ops-api-key"
+   ],
+   "optionalAuth": [],
+   "permissions": [
+    "MANAGE_ATTESTATIONS"
+   ],
+   "rateLimitBuckets": [
+    "ops_admin",
+    "attestation_admin"
+   ],
+   "ipAllowlist": true,
+   "planeGates": [
+    "opsPlaneGate"
+   ],
+   "mfaStepUp": null,
+   "exceptions": []
+  },
+  "GET /v1/attestation/admin/history": {
+   "access": "authenticated",
+   "auth": [
+    "ops-api-key"
+   ],
+   "optionalAuth": [],
+   "permissions": [
+    "READ_ATTESTATIONS"
+   ],
+   "rateLimitBuckets": [
+    "ops_admin",
+    "attestation_admin"
+   ],
+   "ipAllowlist": true,
+   "planeGates": [
+    "opsPlaneGate"
+   ],
+   "mfaStepUp": null,
+   "exceptions": []
+  },
+  "GET /v1/attestation/admin/stats": {
+   "access": "authenticated",
+   "auth": [
+    "ops-api-key"
+   ],
+   "optionalAuth": [],
+   "permissions": [
+    "READ_ATTESTATIONS"
+   ],
+   "rateLimitBuckets": [
+    "ops_admin",
+    "attestation_admin"
+   ],
+   "ipAllowlist": true,
+   "planeGates": [
+    "opsPlaneGate"
+   ],
+   "mfaStepUp": null,
+   "exceptions": []
+  },
+  "GET /v1/attestation/:attestationId/export": {
+   "access": "authenticated",
+   "auth": [
+    "ops-api-key"
+   ],
+   "optionalAuth": [],
+   "permissions": [
+    "EXPORT_ATTESTATIONS"
+   ],
+   "rateLimitBuckets": [
+    "ops_admin",
+    "attestation_admin"
+   ],
+   "ipAllowlist": true,
+   "planeGates": [
+    "opsPlaneGate"
+   ],
+   "mfaStepUp": null,
+   "exceptions": []
+  },
+  "GET /v1/attestation/:attestationId/evidence": {
+   "access": "authenticated",
+   "auth": [
+    "ops-api-key"
+   ],
+   "optionalAuth": [],
+   "permissions": [
+    "EXPORT_ATTESTATIONS"
+   ],
+   "rateLimitBuckets": [
+    "ops_admin",
+    "attestation_admin"
+   ],
+   "ipAllowlist": true,
+   "planeGates": [
+    "opsPlaneGate"
+   ],
+   "mfaStepUp": null,
+   "exceptions": []
+  },
+  "GET /v1/attestation/:attestationId/summary": {
+   "access": "authenticated",
+   "auth": [
+    "ops-api-key"
+   ],
+   "optionalAuth": [],
+   "permissions": [
+    "READ_ATTESTATIONS"
+   ],
+   "rateLimitBuckets": [
+    "ops_admin",
+    "attestation_admin"
+   ],
+   "ipAllowlist": true,
+   "planeGates": [
+    "opsPlaneGate"
+   ],
+   "mfaStepUp": null,
+   "exceptions": []
+  },
+  "GET /v1/certification/:certificationId": {
+   "access": "public",
+   "auth": [],
+   "optionalAuth": [],
+   "permissions": [],
+   "rateLimitBuckets": [
+    "certification"
+   ],
+   "ipAllowlist": false,
+   "planeGates": [],
+   "mfaStepUp": null,
+   "exceptions": []
+  },
+  "GET /v1/certification/:certificationId/summary": {
+   "access": "public",
+   "auth": [],
+   "optionalAuth": [],
+   "permissions": [],
+   "rateLimitBuckets": [
+    "certification"
+   ],
+   "ipAllowlist": false,
+   "planeGates": [],
+   "mfaStepUp": null,
+   "exceptions": []
+  },
+  "GET /v1/certification/:certificationId/certificate": {
+   "access": "public",
+   "auth": [],
+   "optionalAuth": [],
+   "permissions": [],
+   "rateLimitBuckets": [
+    "certification"
+   ],
+   "ipAllowlist": false,
+   "planeGates": [],
+   "mfaStepUp": null,
+   "exceptions": []
+  },
+  "POST /v1/certification/evaluate": {
+   "access": "authenticated",
+   "auth": [
+    "ops-api-key"
+   ],
+   "optionalAuth": [],
+   "permissions": [
+    "SUBMIT_BATCH_CERTIFICATION"
+   ],
+   "rateLimitBuckets": [
+    "ops_admin",
+    "certification_admin",
+    "certification_evaluate"
+   ],
+   "ipAllowlist": true,
+   "planeGates": [
+    "opsPlaneGate"
+   ],
+   "mfaStepUp": "all mutations",
+   "exceptions": []
+  },
+  "GET /v1/certification/admin/history": {
+   "access": "authenticated",
+   "auth": [
+    "ops-api-key"
+   ],
+   "optionalAuth": [],
+   "permissions": [
+    "READ_CERTIFICATIONS"
+   ],
+   "rateLimitBuckets": [
+    "ops_admin",
+    "certification_admin"
+   ],
+   "ipAllowlist": true,
+   "planeGates": [
+    "opsPlaneGate"
+   ],
+   "mfaStepUp": "all mutations",
+   "exceptions": []
+  },
+  "GET /v1/certification/admin/stats": {
+   "access": "authenticated",
+   "auth": [
+    "ops-api-key"
+   ],
+   "optionalAuth": [],
+   "permissions": [
+    "READ_CERTIFICATIONS"
+   ],
+   "rateLimitBuckets": [
+    "ops_admin",
+    "certification_admin"
+   ],
+   "ipAllowlist": true,
+   "planeGates": [
+    "opsPlaneGate"
+   ],
+   "mfaStepUp": "all mutations",
+   "exceptions": []
+  },
+  "GET /v1/certification/:certificationId/report": {
+   "access": "authenticated",
+   "auth": [
+    "ops-api-key"
+   ],
+   "optionalAuth": [],
+   "permissions": [
+    "READ_CERTIFICATIONS"
+   ],
+   "rateLimitBuckets": [
+    "ops_admin",
+    "certification_admin"
+   ],
+   "ipAllowlist": true,
+   "planeGates": [
+    "opsPlaneGate"
+   ],
+   "mfaStepUp": "all mutations",
+   "exceptions": []
+  },
+  "GET /v1/certification/:certificationId/evidence": {
+   "access": "authenticated",
+   "auth": [
+    "ops-api-key"
+   ],
+   "optionalAuth": [],
+   "permissions": [
+    "EXPORT_CERTIFICATIONS"
+   ],
+   "rateLimitBuckets": [
+    "ops_admin",
+    "certification_admin"
+   ],
+   "ipAllowlist": true,
+   "planeGates": [
+    "opsPlaneGate"
+   ],
+   "mfaStepUp": "all mutations",
+   "exceptions": []
+  },
+  "GET /v1/certification/:certificationId/export": {
+   "access": "authenticated",
+   "auth": [
+    "ops-api-key"
+   ],
+   "optionalAuth": [],
+   "permissions": [
+    "EXPORT_CERTIFICATIONS"
+   ],
+   "rateLimitBuckets": [
+    "ops_admin",
+    "certification_admin"
+   ],
+   "ipAllowlist": true,
+   "planeGates": [
+    "opsPlaneGate"
+   ],
+   "mfaStepUp": "all mutations",
+   "exceptions": []
+  },
+  "POST /v1/certifications/batch": {
+   "access": "authenticated",
+   "auth": [
+    "ops-api-key"
+   ],
+   "optionalAuth": [],
+   "permissions": [
+    "SUBMIT_BATCH_CERTIFICATION"
+   ],
+   "rateLimitBuckets": [
+    "ops_admin",
+    "certification_batch"
+   ],
+   "ipAllowlist": true,
+   "planeGates": [
+    "opsPlaneGate"
+   ],
+   "mfaStepUp": "all mutations",
+   "exceptions": []
+  },
+  "GET /v1/certifications/batch/:batchId": {
+   "access": "authenticated",
+   "auth": [
+    "ops-api-key"
+   ],
+   "optionalAuth": [],
+   "permissions": [
+    "READ_CERTIFICATIONS"
+   ],
+   "rateLimitBuckets": [
+    "ops_admin",
+    "certification_batch"
+   ],
+   "ipAllowlist": true,
+   "planeGates": [
+    "opsPlaneGate"
+   ],
+   "mfaStepUp": "all mutations",
+   "exceptions": []
+  },
+  "GET /v1/certifications/batch/:batchId/results": {
+   "access": "authenticated",
+   "auth": [
+    "ops-api-key"
+   ],
+   "optionalAuth": [],
+   "permissions": [
+    "READ_CERTIFICATIONS"
+   ],
+   "rateLimitBuckets": [
+    "ops_admin",
+    "certification_batch"
+   ],
+   "ipAllowlist": true,
+   "planeGates": [
+    "opsPlaneGate"
+   ],
+   "mfaStepUp": "all mutations",
+   "exceptions": []
+  },
+  "POST /v1/certifications/batch/:batchId/cancel": {
+   "access": "authenticated",
+   "auth": [
+    "ops-api-key"
+   ],
+   "optionalAuth": [],
+   "permissions": [
+    "CANCEL_BATCH_CERTIFICATION"
+   ],
+   "rateLimitBuckets": [
+    "ops_admin",
+    "certification_batch"
+   ],
+   "ipAllowlist": true,
+   "planeGates": [
+    "opsPlaneGate"
+   ],
+   "mfaStepUp": "all mutations",
+   "exceptions": []
+  },
+  "GET /dashboard/overview": {
+   "access": "authenticated",
+   "auth": [
+    "ops-api-key"
+   ],
+   "optionalAuth": [],
+   "permissions": [
+    "VIEW_DASHBOARD"
+   ],
+   "rateLimitBuckets": [
+    "ops_admin"
+   ],
+   "ipAllowlist": true,
+   "planeGates": [
+    "opsPlaneGate"
+   ],
+   "mfaStepUp": "all mutations",
+   "exceptions": []
+  },
+  "GET /dashboard/executions": {
+   "access": "authenticated",
+   "auth": [
+    "ops-api-key"
+   ],
+   "optionalAuth": [],
+   "permissions": [
+    "VIEW_DASHBOARD"
+   ],
+   "rateLimitBuckets": [
+    "ops_admin"
+   ],
+   "ipAllowlist": true,
+   "planeGates": [
+    "opsPlaneGate"
+   ],
+   "mfaStepUp": "all mutations",
+   "exceptions": []
+  },
+  "GET /dashboard/blocked": {
+   "access": "authenticated",
+   "auth": [
+    "ops-api-key"
+   ],
+   "optionalAuth": [],
+   "permissions": [
+    "VIEW_DASHBOARD"
+   ],
+   "rateLimitBuckets": [
+    "ops_admin"
+   ],
+   "ipAllowlist": true,
+   "planeGates": [
+    "opsPlaneGate"
+   ],
+   "mfaStepUp": "all mutations",
+   "exceptions": []
+  },
+  "GET /dashboard/replays": {
+   "access": "authenticated",
+   "auth": [
+    "ops-api-key"
+   ],
+   "optionalAuth": [],
+   "permissions": [
+    "VIEW_DASHBOARD"
+   ],
+   "rateLimitBuckets": [
+    "ops_admin"
+   ],
+   "ipAllowlist": true,
+   "planeGates": [
+    "opsPlaneGate"
+   ],
+   "mfaStepUp": "all mutations",
+   "exceptions": []
+  },
+  "GET /dashboard/anomalies": {
+   "access": "authenticated",
+   "auth": [
+    "ops-api-key"
+   ],
+   "optionalAuth": [],
+   "permissions": [
+    "VIEW_DASHBOARD"
+   ],
+   "rateLimitBuckets": [
+    "ops_admin"
+   ],
+   "ipAllowlist": true,
+   "planeGates": [
+    "opsPlaneGate"
+   ],
+   "mfaStepUp": "all mutations",
+   "exceptions": []
+  },
+  "GET /dashboard/status": {
+   "access": "authenticated",
+   "auth": [
+    "ops-api-key"
+   ],
+   "optionalAuth": [],
+   "permissions": [
+    "VIEW_DASHBOARD"
+   ],
+   "rateLimitBuckets": [
+    "ops_admin"
+   ],
+   "ipAllowlist": true,
+   "planeGates": [
+    "opsPlaneGate"
+   ],
+   "mfaStepUp": "all mutations",
+   "exceptions": []
+  },
+  "GET /dashboard/activity": {
+   "access": "authenticated",
+   "auth": [
+    "ops-api-key"
+   ],
+   "optionalAuth": [],
+   "permissions": [
+    "VIEW_DASHBOARD"
+   ],
+   "rateLimitBuckets": [
+    "ops_admin"
+   ],
+   "ipAllowlist": true,
+   "planeGates": [
+    "opsPlaneGate"
+   ],
+   "mfaStepUp": "all mutations",
+   "exceptions": []
+  },
+  "GET /dashboard/stream": {
+   "access": "authenticated",
+   "auth": [
+    "ops-api-key"
+   ],
+   "optionalAuth": [],
+   "permissions": [
+    "VIEW_DASHBOARD"
+   ],
+   "rateLimitBuckets": [
+    "ops_admin"
+   ],
+   "ipAllowlist": true,
+   "planeGates": [
+    "opsPlaneGate"
+   ],
+   "mfaStepUp": "all mutations",
+   "exceptions": []
+  },
+  "GET /key-admin/inventory": {
+   "access": "authenticated",
+   "auth": [
+    "ops-api-key"
+   ],
+   "optionalAuth": [],
+   "permissions": [
+    "MANAGE_KEYS"
+   ],
+   "rateLimitBuckets": [
+    "ops_admin"
+   ],
+   "ipAllowlist": true,
+   "planeGates": [
+    "opsPlaneGate"
+   ],
+   "mfaStepUp": "all mutations",
+   "exceptions": []
+  },
+  "POST /key-admin/purge-expired": {
+   "access": "authenticated",
+   "auth": [
+    "ops-api-key"
+   ],
+   "optionalAuth": [],
+   "permissions": [
+    "MANAGE_KEYS"
+   ],
+   "rateLimitBuckets": [
+    "ops_admin"
+   ],
+   "ipAllowlist": true,
+   "planeGates": [
+    "opsPlaneGate"
+   ],
+   "mfaStepUp": "all mutations",
+   "exceptions": []
+  },
+  "GET /key-admin/rotation-scheduler/status": {
+   "access": "authenticated",
+   "auth": [
+    "ops-api-key"
+   ],
+   "optionalAuth": [],
+   "permissions": [
+    "MANAGE_KEYS"
+   ],
+   "rateLimitBuckets": [
+    "ops_admin"
+   ],
+   "ipAllowlist": true,
+   "planeGates": [
+    "opsPlaneGate"
+   ],
+   "mfaStepUp": "all mutations",
+   "exceptions": []
+  },
+  "GET /key-admin/health": {
+   "access": "authenticated",
+   "auth": [
+    "ops-api-key"
+   ],
+   "optionalAuth": [],
+   "permissions": [
+    "MANAGE_KEYS"
+   ],
+   "rateLimitBuckets": [
+    "ops_admin"
+   ],
+   "ipAllowlist": true,
+   "planeGates": [
+    "opsPlaneGate"
+   ],
+   "mfaStepUp": "all mutations",
+   "exceptions": []
+  },
+  "GET /key-admin/:clientId/status": {
+   "access": "authenticated",
+   "auth": [
+    "ops-api-key"
+   ],
+   "optionalAuth": [],
+   "permissions": [
+    "MANAGE_KEYS"
+   ],
+   "rateLimitBuckets": [
+    "ops_admin"
+   ],
+   "ipAllowlist": true,
+   "planeGates": [
+    "opsPlaneGate"
+   ],
+   "mfaStepUp": "all mutations",
+   "exceptions": []
+  },
+  "POST /key-admin/kek/rotate": {
+   "access": "authenticated",
+   "auth": [
+    "ops-api-key"
+   ],
+   "optionalAuth": [],
+   "permissions": [
+    "MANAGE_KEYS"
+   ],
+   "rateLimitBuckets": [
+    "ops_admin"
+   ],
+   "ipAllowlist": true,
+   "planeGates": [
+    "opsPlaneGate"
+   ],
+   "mfaStepUp": "all mutations",
+   "exceptions": []
+  },
+  "POST /key-admin/mac-keys/rotate": {
+   "access": "authenticated",
+   "auth": [
+    "ops-api-key"
+   ],
+   "optionalAuth": [],
+   "permissions": [
+    "MANAGE_KEYS"
+   ],
+   "rateLimitBuckets": [
+    "ops_admin"
+   ],
+   "ipAllowlist": true,
+   "planeGates": [
+    "opsPlaneGate"
+   ],
+   "mfaStepUp": "all mutations",
+   "exceptions": []
+  },
+  "POST /key-admin/:clientId/rotate": {
+   "access": "authenticated",
+   "auth": [
+    "ops-api-key"
+   ],
+   "optionalAuth": [],
+   "permissions": [
+    "MANAGE_KEYS"
+   ],
+   "rateLimitBuckets": [
+    "ops_admin"
+   ],
+   "ipAllowlist": true,
+   "planeGates": [
+    "opsPlaneGate"
+   ],
+   "mfaStepUp": "all mutations",
+   "exceptions": []
+  },
+  "POST /key-admin/:clientId/rotate-graceful": {
+   "access": "authenticated",
+   "auth": [
+    "ops-api-key"
+   ],
+   "optionalAuth": [],
+   "permissions": [
+    "MANAGE_KEYS"
+   ],
+   "rateLimitBuckets": [
+    "ops_admin"
+   ],
+   "ipAllowlist": true,
+   "planeGates": [
+    "opsPlaneGate"
+   ],
+   "mfaStepUp": "all mutations",
+   "exceptions": []
+  },
+  "POST /key-admin/:clientId/revoke": {
+   "access": "authenticated",
+   "auth": [
+    "ops-api-key"
+   ],
+   "optionalAuth": [],
+   "permissions": [
+    "MANAGE_KEYS"
+   ],
+   "rateLimitBuckets": [
+    "ops_admin"
+   ],
+   "ipAllowlist": true,
+   "planeGates": [
+    "opsPlaneGate"
+   ],
+   "mfaStepUp": "all mutations",
+   "exceptions": []
+  },
+  "POST /key-admin/:clientId/recover": {
+   "access": "authenticated",
+   "auth": [
+    "ops-api-key"
+   ],
+   "optionalAuth": [],
+   "permissions": [
+    "MANAGE_KEYS"
+   ],
+   "rateLimitBuckets": [
+    "ops_admin"
+   ],
+   "ipAllowlist": true,
+   "planeGates": [
+    "opsPlaneGate"
+   ],
+   "mfaStepUp": "all mutations",
+   "exceptions": []
+  },
+  "GET /rbac/roles": {
+   "access": "authenticated",
+   "auth": [
+    "ops-api-key"
+   ],
+   "optionalAuth": [],
+   "permissions": [
+    "READ_USERS"
+   ],
+   "rateLimitBuckets": [
+    "ops_admin",
+    "rbac_admin"
+   ],
+   "ipAllowlist": true,
+   "planeGates": [
+    "opsPlaneGate"
+   ],
+   "mfaStepUp": "all mutations except self MFA enrol/confirm",
+   "exceptions": []
+  },
+  "POST /rbac/roles": {
+   "access": "authenticated",
+   "auth": [
+    "ops-api-key"
+   ],
+   "optionalAuth": [],
+   "permissions": [
+    "MANAGE_USERS"
+   ],
+   "rateLimitBuckets": [
+    "ops_admin",
+    "rbac_admin"
+   ],
+   "ipAllowlist": true,
+   "planeGates": [
+    "opsPlaneGate"
+   ],
+   "mfaStepUp": "all mutations except self MFA enrol/confirm",
+   "exceptions": []
+  },
+  "POST /rbac/roles/validate": {
+   "access": "authenticated",
+   "auth": [
+    "ops-api-key"
+   ],
+   "optionalAuth": [],
+   "permissions": [
+    "READ_USERS"
+   ],
+   "rateLimitBuckets": [
+    "ops_admin",
+    "rbac_admin"
+   ],
+   "ipAllowlist": true,
+   "planeGates": [
+    "opsPlaneGate"
+   ],
+   "mfaStepUp": "all mutations except self MFA enrol/confirm",
+   "exceptions": []
+  },
+  "GET /rbac/roles/:id": {
+   "access": "authenticated",
+   "auth": [
+    "ops-api-key"
+   ],
+   "optionalAuth": [],
+   "permissions": [
+    "READ_USERS"
+   ],
+   "rateLimitBuckets": [
+    "ops_admin",
+    "rbac_admin"
+   ],
+   "ipAllowlist": true,
+   "planeGates": [
+    "opsPlaneGate"
+   ],
+   "mfaStepUp": "all mutations except self MFA enrol/confirm",
+   "exceptions": []
+  },
+  "PATCH /rbac/roles/:id": {
+   "access": "authenticated",
+   "auth": [
+    "ops-api-key"
+   ],
+   "optionalAuth": [],
+   "permissions": [
+    "MANAGE_USERS"
+   ],
+   "rateLimitBuckets": [
+    "ops_admin",
+    "rbac_admin"
+   ],
+   "ipAllowlist": true,
+   "planeGates": [
+    "opsPlaneGate"
+   ],
+   "mfaStepUp": "all mutations except self MFA enrol/confirm",
+   "exceptions": []
+  },
+  "PUT /rbac/roles/:id": {
+   "access": "authenticated",
+   "auth": [
+    "ops-api-key"
+   ],
+   "optionalAuth": [],
+   "permissions": [
+    "MANAGE_USERS"
+   ],
+   "rateLimitBuckets": [
+    "ops_admin",
+    "rbac_admin"
+   ],
+   "ipAllowlist": true,
+   "planeGates": [
+    "opsPlaneGate"
+   ],
+   "mfaStepUp": "all mutations except self MFA enrol/confirm",
+   "exceptions": []
+  },
+  "DELETE /rbac/roles/:id": {
+   "access": "authenticated",
+   "auth": [
+    "ops-api-key"
+   ],
+   "optionalAuth": [],
+   "permissions": [
+    "MANAGE_USERS"
+   ],
+   "rateLimitBuckets": [
+    "ops_admin",
+    "rbac_admin"
+   ],
+   "ipAllowlist": true,
+   "planeGates": [
+    "opsPlaneGate"
+   ],
+   "mfaStepUp": "all mutations except self MFA enrol/confirm",
+   "exceptions": []
+  },
+  "GET /rbac/permissions": {
+   "access": "authenticated",
+   "auth": [
+    "ops-api-key"
+   ],
+   "optionalAuth": [],
+   "permissions": [
+    "READ_USERS"
+   ],
+   "rateLimitBuckets": [
+    "ops_admin",
+    "rbac_admin"
+   ],
+   "ipAllowlist": true,
+   "planeGates": [
+    "opsPlaneGate"
+   ],
+   "mfaStepUp": "all mutations except self MFA enrol/confirm",
+   "exceptions": []
+  },
+  "GET /rbac/users": {
+   "access": "authenticated",
+   "auth": [
+    "ops-api-key"
+   ],
+   "optionalAuth": [],
+   "permissions": [
+    "READ_USERS"
+   ],
+   "rateLimitBuckets": [
+    "ops_admin",
+    "rbac_admin"
+   ],
+   "ipAllowlist": true,
+   "planeGates": [
+    "opsPlaneGate"
+   ],
+   "mfaStepUp": "all mutations except self MFA enrol/confirm",
+   "exceptions": []
+  },
+  "POST /rbac/users": {
+   "access": "authenticated",
+   "auth": [
+    "ops-api-key"
+   ],
+   "optionalAuth": [],
+   "permissions": [
+    "MANAGE_USERS"
+   ],
+   "rateLimitBuckets": [
+    "ops_admin",
+    "rbac_admin"
+   ],
+   "ipAllowlist": true,
+   "planeGates": [
+    "opsPlaneGate"
+   ],
+   "mfaStepUp": "all mutations except self MFA enrol/confirm",
+   "exceptions": []
+  },
+  "GET /rbac/users/:id": {
+   "access": "authenticated",
+   "auth": [
+    "ops-api-key"
+   ],
+   "optionalAuth": [],
+   "permissions": [
+    "READ_USERS"
+   ],
+   "rateLimitBuckets": [
+    "ops_admin",
+    "rbac_admin"
+   ],
+   "ipAllowlist": true,
+   "planeGates": [
+    "opsPlaneGate"
+   ],
+   "mfaStepUp": "all mutations except self MFA enrol/confirm",
+   "exceptions": []
+  },
+  "PATCH /rbac/users/:id": {
+   "access": "authenticated",
+   "auth": [
+    "ops-api-key"
+   ],
+   "optionalAuth": [],
+   "permissions": [
+    "MANAGE_USERS"
+   ],
+   "rateLimitBuckets": [
+    "ops_admin",
+    "rbac_admin"
+   ],
+   "ipAllowlist": true,
+   "planeGates": [
+    "opsPlaneGate"
+   ],
+   "mfaStepUp": "all mutations except self MFA enrol/confirm",
+   "exceptions": []
+  },
+  "PUT /rbac/users/:id": {
+   "access": "authenticated",
+   "auth": [
+    "ops-api-key"
+   ],
+   "optionalAuth": [],
+   "permissions": [
+    "MANAGE_USERS"
+   ],
+   "rateLimitBuckets": [
+    "ops_admin",
+    "rbac_admin"
+   ],
+   "ipAllowlist": true,
+   "planeGates": [
+    "opsPlaneGate"
+   ],
+   "mfaStepUp": "all mutations except self MFA enrol/confirm",
+   "exceptions": []
+  },
+  "DELETE /rbac/users/:id": {
+   "access": "authenticated",
+   "auth": [
+    "ops-api-key"
+   ],
+   "optionalAuth": [],
+   "permissions": [
+    "MANAGE_USERS"
+   ],
+   "rateLimitBuckets": [
+    "ops_admin",
+    "rbac_admin"
+   ],
+   "ipAllowlist": true,
+   "planeGates": [
+    "opsPlaneGate"
+   ],
+   "mfaStepUp": "all mutations except self MFA enrol/confirm",
+   "exceptions": []
+  },
+  "POST /rbac/users/:id/api-key": {
+   "access": "authenticated",
+   "auth": [
+    "ops-api-key"
+   ],
+   "optionalAuth": [],
+   "permissions": [
+    "MANAGE_USERS"
+   ],
+   "rateLimitBuckets": [
+    "ops_admin",
+    "rbac_admin"
+   ],
+   "ipAllowlist": true,
+   "planeGates": [
+    "opsPlaneGate"
+   ],
+   "mfaStepUp": "all mutations except self MFA enrol/confirm",
+   "exceptions": []
+  },
+  "DELETE /rbac/users/:id/api-key": {
+   "access": "authenticated",
+   "auth": [
+    "ops-api-key"
+   ],
+   "optionalAuth": [],
+   "permissions": [
+    "MANAGE_USERS"
+   ],
+   "rateLimitBuckets": [
+    "ops_admin",
+    "rbac_admin"
+   ],
+   "ipAllowlist": true,
+   "planeGates": [
+    "opsPlaneGate"
+   ],
+   "mfaStepUp": "all mutations except self MFA enrol/confirm",
+   "exceptions": []
+  },
+  "GET /rbac/users/:id/permissions": {
+   "access": "authenticated",
+   "auth": [
+    "ops-api-key"
+   ],
+   "optionalAuth": [],
+   "permissions": [
+    "READ_USERS"
+   ],
+   "rateLimitBuckets": [
+    "ops_admin",
+    "rbac_admin"
+   ],
+   "ipAllowlist": true,
+   "planeGates": [
+    "opsPlaneGate"
+   ],
+   "mfaStepUp": "all mutations except self MFA enrol/confirm",
+   "exceptions": []
+  },
+  "GET /rbac/me/mfa": {
+   "access": "authenticated",
+   "auth": [
+    "ops-api-key"
+   ],
+   "optionalAuth": [],
+   "permissions": [],
+   "rateLimitBuckets": [
+    "ops_admin",
+    "rbac_admin"
+   ],
+   "ipAllowlist": true,
+   "planeGates": [
+    "opsPlaneGate"
+   ],
+   "mfaStepUp": "all mutations except self MFA enrol/confirm",
+   "exceptions": [
+    "self-service-mfa"
+   ]
+  },
+  "POST /rbac/me/mfa/enroll": {
+   "access": "authenticated",
+   "auth": [
+    "ops-api-key"
+   ],
+   "optionalAuth": [],
+   "permissions": [],
+   "rateLimitBuckets": [
+    "ops_admin",
+    "rbac_admin"
+   ],
+   "ipAllowlist": true,
+   "planeGates": [
+    "opsPlaneGate"
+   ],
+   "mfaStepUp": "all mutations except self MFA enrol/confirm",
+   "exceptions": [
+    "self-service-mfa"
+   ]
+  },
+  "POST /rbac/me/mfa/confirm": {
+   "access": "authenticated",
+   "auth": [
+    "ops-api-key"
+   ],
+   "optionalAuth": [],
+   "permissions": [],
+   "rateLimitBuckets": [
+    "ops_admin",
+    "rbac_admin"
+   ],
+   "ipAllowlist": true,
+   "planeGates": [
+    "opsPlaneGate"
+   ],
+   "mfaStepUp": "all mutations except self MFA enrol/confirm",
+   "exceptions": [
+    "self-service-mfa"
+   ]
+  },
+  "DELETE /rbac/users/:id/mfa": {
+   "access": "authenticated",
+   "auth": [
+    "ops-api-key"
+   ],
+   "optionalAuth": [],
+   "permissions": [
+    "MANAGE_USERS"
+   ],
+   "rateLimitBuckets": [
+    "ops_admin",
+    "rbac_admin"
+   ],
+   "ipAllowlist": true,
+   "planeGates": [
+    "opsPlaneGate"
+   ],
+   "mfaStepUp": "all mutations except self MFA enrol/confirm",
+   "exceptions": []
+  },
+  "GET /signing-identities": {
+   "access": "authenticated",
+   "auth": [
+    "ops-api-key"
+   ],
+   "optionalAuth": [],
+   "permissions": [
+    "READ_SIGNING_IDENTITIES"
+   ],
+   "rateLimitBuckets": [
+    "ops_admin"
+   ],
+   "ipAllowlist": true,
+   "planeGates": [
+    "opsPlaneGate"
+   ],
+   "mfaStepUp": "all mutations",
+   "exceptions": []
+  },
+  "POST /signing-identities": {
+   "access": "authenticated",
+   "auth": [
+    "ops-api-key"
+   ],
+   "optionalAuth": [],
+   "permissions": [
+    "MANAGE_SIGNING_IDENTITIES"
+   ],
+   "rateLimitBuckets": [
+    "ops_admin"
+   ],
+   "ipAllowlist": true,
+   "planeGates": [
+    "opsPlaneGate"
+   ],
+   "mfaStepUp": "all mutations",
+   "exceptions": []
+  },
+  "GET /signing-identities/:id": {
+   "access": "authenticated",
+   "auth": [
+    "ops-api-key"
+   ],
+   "optionalAuth": [],
+   "permissions": [
+    "READ_SIGNING_IDENTITIES"
+   ],
+   "rateLimitBuckets": [
+    "ops_admin"
+   ],
+   "ipAllowlist": true,
+   "planeGates": [
+    "opsPlaneGate"
+   ],
+   "mfaStepUp": "all mutations",
+   "exceptions": []
+  },
+  "PATCH /signing-identities/:id": {
+   "access": "authenticated",
+   "auth": [
+    "ops-api-key"
+   ],
+   "optionalAuth": [],
+   "permissions": [
+    "MANAGE_SIGNING_IDENTITIES"
+   ],
+   "rateLimitBuckets": [
+    "ops_admin"
+   ],
+   "ipAllowlist": true,
+   "planeGates": [
+    "opsPlaneGate"
+   ],
+   "mfaStepUp": "all mutations",
+   "exceptions": []
+  },
+  "PUT /signing-identities/:id": {
+   "access": "authenticated",
+   "auth": [
+    "ops-api-key"
+   ],
+   "optionalAuth": [],
+   "permissions": [
+    "MANAGE_SIGNING_IDENTITIES"
+   ],
+   "rateLimitBuckets": [
+    "ops_admin"
+   ],
+   "ipAllowlist": true,
+   "planeGates": [
+    "opsPlaneGate"
+   ],
+   "mfaStepUp": "all mutations",
+   "exceptions": []
+  },
+  "DELETE /signing-identities/:id": {
+   "access": "authenticated",
+   "auth": [
+    "ops-api-key"
+   ],
+   "optionalAuth": [],
+   "permissions": [
+    "MANAGE_SIGNING_IDENTITIES"
+   ],
+   "rateLimitBuckets": [
+    "ops_admin"
+   ],
+   "ipAllowlist": true,
+   "planeGates": [
+    "opsPlaneGate"
+   ],
+   "mfaStepUp": "all mutations",
+   "exceptions": []
+  },
+  "POST /signing-identities/:id/api-key": {
+   "access": "authenticated",
+   "auth": [
+    "ops-api-key"
+   ],
+   "optionalAuth": [],
+   "permissions": [
+    "MANAGE_SIGNING_IDENTITIES"
+   ],
+   "rateLimitBuckets": [
+    "ops_admin"
+   ],
+   "ipAllowlist": true,
+   "planeGates": [
+    "opsPlaneGate"
+   ],
+   "mfaStepUp": "all mutations",
+   "exceptions": []
+  },
+  "DELETE /signing-identities/:id/api-key": {
+   "access": "authenticated",
+   "auth": [
+    "ops-api-key"
+   ],
+   "optionalAuth": [],
+   "permissions": [
+    "MANAGE_SIGNING_IDENTITIES"
+   ],
+   "rateLimitBuckets": [
+    "ops_admin"
+   ],
+   "ipAllowlist": true,
+   "planeGates": [
+    "opsPlaneGate"
+   ],
+   "mfaStepUp": "all mutations",
+   "exceptions": []
+  },
+  "GET /audit-store/events": {
+   "access": "authenticated",
+   "auth": [
+    "ops-api-key"
+   ],
+   "optionalAuth": [],
+   "permissions": [
+    "READ_AUDIT"
+   ],
+   "rateLimitBuckets": [
+    "ops_admin"
+   ],
+   "ipAllowlist": true,
+   "planeGates": [
+    "opsPlaneGate"
+   ],
+   "mfaStepUp": "all mutations",
+   "exceptions": []
+  },
+  "GET /audit-store/events/:eventId": {
+   "access": "authenticated",
+   "auth": [
+    "ops-api-key"
+   ],
+   "optionalAuth": [],
+   "permissions": [
+    "READ_AUDIT"
+   ],
+   "rateLimitBuckets": [
+    "ops_admin"
+   ],
+   "ipAllowlist": true,
+   "planeGates": [
+    "opsPlaneGate"
+   ],
+   "mfaStepUp": "all mutations",
+   "exceptions": []
+  },
+  "GET /audit-store/correlate/:requestId": {
+   "access": "authenticated",
+   "auth": [
+    "ops-api-key"
+   ],
+   "optionalAuth": [],
+   "permissions": [
+    "READ_AUDIT"
+   ],
+   "rateLimitBuckets": [
+    "ops_admin"
+   ],
+   "ipAllowlist": true,
+   "planeGates": [
+    "opsPlaneGate"
+   ],
+   "mfaStepUp": "all mutations",
+   "exceptions": []
+  },
+  "GET /audit-store/artifact/:artifactId/timeline": {
+   "access": "authenticated",
+   "auth": [
+    "ops-api-key"
+   ],
+   "optionalAuth": [],
+   "permissions": [
+    "READ_AUDIT"
+   ],
+   "rateLimitBuckets": [
+    "ops_admin"
+   ],
+   "ipAllowlist": true,
+   "planeGates": [
+    "opsPlaneGate"
+   ],
+   "mfaStepUp": "all mutations",
+   "exceptions": []
+  },
+  "GET /audit-store/actor/:actorId/activity": {
+   "access": "authenticated",
+   "auth": [
+    "ops-api-key"
+   ],
+   "optionalAuth": [],
+   "permissions": [
+    "READ_AUDIT"
+   ],
+   "rateLimitBuckets": [
+    "ops_admin"
+   ],
+   "ipAllowlist": true,
+   "planeGates": [
+    "opsPlaneGate"
+   ],
+   "mfaStepUp": "all mutations",
+   "exceptions": []
+  },
+  "GET /audit-store/stats": {
+   "access": "authenticated",
+   "auth": [
+    "ops-api-key"
+   ],
+   "optionalAuth": [],
+   "permissions": [
+    "READ_AUDIT"
+   ],
+   "rateLimitBuckets": [
+    "ops_admin"
+   ],
+   "ipAllowlist": true,
+   "planeGates": [
+    "opsPlaneGate"
+   ],
+   "mfaStepUp": "all mutations",
+   "exceptions": []
+  },
+  "GET /audit-store/ingestion-rate": {
+   "access": "authenticated",
+   "auth": [
+    "ops-api-key"
+   ],
+   "optionalAuth": [],
+   "permissions": [
+    "READ_AUDIT"
+   ],
+   "rateLimitBuckets": [
+    "ops_admin"
+   ],
+   "ipAllowlist": true,
+   "planeGates": [
+    "opsPlaneGate"
+   ],
+   "mfaStepUp": "all mutations",
+   "exceptions": []
+  },
+  "GET /audit-store/top-events": {
+   "access": "authenticated",
+   "auth": [
+    "ops-api-key"
+   ],
+   "optionalAuth": [],
+   "permissions": [
+    "READ_AUDIT"
+   ],
+   "rateLimitBuckets": [
+    "ops_admin"
+   ],
+   "ipAllowlist": true,
+   "planeGates": [
+    "opsPlaneGate"
+   ],
+   "mfaStepUp": "all mutations",
+   "exceptions": []
+  },
+  "GET /audit-store/retention/policies": {
+   "access": "authenticated",
+   "auth": [
+    "ops-api-key"
+   ],
+   "optionalAuth": [],
+   "permissions": [
+    "READ_AUDIT"
+   ],
+   "rateLimitBuckets": [
+    "ops_admin"
+   ],
+   "ipAllowlist": true,
+   "planeGates": [
+    "opsPlaneGate"
+   ],
+   "mfaStepUp": "all mutations",
+   "exceptions": []
+  },
+  "POST /audit-store/retention/policies": {
+   "access": "authenticated",
+   "auth": [
+    "ops-api-key"
+   ],
+   "optionalAuth": [],
+   "permissions": [
+    "MANAGE_RETENTION"
+   ],
+   "rateLimitBuckets": [
+    "ops_admin"
+   ],
+   "ipAllowlist": true,
+   "planeGates": [
+    "opsPlaneGate"
+   ],
+   "mfaStepUp": "all mutations",
+   "exceptions": []
+  },
+  "POST /audit-store/retention/apply": {
+   "access": "authenticated",
+   "auth": [
+    "ops-api-key"
+   ],
+   "optionalAuth": [],
+   "permissions": [
+    "MANAGE_RETENTION"
+   ],
+   "rateLimitBuckets": [
+    "ops_admin"
+   ],
+   "ipAllowlist": true,
+   "planeGates": [
+    "opsPlaneGate"
+   ],
+   "mfaStepUp": "all mutations",
+   "exceptions": []
+  },
+  "GET /audit-store/retention/runs": {
+   "access": "authenticated",
+   "auth": [
+    "ops-api-key"
+   ],
+   "optionalAuth": [],
+   "permissions": [
+    "READ_AUDIT"
+   ],
+   "rateLimitBuckets": [
+    "ops_admin"
+   ],
+   "ipAllowlist": true,
+   "planeGates": [
+    "opsPlaneGate"
+   ],
+   "mfaStepUp": "all mutations",
+   "exceptions": []
+  },
+  "GET /audit-store/retention/holds": {
+   "access": "authenticated",
+   "auth": [
+    "ops-api-key"
+   ],
+   "optionalAuth": [],
+   "permissions": [
+    "READ_AUDIT"
+   ],
+   "rateLimitBuckets": [
+    "ops_admin"
+   ],
+   "ipAllowlist": true,
+   "planeGates": [
+    "opsPlaneGate"
+   ],
+   "mfaStepUp": "all mutations",
+   "exceptions": []
+  },
+  "POST /audit-store/retention/holds": {
+   "access": "authenticated",
+   "auth": [
+    "ops-api-key"
+   ],
+   "optionalAuth": [],
+   "permissions": [
+    "MANAGE_RETENTION"
+   ],
+   "rateLimitBuckets": [
+    "ops_admin"
+   ],
+   "ipAllowlist": true,
+   "planeGates": [
+    "opsPlaneGate"
+   ],
+   "mfaStepUp": "all mutations",
+   "exceptions": []
+  },
+  "DELETE /audit-store/retention/holds/:holdName": {
+   "access": "authenticated",
+   "auth": [
+    "ops-api-key"
+   ],
+   "optionalAuth": [],
+   "permissions": [
+    "MANAGE_RETENTION"
+   ],
+   "rateLimitBuckets": [
+    "ops_admin"
+   ],
+   "ipAllowlist": true,
+   "planeGates": [
+    "opsPlaneGate"
+   ],
+   "mfaStepUp": "all mutations",
+   "exceptions": []
+  },
+  "GET /compliance/frameworks": {
+   "access": "authenticated",
+   "auth": [
+    "ops-api-key"
+   ],
+   "optionalAuth": [],
+   "permissions": [
+    "READ_COMPLIANCE"
+   ],
+   "rateLimitBuckets": [
+    "ops_admin"
+   ],
+   "ipAllowlist": true,
+   "planeGates": [
+    "opsPlaneGate"
+   ],
+   "mfaStepUp": "all mutations",
+   "exceptions": []
+  },
+  "GET /compliance/controls/:frameworkId": {
+   "access": "authenticated",
+   "auth": [
+    "ops-api-key"
+   ],
+   "optionalAuth": [],
+   "permissions": [
+    "READ_COMPLIANCE"
+   ],
+   "rateLimitBuckets": [
+    "ops_admin"
+   ],
+   "ipAllowlist": true,
+   "planeGates": [
+    "opsPlaneGate"
+   ],
+   "mfaStepUp": "all mutations",
+   "exceptions": []
+  },
+  "POST /compliance/report/generate": {
+   "access": "authenticated",
+   "auth": [
+    "ops-api-key"
+   ],
+   "optionalAuth": [],
+   "permissions": [
+    "GENERATE_REPORT"
+   ],
+   "rateLimitBuckets": [
+    "ops_admin"
+   ],
+   "ipAllowlist": true,
+   "planeGates": [
+    "opsPlaneGate"
+   ],
+   "mfaStepUp": "all mutations",
+   "exceptions": []
+  },
+  "GET /compliance/reports": {
+   "access": "authenticated",
+   "auth": [
+    "ops-api-key"
+   ],
+   "optionalAuth": [],
+   "permissions": [
+    "READ_COMPLIANCE"
+   ],
+   "rateLimitBuckets": [
+    "ops_admin"
+   ],
+   "ipAllowlist": true,
+   "planeGates": [
+    "opsPlaneGate"
+   ],
+   "mfaStepUp": "all mutations",
+   "exceptions": []
+  },
+  "GET /compliance/report/:id": {
+   "access": "authenticated",
+   "auth": [
+    "ops-api-key"
+   ],
+   "optionalAuth": [],
+   "permissions": [
+    "READ_COMPLIANCE"
+   ],
+   "rateLimitBuckets": [
+    "ops_admin"
+   ],
+   "ipAllowlist": true,
+   "planeGates": [
+    "opsPlaneGate"
+   ],
+   "mfaStepUp": "all mutations",
+   "exceptions": []
+  },
+  "GET /compliance/report/:id/assessments": {
+   "access": "authenticated",
+   "auth": [
+    "ops-api-key"
+   ],
+   "optionalAuth": [],
+   "permissions": [
+    "READ_COMPLIANCE"
+   ],
+   "rateLimitBuckets": [
+    "ops_admin"
+   ],
+   "ipAllowlist": true,
+   "planeGates": [
+    "opsPlaneGate"
+   ],
+   "mfaStepUp": "all mutations",
+   "exceptions": []
+  },
+  "POST /compliance/report/verify": {
+   "access": "authenticated",
+   "auth": [
+    "ops-api-key"
+   ],
+   "optionalAuth": [],
+   "permissions": [
+    "READ_COMPLIANCE"
+   ],
+   "rateLimitBuckets": [
+    "ops_admin"
+   ],
+   "ipAllowlist": true,
+   "planeGates": [
+    "opsPlaneGate"
+   ],
+   "mfaStepUp": "all mutations",
+   "exceptions": []
+  },
+  "GET /compliance/report/:id/download": {
+   "access": "authenticated",
+   "auth": [
+    "ops-api-key"
+   ],
+   "optionalAuth": [],
+   "permissions": [
+    "READ_COMPLIANCE"
+   ],
+   "rateLimitBuckets": [
+    "ops_admin"
+   ],
+   "ipAllowlist": true,
+   "planeGates": [
+    "opsPlaneGate"
+   ],
+   "mfaStepUp": "all mutations",
+   "exceptions": []
+  },
+  "GET /compliance/health": {
+   "access": "authenticated",
+   "auth": [
+    "ops-api-key"
+   ],
+   "optionalAuth": [],
+   "permissions": [
+    "READ_COMPLIANCE"
+   ],
+   "rateLimitBuckets": [
+    "ops_admin"
+   ],
+   "ipAllowlist": true,
+   "planeGates": [
+    "opsPlaneGate"
+   ],
+   "mfaStepUp": "all mutations",
+   "exceptions": []
+  },
+  "GET /alerts/stats": {
+   "access": "authenticated",
+   "auth": [
+    "ops-api-key"
+   ],
+   "optionalAuth": [],
+   "permissions": [
+    "READ_AUDIT"
+   ],
+   "rateLimitBuckets": [
+    "ops_admin"
+   ],
+   "ipAllowlist": true,
+   "planeGates": [
+    "opsPlaneGate"
+   ],
+   "mfaStepUp": "all mutations",
+   "exceptions": []
+  },
+  "GET /alerts/health": {
+   "access": "authenticated",
+   "auth": [
+    "ops-api-key"
+   ],
+   "optionalAuth": [],
+   "permissions": [
+    "READ_AUDIT"
+   ],
+   "rateLimitBuckets": [
+    "ops_admin"
+   ],
+   "ipAllowlist": true,
+   "planeGates": [
+    "opsPlaneGate"
+   ],
+   "mfaStepUp": "all mutations",
+   "exceptions": []
+  },
+  "GET /alerts/counters": {
+   "access": "authenticated",
+   "auth": [
+    "ops-api-key"
+   ],
+   "optionalAuth": [],
+   "permissions": [
+    "READ_AUDIT"
+   ],
+   "rateLimitBuckets": [
+    "ops_admin"
+   ],
+   "ipAllowlist": true,
+   "planeGates": [
+    "opsPlaneGate"
+   ],
+   "mfaStepUp": "all mutations",
+   "exceptions": []
+  },
+  "POST /alerts/test/:channel": {
+   "access": "authenticated",
+   "auth": [
+    "ops-api-key"
+   ],
+   "optionalAuth": [],
+   "permissions": [
+    "READ_AUDIT",
+    "MANAGE_ALERTS"
+   ],
+   "rateLimitBuckets": [
+    "ops_admin"
+   ],
+   "ipAllowlist": true,
+   "planeGates": [
+    "opsPlaneGate"
+   ],
+   "mfaStepUp": "all mutations",
+   "exceptions": []
+  },
+  "GET /alerts/stream": {
+   "access": "authenticated",
+   "auth": [
+    "ops-api-key"
+   ],
+   "optionalAuth": [],
+   "permissions": [
+    "READ_AUDIT"
+   ],
+   "rateLimitBuckets": [
+    "ops_admin"
+   ],
+   "ipAllowlist": true,
+   "planeGates": [
+    "opsPlaneGate"
+   ],
+   "mfaStepUp": "all mutations",
+   "exceptions": []
+  },
+  "GET /alerts": {
+   "access": "authenticated",
+   "auth": [
+    "ops-api-key"
+   ],
+   "optionalAuth": [],
+   "permissions": [
+    "READ_AUDIT"
+   ],
+   "rateLimitBuckets": [
+    "ops_admin"
+   ],
+   "ipAllowlist": true,
+   "planeGates": [
+    "opsPlaneGate"
+   ],
+   "mfaStepUp": "all mutations",
+   "exceptions": []
+  },
+  "POST /alerts": {
+   "access": "authenticated",
+   "auth": [
+    "ops-api-key"
+   ],
+   "optionalAuth": [],
+   "permissions": [
+    "READ_AUDIT",
+    "MANAGE_ALERTS"
+   ],
+   "rateLimitBuckets": [
+    "ops_admin"
+   ],
+   "ipAllowlist": true,
+   "planeGates": [
+    "opsPlaneGate"
+   ],
+   "mfaStepUp": "all mutations",
+   "exceptions": []
+  },
+  "GET /alerts/:id": {
+   "access": "authenticated",
+   "auth": [
+    "ops-api-key"
+   ],
+   "optionalAuth": [],
+   "permissions": [
+    "READ_AUDIT"
+   ],
+   "rateLimitBuckets": [
+    "ops_admin"
+   ],
+   "ipAllowlist": true,
+   "planeGates": [
+    "opsPlaneGate"
+   ],
+   "mfaStepUp": "all mutations",
+   "exceptions": []
+  },
+  "POST /alerts/:id/acknowledge": {
+   "access": "authenticated",
+   "auth": [
+    "ops-api-key"
+   ],
+   "optionalAuth": [],
+   "permissions": [
+    "READ_AUDIT",
+    "MANAGE_ALERTS"
+   ],
+   "rateLimitBuckets": [
+    "ops_admin"
+   ],
+   "ipAllowlist": true,
+   "planeGates": [
+    "opsPlaneGate"
+   ],
+   "mfaStepUp": "all mutations",
+   "exceptions": []
+  },
+  "POST /alerts/:id/resolve": {
+   "access": "authenticated",
+   "auth": [
+    "ops-api-key"
+   ],
+   "optionalAuth": [],
+   "permissions": [
+    "READ_AUDIT",
+    "MANAGE_ALERTS"
+   ],
+   "rateLimitBuckets": [
+    "ops_admin"
+   ],
+   "ipAllowlist": true,
+   "planeGates": [
+    "opsPlaneGate"
+   ],
+   "mfaStepUp": "all mutations",
+   "exceptions": []
+  },
+  "POST /alerts/:id/suppress": {
+   "access": "authenticated",
+   "auth": [
+    "ops-api-key"
+   ],
+   "optionalAuth": [],
+   "permissions": [
+    "READ_AUDIT",
+    "MANAGE_ALERTS"
+   ],
+   "rateLimitBuckets": [
+    "ops_admin"
+   ],
+   "ipAllowlist": true,
+   "planeGates": [
+    "opsPlaneGate"
+   ],
+   "mfaStepUp": "all mutations",
+   "exceptions": []
+  },
+  "POST /alerts/:id/false-positive": {
+   "access": "authenticated",
+   "auth": [
+    "ops-api-key"
+   ],
+   "optionalAuth": [],
+   "permissions": [
+    "READ_AUDIT",
+    "MANAGE_ALERTS"
+   ],
+   "rateLimitBuckets": [
+    "ops_admin"
+   ],
+   "ipAllowlist": true,
+   "planeGates": [
+    "opsPlaneGate"
+   ],
+   "mfaStepUp": "all mutations",
+   "exceptions": []
+  },
+  "GET /alerts/:id/history": {
+   "access": "authenticated",
+   "auth": [
+    "ops-api-key"
+   ],
+   "optionalAuth": [],
+   "permissions": [
+    "READ_AUDIT"
+   ],
+   "rateLimitBuckets": [
+    "ops_admin"
+   ],
+   "ipAllowlist": true,
+   "planeGates": [
+    "opsPlaneGate"
+   ],
+   "mfaStepUp": "all mutations",
+   "exceptions": []
+  },
+  "GET /alerts/:id/exposure-notification": {
+   "access": "authenticated",
+   "auth": [
+    "ops-api-key"
+   ],
+   "optionalAuth": [],
+   "permissions": [
+    "READ_AUDIT"
+   ],
+   "rateLimitBuckets": [
+    "ops_admin"
+   ],
+   "ipAllowlist": true,
+   "planeGates": [
+    "opsPlaneGate"
+   ],
+   "mfaStepUp": "all mutations",
+   "exceptions": []
+  },
+  "GET /consent/health": {
+   "access": "authenticated",
+   "auth": [
+    "ops-api-key"
+   ],
+   "optionalAuth": [],
+   "permissions": [
+    "MANAGE_CONSENT"
+   ],
+   "rateLimitBuckets": [
+    "ops_admin"
+   ],
+   "ipAllowlist": true,
+   "planeGates": [
+    "opsPlaneGate"
+   ],
+   "mfaStepUp": "all mutations",
+   "exceptions": []
+  },
+  "GET /consent/revoked": {
+   "access": "authenticated",
+   "auth": [
+    "ops-api-key"
+   ],
+   "optionalAuth": [],
+   "permissions": [
+    "MANAGE_CONSENT"
+   ],
+   "rateLimitBuckets": [
+    "ops_admin"
+   ],
+   "ipAllowlist": true,
+   "planeGates": [
+    "opsPlaneGate"
+   ],
+   "mfaStepUp": "all mutations",
+   "exceptions": []
+  },
+  "POST /consent": {
+   "access": "authenticated",
+   "auth": [
+    "ops-api-key"
+   ],
+   "optionalAuth": [],
+   "permissions": [
+    "MANAGE_CONSENT"
+   ],
+   "rateLimitBuckets": [
+    "ops_admin"
+   ],
+   "ipAllowlist": true,
+   "planeGates": [
+    "opsPlaneGate"
+   ],
+   "mfaStepUp": "all mutations",
+   "exceptions": []
+  },
+  "GET /consent": {
+   "access": "authenticated",
+   "auth": [
+    "ops-api-key"
+   ],
+   "optionalAuth": [],
+   "permissions": [
+    "MANAGE_CONSENT"
+   ],
+   "rateLimitBuckets": [
+    "ops_admin"
+   ],
+   "ipAllowlist": true,
+   "planeGates": [
+    "opsPlaneGate"
+   ],
+   "mfaStepUp": "all mutations",
+   "exceptions": []
+  },
+  "GET /consent/:id": {
+   "access": "authenticated",
+   "auth": [
+    "ops-api-key"
+   ],
+   "optionalAuth": [],
+   "permissions": [
+    "MANAGE_CONSENT"
+   ],
+   "rateLimitBuckets": [
+    "ops_admin"
+   ],
+   "ipAllowlist": true,
+   "planeGates": [
+    "opsPlaneGate"
+   ],
+   "mfaStepUp": "all mutations",
+   "exceptions": []
+  },
+  "POST /consent/:id/revoke": {
+   "access": "authenticated",
+   "auth": [
+    "ops-api-key"
+   ],
+   "optionalAuth": [],
+   "permissions": [
+    "MANAGE_CONSENT"
+   ],
+   "rateLimitBuckets": [
+    "ops_admin"
+   ],
+   "ipAllowlist": true,
+   "planeGates": [
+    "opsPlaneGate"
+   ],
+   "mfaStepUp": "all mutations",
+   "exceptions": []
+  },
+  "POST /consent/:id/suspend": {
+   "access": "authenticated",
+   "auth": [
+    "ops-api-key"
+   ],
+   "optionalAuth": [],
+   "permissions": [
+    "MANAGE_CONSENT"
+   ],
+   "rateLimitBuckets": [
+    "ops_admin"
+   ],
+   "ipAllowlist": true,
+   "planeGates": [
+    "opsPlaneGate"
+   ],
+   "mfaStepUp": "all mutations",
+   "exceptions": []
+  },
+  "POST /consent/:id/resume": {
+   "access": "authenticated",
+   "auth": [
+    "ops-api-key"
+   ],
+   "optionalAuth": [],
+   "permissions": [
+    "MANAGE_CONSENT"
+   ],
+   "rateLimitBuckets": [
+    "ops_admin"
+   ],
+   "ipAllowlist": true,
+   "planeGates": [
+    "opsPlaneGate"
+   ],
+   "mfaStepUp": "all mutations",
+   "exceptions": []
+  },
+  "POST /consent/actor/:actorId/revoke": {
+   "access": "authenticated",
+   "auth": [
+    "ops-api-key"
+   ],
+   "optionalAuth": [],
+   "permissions": [
+    "MANAGE_CONSENT"
+   ],
+   "rateLimitBuckets": [
+    "ops_admin"
+   ],
+   "ipAllowlist": true,
+   "planeGates": [
+    "opsPlaneGate"
+   ],
+   "mfaStepUp": "all mutations",
+   "exceptions": []
+  },
+  "DELETE /consent/actor/:actorId": {
+   "access": "authenticated",
+   "auth": [
+    "ops-api-key"
+   ],
+   "optionalAuth": [],
+   "permissions": [
+    "MANAGE_CONSENT"
+   ],
+   "rateLimitBuckets": [
+    "ops_admin"
+   ],
+   "ipAllowlist": true,
+   "planeGates": [
+    "opsPlaneGate"
+   ],
+   "mfaStepUp": "all mutations",
+   "exceptions": []
+  },
+  "GET /consent/:id/audit": {
+   "access": "authenticated",
+   "auth": [
+    "ops-api-key"
+   ],
+   "optionalAuth": [],
+   "permissions": [
+    "MANAGE_CONSENT"
+   ],
+   "rateLimitBuckets": [
+    "ops_admin"
+   ],
+   "ipAllowlist": true,
+   "planeGates": [
+    "opsPlaneGate"
+   ],
+   "mfaStepUp": "all mutations",
+   "exceptions": []
+  },
+  "GET /consent/:id/status": {
+   "access": "authenticated",
+   "auth": [
+    "ops-api-key"
+   ],
+   "optionalAuth": [],
+   "permissions": [
+    "MANAGE_CONSENT"
+   ],
+   "rateLimitBuckets": [
+    "ops_admin"
+   ],
+   "ipAllowlist": true,
+   "planeGates": [
+    "opsPlaneGate"
+   ],
+   "mfaStepUp": "all mutations",
+   "exceptions": []
+  },
+  "GET /consent/:id/history": {
+   "access": "authenticated",
+   "auth": [
+    "ops-api-key"
+   ],
+   "optionalAuth": [],
+   "permissions": [
+    "MANAGE_CONSENT"
+   ],
+   "rateLimitBuckets": [
+    "ops_admin"
+   ],
+   "ipAllowlist": true,
+   "planeGates": [
+    "opsPlaneGate"
+   ],
+   "mfaStepUp": "all mutations",
+   "exceptions": []
+  },
+  "POST /consent/verify": {
+   "access": "authenticated",
+   "auth": [
+    "ops-api-key"
+   ],
+   "optionalAuth": [],
+   "permissions": [
+    "MANAGE_CONSENT"
+   ],
+   "rateLimitBuckets": [
+    "ops_admin"
+   ],
+   "ipAllowlist": true,
+   "planeGates": [
+    "opsPlaneGate"
+   ],
+   "mfaStepUp": "all mutations",
+   "exceptions": []
+  },
+  "GET /tenant-portal/login [portal]": {
+   "access": "public",
+   "auth": [],
+   "optionalAuth": [],
+   "permissions": [],
+   "rateLimitBuckets": [
+    "tenant_portal"
+   ],
+   "ipAllowlist": false,
+   "planeGates": [],
+   "mfaStepUp": null,
+   "exceptions": []
+  },
+  "GET /tenant-portal/callback [portal]": {
+   "access": "public",
+   "auth": [],
+   "optionalAuth": [],
+   "permissions": [],
+   "rateLimitBuckets": [
+    "tenant_portal"
+   ],
+   "ipAllowlist": false,
+   "planeGates": [],
+   "mfaStepUp": null,
+   "exceptions": [
+    "portal-login"
+   ]
+  },
+  "GET /tenant-portal/dev-login [portal]": {
+   "access": "public",
+   "auth": [],
+   "optionalAuth": [],
+   "permissions": [],
+   "rateLimitBuckets": [
+    "tenant_portal"
+   ],
+   "ipAllowlist": false,
+   "planeGates": [],
+   "mfaStepUp": null,
+   "exceptions": [
+    "portal-login"
+   ]
+  },
+  "POST /tenant-portal/logout [portal]": {
+   "access": "authenticated",
+   "auth": [
+    "portal-session"
+   ],
+   "optionalAuth": [],
+   "permissions": [],
+   "rateLimitBuckets": [
+    "tenant_portal"
+   ],
+   "ipAllowlist": false,
+   "planeGates": [],
+   "mfaStepUp": null,
+   "exceptions": []
+  },
+  "GET /tenant-portal/api/me [portal]": {
+   "access": "authenticated",
+   "auth": [
+    "portal-session"
+   ],
+   "optionalAuth": [],
+   "permissions": [
+    "READ_TENANT_IDENTITY"
+   ],
+   "rateLimitBuckets": [
+    "tenant_portal"
+   ],
+   "ipAllowlist": false,
+   "planeGates": [],
+   "mfaStepUp": null,
+   "exceptions": []
+  },
+  "GET /tenant-portal/api/keys [portal]": {
+   "access": "authenticated",
+   "auth": [
+    "portal-session"
+   ],
+   "optionalAuth": [],
+   "permissions": [
+    "READ_TENANT_KEYS"
+   ],
+   "rateLimitBuckets": [
+    "tenant_portal"
+   ],
+   "ipAllowlist": false,
+   "planeGates": [],
+   "mfaStepUp": null,
+   "exceptions": []
+  },
+  "GET /tenant-portal/api/consent [portal]": {
+   "access": "authenticated",
+   "auth": [
+    "portal-session"
+   ],
+   "optionalAuth": [],
+   "permissions": [
+    "READ_TENANT_CONSENT"
+   ],
+   "rateLimitBuckets": [
+    "tenant_portal"
+   ],
+   "ipAllowlist": false,
+   "planeGates": [],
+   "mfaStepUp": null,
+   "exceptions": []
+  },
+  "GET /tenant-portal/api/usage [portal]": {
+   "access": "authenticated",
+   "auth": [
+    "portal-session"
+   ],
+   "optionalAuth": [],
+   "permissions": [
+    "READ_TENANT_USAGE"
+   ],
+   "rateLimitBuckets": [
+    "tenant_portal"
+   ],
+   "ipAllowlist": false,
+   "planeGates": [],
+   "mfaStepUp": null,
+   "exceptions": []
+  },
+  "GET /tenant-portal/api/usage/export [portal]": {
+   "access": "authenticated",
+   "auth": [
+    "portal-session"
+   ],
+   "optionalAuth": [],
+   "permissions": [
+    "READ_TENANT_USAGE"
+   ],
+   "rateLimitBuckets": [
+    "tenant_portal"
+   ],
+   "ipAllowlist": false,
+   "planeGates": [],
+   "mfaStepUp": null,
+   "exceptions": []
+  },
+  "GET /auth/saml/login": {
+   "access": "public",
+   "auth": [],
+   "optionalAuth": [],
+   "permissions": [],
+   "rateLimitBuckets": [
+    "public_verify"
+   ],
+   "ipAllowlist": false,
+   "planeGates": [],
+   "mfaStepUp": null,
+   "exceptions": []
+  },
+  "POST /auth/saml/acs": {
+   "access": "public",
+   "auth": [],
+   "optionalAuth": [],
+   "permissions": [],
+   "rateLimitBuckets": [
+    "public_verify"
+   ],
+   "ipAllowlist": false,
+   "planeGates": [],
+   "mfaStepUp": null,
+   "exceptions": []
+  },
+  "GET /auth/saml/metadata": {
+   "access": "public",
+   "auth": [],
+   "optionalAuth": [],
+   "permissions": [],
+   "rateLimitBuckets": [
+    "public_verify"
+   ],
+   "ipAllowlist": false,
+   "planeGates": [],
+   "mfaStepUp": null,
+   "exceptions": []
+  },
+  "POST /auth/ldap/login": {
+   "access": "public",
+   "auth": [],
+   "optionalAuth": [],
+   "permissions": [],
+   "rateLimitBuckets": [
+    "public_verify"
+   ],
+   "ipAllowlist": false,
+   "planeGates": [],
+   "mfaStepUp": null,
+   "exceptions": []
+  },
+  "POST /v1/webhooks": {
+   "access": "authenticated",
+   "auth": [
+    "ops-api-key"
+   ],
+   "optionalAuth": [],
+   "permissions": [
+    "MANAGE_WEBHOOKS"
+   ],
+   "rateLimitBuckets": [
+    "ops_admin",
+    "webhooks_admin"
+   ],
+   "ipAllowlist": true,
+   "planeGates": [
+    "opsPlaneGate"
+   ],
+   "mfaStepUp": "all mutations",
+   "exceptions": []
+  },
+  "GET /v1/webhooks": {
+   "access": "authenticated",
+   "auth": [
+    "ops-api-key"
+   ],
+   "optionalAuth": [],
+   "permissions": [
+    "READ_WEBHOOKS"
+   ],
+   "rateLimitBuckets": [
+    "ops_admin",
+    "webhooks_admin"
+   ],
+   "ipAllowlist": true,
+   "planeGates": [
+    "opsPlaneGate"
+   ],
+   "mfaStepUp": "all mutations",
+   "exceptions": []
+  },
+  "GET /v1/webhooks/metrics": {
+   "access": "authenticated",
+   "auth": [
+    "ops-api-key"
+   ],
+   "optionalAuth": [],
+   "permissions": [
+    "READ_WEBHOOKS"
+   ],
+   "rateLimitBuckets": [
+    "ops_admin",
+    "webhooks_admin"
+   ],
+   "ipAllowlist": true,
+   "planeGates": [
+    "opsPlaneGate"
+   ],
+   "mfaStepUp": "all mutations",
+   "exceptions": []
+  },
+  "GET /v1/webhooks/:id": {
+   "access": "authenticated",
+   "auth": [
+    "ops-api-key"
+   ],
+   "optionalAuth": [],
+   "permissions": [
+    "READ_WEBHOOKS"
+   ],
+   "rateLimitBuckets": [
+    "ops_admin",
+    "webhooks_admin"
+   ],
+   "ipAllowlist": true,
+   "planeGates": [
+    "opsPlaneGate"
+   ],
+   "mfaStepUp": "all mutations",
+   "exceptions": []
+  },
+  "PATCH /v1/webhooks/:id": {
+   "access": "authenticated",
+   "auth": [
+    "ops-api-key"
+   ],
+   "optionalAuth": [],
+   "permissions": [
+    "MANAGE_WEBHOOKS"
+   ],
+   "rateLimitBuckets": [
+    "ops_admin",
+    "webhooks_admin"
+   ],
+   "ipAllowlist": true,
+   "planeGates": [
+    "opsPlaneGate"
+   ],
+   "mfaStepUp": "all mutations",
+   "exceptions": []
+  },
+  "DELETE /v1/webhooks/:id": {
+   "access": "authenticated",
+   "auth": [
+    "ops-api-key"
+   ],
+   "optionalAuth": [],
+   "permissions": [
+    "MANAGE_WEBHOOKS"
+   ],
+   "rateLimitBuckets": [
+    "ops_admin",
+    "webhooks_admin"
+   ],
+   "ipAllowlist": true,
+   "planeGates": [
+    "opsPlaneGate"
+   ],
+   "mfaStepUp": "all mutations",
+   "exceptions": []
+  },
+  "POST /v1/webhooks/:id/test": {
+   "access": "authenticated",
+   "auth": [
+    "ops-api-key"
+   ],
+   "optionalAuth": [],
+   "permissions": [
+    "MANAGE_WEBHOOKS"
+   ],
+   "rateLimitBuckets": [
+    "ops_admin",
+    "webhooks_admin"
+   ],
+   "ipAllowlist": true,
+   "planeGates": [
+    "opsPlaneGate"
+   ],
+   "mfaStepUp": "all mutations",
+   "exceptions": []
+  },
+  "GET /v1/webhooks/:id/deliveries": {
+   "access": "authenticated",
+   "auth": [
+    "ops-api-key"
+   ],
+   "optionalAuth": [],
+   "permissions": [
+    "READ_WEBHOOKS"
+   ],
+   "rateLimitBuckets": [
+    "ops_admin",
+    "webhooks_admin"
+   ],
+   "ipAllowlist": true,
+   "planeGates": [
+    "opsPlaneGate"
+   ],
+   "mfaStepUp": "all mutations",
+   "exceptions": []
+  },
+  "GET /v1/prq/stats": {
+   "access": "authenticated",
+   "auth": [
+    "ops-api-key"
+   ],
+   "optionalAuth": [],
+   "permissions": [
+    "READ_RECOVERY_QUEUE"
+   ],
+   "rateLimitBuckets": [
+    "ops_admin"
+   ],
+   "ipAllowlist": true,
+   "planeGates": [
+    "opsPlaneGate"
+   ],
+   "mfaStepUp": "all mutations",
+   "exceptions": []
+  },
+  "GET /v1/prq/dlq": {
+   "access": "authenticated",
+   "auth": [
+    "ops-api-key"
+   ],
+   "optionalAuth": [],
+   "permissions": [
+    "READ_RECOVERY_QUEUE"
+   ],
+   "rateLimitBuckets": [
+    "ops_admin"
+   ],
+   "ipAllowlist": true,
+   "planeGates": [
+    "opsPlaneGate"
+   ],
+   "mfaStepUp": "all mutations",
+   "exceptions": []
+  },
+  "GET /v1/prq/dlq/replay": {
+   "access": "authenticated",
+   "auth": [
+    "ops-api-key"
+   ],
+   "optionalAuth": [],
+   "permissions": [
+    "READ_RECOVERY_QUEUE"
+   ],
+   "rateLimitBuckets": [
+    "ops_admin"
+   ],
+   "ipAllowlist": true,
+   "planeGates": [
+    "opsPlaneGate"
+   ],
+   "mfaStepUp": "all mutations",
+   "exceptions": []
+  },
+  "GET /v1/prq/dlq/:operationId": {
+   "access": "authenticated",
+   "auth": [
+    "ops-api-key"
+   ],
+   "optionalAuth": [],
+   "permissions": [
+    "READ_RECOVERY_QUEUE"
+   ],
+   "rateLimitBuckets": [
+    "ops_admin"
+   ],
+   "ipAllowlist": true,
+   "planeGates": [
+    "opsPlaneGate"
+   ],
+   "mfaStepUp": "all mutations",
+   "exceptions": []
+  },
+  "POST /v1/prq/dlq/replay": {
+   "access": "authenticated",
+   "auth": [
+    "ops-api-key"
+   ],
+   "optionalAuth": [],
+   "permissions": [
+    "MANAGE_RECOVERY_QUEUE"
+   ],
+   "rateLimitBuckets": [
+    "ops_admin"
+   ],
+   "ipAllowlist": true,
+   "planeGates": [
+    "opsPlaneGate"
+   ],
+   "mfaStepUp": "all mutations",
+   "exceptions": []
+  },
+  "DELETE /v1/prq/dlq/:operationId": {
+   "access": "authenticated",
+   "auth": [
+    "ops-api-key"
+   ],
+   "optionalAuth": [],
+   "permissions": [
+    "MANAGE_RECOVERY_QUEUE"
+   ],
+   "rateLimitBuckets": [
+    "ops_admin"
+   ],
+   "ipAllowlist": true,
+   "planeGates": [
+    "opsPlaneGate"
+   ],
+   "mfaStepUp": "all mutations",
+   "exceptions": []
+  },
+  "GET /v1/prq/archived": {
+   "access": "authenticated",
+   "auth": [
+    "ops-api-key"
+   ],
+   "optionalAuth": [],
+   "permissions": [
+    "READ_RECOVERY_QUEUE"
+   ],
+   "rateLimitBuckets": [
+    "ops_admin"
+   ],
+   "ipAllowlist": true,
+   "planeGates": [
+    "opsPlaneGate"
+   ],
+   "mfaStepUp": "all mutations",
+   "exceptions": []
+  },
+  "POST /v1/admin/organizations": {
+   "access": "authenticated",
+   "auth": [
+    "ops-api-key"
+   ],
+   "optionalAuth": [],
+   "permissions": [
+    "MANAGE_USERS"
+   ],
+   "rateLimitBuckets": [
+    "ops_admin"
+   ],
+   "ipAllowlist": true,
+   "planeGates": [
+    "opsPlaneGate"
+   ],
+   "mfaStepUp": "all mutations",
+   "exceptions": []
+  },
+  "GET /v1/admin/organizations": {
+   "access": "authenticated",
+   "auth": [
+    "ops-api-key"
+   ],
+   "optionalAuth": [],
+   "permissions": [
+    "MANAGE_USERS"
+   ],
+   "rateLimitBuckets": [
+    "ops_admin"
+   ],
+   "ipAllowlist": true,
+   "planeGates": [
+    "opsPlaneGate"
+   ],
+   "mfaStepUp": "all mutations",
+   "exceptions": []
+  },
+  "GET /v1/admin/organizations/:orgId": {
+   "access": "authenticated",
+   "auth": [
+    "ops-api-key"
+   ],
+   "optionalAuth": [],
+   "permissions": [
+    "MANAGE_USERS"
+   ],
+   "rateLimitBuckets": [
+    "ops_admin"
+   ],
+   "ipAllowlist": true,
+   "planeGates": [
+    "opsPlaneGate"
+   ],
+   "mfaStepUp": "all mutations",
+   "exceptions": []
+  },
+  "PATCH /v1/admin/organizations/:orgId": {
+   "access": "authenticated",
+   "auth": [
+    "ops-api-key"
+   ],
+   "optionalAuth": [],
+   "permissions": [
+    "MANAGE_USERS"
+   ],
+   "rateLimitBuckets": [
+    "ops_admin"
+   ],
+   "ipAllowlist": true,
+   "planeGates": [
+    "opsPlaneGate"
+   ],
+   "mfaStepUp": "all mutations",
+   "exceptions": []
+  },
+  "POST /v1/admin/organizations/:orgId/tenants/:tenantId": {
+   "access": "authenticated",
+   "auth": [
+    "ops-api-key"
+   ],
+   "optionalAuth": [],
+   "permissions": [
+    "MANAGE_USERS"
+   ],
+   "rateLimitBuckets": [
+    "ops_admin"
+   ],
+   "ipAllowlist": true,
+   "planeGates": [
+    "opsPlaneGate"
+   ],
+   "mfaStepUp": "all mutations",
+   "exceptions": []
+  },
+  "DELETE /v1/admin/organizations/:orgId/tenants/:tenantId": {
+   "access": "authenticated",
+   "auth": [
+    "ops-api-key"
+   ],
+   "optionalAuth": [],
+   "permissions": [
+    "MANAGE_USERS"
+   ],
+   "rateLimitBuckets": [
+    "ops_admin"
+   ],
+   "ipAllowlist": true,
+   "planeGates": [
+    "opsPlaneGate"
+   ],
+   "mfaStepUp": "all mutations",
+   "exceptions": []
+  },
+  "POST /v1/admin/tenants": {
+   "access": "authenticated",
+   "auth": [
+    "ops-api-key"
+   ],
+   "optionalAuth": [],
+   "permissions": [
+    "MANAGE_USERS"
+   ],
+   "rateLimitBuckets": [
+    "ops_admin"
+   ],
+   "ipAllowlist": true,
+   "planeGates": [
+    "opsPlaneGate"
+   ],
+   "mfaStepUp": "all mutations",
+   "exceptions": []
+  },
+  "GET /v1/admin/tenants": {
+   "access": "authenticated",
+   "auth": [
+    "ops-api-key"
+   ],
+   "optionalAuth": [],
+   "permissions": [
+    "MANAGE_USERS"
+   ],
+   "rateLimitBuckets": [
+    "ops_admin"
+   ],
+   "ipAllowlist": true,
+   "planeGates": [
+    "opsPlaneGate"
+   ],
+   "mfaStepUp": "all mutations",
+   "exceptions": []
+  },
+  "GET /v1/admin/tenants/:tenantId": {
+   "access": "authenticated",
+   "auth": [
+    "ops-api-key"
+   ],
+   "optionalAuth": [],
+   "permissions": [
+    "MANAGE_USERS"
+   ],
+   "rateLimitBuckets": [
+    "ops_admin"
+   ],
+   "ipAllowlist": true,
+   "planeGates": [
+    "opsPlaneGate"
+   ],
+   "mfaStepUp": "all mutations",
+   "exceptions": []
+  },
+  "GET /v1/admin/tenants/:tenantId/policy-config": {
+   "access": "authenticated",
+   "auth": [
+    "ops-api-key"
+   ],
+   "optionalAuth": [],
+   "permissions": [
+    "MANAGE_USERS"
+   ],
+   "rateLimitBuckets": [
+    "ops_admin"
+   ],
+   "ipAllowlist": true,
+   "planeGates": [
+    "opsPlaneGate"
+   ],
+   "mfaStepUp": "all mutations",
+   "exceptions": []
+  },
+  "PATCH /v1/admin/tenants/:tenantId": {
+   "access": "authenticated",
+   "auth": [
+    "ops-api-key"
+   ],
+   "optionalAuth": [],
+   "permissions": [
+    "MANAGE_USERS"
+   ],
+   "rateLimitBuckets": [
+    "ops_admin"
+   ],
+   "ipAllowlist": true,
+   "planeGates": [
+    "opsPlaneGate"
+   ],
+   "mfaStepUp": "all mutations",
+   "exceptions": []
+  },
+  "POST /v1/admin/tenants/:tenantId/portal-users/:portalUserId/revoke-sessions": {
+   "access": "authenticated",
+   "auth": [
+    "ops-api-key"
+   ],
+   "optionalAuth": [],
+   "permissions": [
+    "MANAGE_USERS"
+   ],
+   "rateLimitBuckets": [
+    "ops_admin"
+   ],
+   "ipAllowlist": true,
+   "planeGates": [
+    "opsPlaneGate"
+   ],
+   "mfaStepUp": "all mutations",
+   "exceptions": []
+  },
+  "GET /v1/admin/kill-switch": {
+   "access": "authenticated",
+   "auth": [
+    "ops-api-key"
+   ],
+   "optionalAuth": [],
+   "permissions": [
+    "READ_KILL_SWITCH"
+   ],
+   "rateLimitBuckets": [
+    "ops_admin"
+   ],
+   "ipAllowlist": true,
+   "planeGates": [
+    "opsPlaneGate"
+   ],
+   "mfaStepUp": "all mutations",
+   "exceptions": []
+  },
+  "POST /v1/admin/kill-switch/activate": {
+   "access": "authenticated",
+   "auth": [
+    "ops-api-key"
+   ],
+   "optionalAuth": [],
+   "permissions": [
+    "MANAGE_KILL_SWITCH"
+   ],
+   "rateLimitBuckets": [
+    "ops_admin"
+   ],
+   "ipAllowlist": true,
+   "planeGates": [
+    "opsPlaneGate"
+   ],
+   "mfaStepUp": "all mutations",
+   "exceptions": []
+  },
+  "POST /v1/admin/kill-switch/release": {
+   "access": "authenticated",
+   "auth": [
+    "ops-api-key"
+   ],
+   "optionalAuth": [],
+   "permissions": [
+    "MANAGE_KILL_SWITCH"
+   ],
+   "rateLimitBuckets": [
+    "ops_admin"
+   ],
+   "ipAllowlist": true,
+   "planeGates": [
+    "opsPlaneGate"
+   ],
+   "mfaStepUp": "all mutations",
+   "exceptions": []
+  },
+  "GET /v1/admin/providers": {
+   "access": "authenticated",
+   "auth": [
+    "ops-api-key"
+   ],
+   "optionalAuth": [],
+   "permissions": [
+    "READ_PROVIDERS"
+   ],
+   "rateLimitBuckets": [
+    "ops_admin"
+   ],
+   "ipAllowlist": true,
+   "planeGates": [
+    "opsPlaneGate"
+   ],
+   "mfaStepUp": "all mutations",
+   "exceptions": []
+  },
+  "POST /v1/admin/providers/compare": {
+   "access": "authenticated",
+   "auth": [
+    "ops-api-key"
+   ],
+   "optionalAuth": [],
+   "permissions": [
+    "READ_PROVIDERS"
+   ],
+   "rateLimitBuckets": [
+    "ops_admin"
+   ],
+   "ipAllowlist": true,
+   "planeGates": [
+    "opsPlaneGate"
+   ],
+   "mfaStepUp": "all mutations",
+   "exceptions": []
+  },
+  "GET /v1/admin/providers/:id": {
+   "access": "authenticated",
+   "auth": [
+    "ops-api-key"
+   ],
+   "optionalAuth": [],
+   "permissions": [
+    "READ_PROVIDERS"
+   ],
+   "rateLimitBuckets": [
+    "ops_admin"
+   ],
+   "ipAllowlist": true,
+   "planeGates": [
+    "opsPlaneGate"
+   ],
+   "mfaStepUp": "all mutations",
+   "exceptions": []
+  },
+  "POST /v1/admin/providers": {
+   "access": "authenticated",
+   "auth": [
+    "ops-api-key"
+   ],
+   "optionalAuth": [],
+   "permissions": [
+    "MANAGE_PROVIDERS"
+   ],
+   "rateLimitBuckets": [
+    "ops_admin"
+   ],
+   "ipAllowlist": true,
+   "planeGates": [
+    "opsPlaneGate"
+   ],
+   "mfaStepUp": "all mutations",
+   "exceptions": []
+  },
+  "PUT /v1/admin/providers/:id": {
+   "access": "authenticated",
+   "auth": [
+    "ops-api-key"
+   ],
+   "optionalAuth": [],
+   "permissions": [
+    "MANAGE_PROVIDERS"
+   ],
+   "rateLimitBuckets": [
+    "ops_admin"
+   ],
+   "ipAllowlist": true,
+   "planeGates": [
+    "opsPlaneGate"
+   ],
+   "mfaStepUp": "all mutations",
+   "exceptions": []
+  },
+  "POST /v1/admin/providers/:id/disable": {
+   "access": "authenticated",
+   "auth": [
+    "ops-api-key"
+   ],
+   "optionalAuth": [],
+   "permissions": [
+    "MANAGE_PROVIDERS"
+   ],
+   "rateLimitBuckets": [
+    "ops_admin"
+   ],
+   "ipAllowlist": true,
+   "planeGates": [
+    "opsPlaneGate"
+   ],
+   "mfaStepUp": "all mutations",
+   "exceptions": []
+  },
+  "POST /v1/admin/providers/:id/enable": {
+   "access": "authenticated",
+   "auth": [
+    "ops-api-key"
+   ],
+   "optionalAuth": [],
+   "permissions": [
+    "MANAGE_PROVIDERS"
+   ],
+   "rateLimitBuckets": [
+    "ops_admin"
+   ],
+   "ipAllowlist": true,
+   "planeGates": [
+    "opsPlaneGate"
+   ],
+   "mfaStepUp": "all mutations",
+   "exceptions": []
+  },
+  "POST /v1/admin/artifact-revocations": {
+   "access": "authenticated",
+   "auth": [
+    "ops-api-key"
+   ],
+   "optionalAuth": [],
+   "permissions": [
+    "MANAGE_ARTIFACT_REVOCATIONS"
+   ],
+   "rateLimitBuckets": [
+    "ops_admin"
+   ],
+   "ipAllowlist": true,
+   "planeGates": [
+    "opsPlaneGate"
+   ],
+   "mfaStepUp": "all mutations",
+   "exceptions": []
+  },
+  "GET /v1/admin/artifact-revocations/:requestId": {
+   "access": "authenticated",
+   "auth": [
+    "ops-api-key"
+   ],
+   "optionalAuth": [],
+   "permissions": [
+    "MANAGE_ARTIFACT_REVOCATIONS"
+   ],
+   "rateLimitBuckets": [
+    "ops_admin"
+   ],
+   "ipAllowlist": true,
+   "planeGates": [
+    "opsPlaneGate"
+   ],
+   "mfaStepUp": "all mutations",
+   "exceptions": []
+  },
+  "GET /v1/policy/governance": {
+   "access": "authenticated",
+   "auth": [
+    "ops-api-key"
+   ],
+   "optionalAuth": [],
+   "permissions": [
+    "READ_POLICY_GOVERNANCE"
+   ],
+   "rateLimitBuckets": [
+    "ops_admin"
+   ],
+   "ipAllowlist": true,
+   "planeGates": [
+    "opsPlaneGate"
+   ],
+   "mfaStepUp": "all mutations",
+   "exceptions": []
+  },
+  "GET /v1/policy/governance/:id": {
+   "access": "authenticated",
+   "auth": [
+    "ops-api-key"
+   ],
+   "optionalAuth": [],
+   "permissions": [
+    "READ_POLICY_GOVERNANCE"
+   ],
+   "rateLimitBuckets": [
+    "ops_admin"
+   ],
+   "ipAllowlist": true,
+   "planeGates": [
+    "opsPlaneGate"
+   ],
+   "mfaStepUp": "all mutations",
+   "exceptions": []
+  },
+  "GET /v1/policy/governance/:id/evidence": {
+   "access": "authenticated",
+   "auth": [
+    "ops-api-key"
+   ],
+   "optionalAuth": [],
+   "permissions": [
+    "READ_POLICY_GOVERNANCE"
+   ],
+   "rateLimitBuckets": [
+    "ops_admin"
+   ],
+   "ipAllowlist": true,
+   "planeGates": [
+    "opsPlaneGate"
+   ],
+   "mfaStepUp": "all mutations",
+   "exceptions": []
+  },
+  "POST /v1/policy/governance/draft": {
+   "access": "authenticated",
+   "auth": [
+    "ops-api-key"
+   ],
+   "optionalAuth": [],
+   "permissions": [
+    "PROPOSE_POLICY_CHANGE"
+   ],
+   "rateLimitBuckets": [
+    "ops_admin"
+   ],
+   "ipAllowlist": true,
+   "planeGates": [
+    "opsPlaneGate"
+   ],
+   "mfaStepUp": "all mutations",
+   "exceptions": []
+  },
+  "POST /v1/policy/governance/:id/submit": {
+   "access": "authenticated",
+   "auth": [
+    "ops-api-key"
+   ],
+   "optionalAuth": [],
+   "permissions": [
+    "PROPOSE_POLICY_CHANGE"
+   ],
+   "rateLimitBuckets": [
+    "ops_admin"
+   ],
+   "ipAllowlist": true,
+   "planeGates": [
+    "opsPlaneGate"
+   ],
+   "mfaStepUp": "all mutations",
+   "exceptions": []
+  },
+  "POST /v1/policy/governance/:id/review": {
+   "access": "authenticated",
+   "auth": [
+    "ops-api-key"
+   ],
+   "optionalAuth": [],
+   "permissions": [
+    "REVIEW_POLICY_CHANGE"
+   ],
+   "rateLimitBuckets": [
+    "ops_admin"
+   ],
+   "ipAllowlist": true,
+   "planeGates": [
+    "opsPlaneGate"
+   ],
+   "mfaStepUp": "all mutations",
+   "exceptions": []
+  },
+  "POST /v1/policy/governance/:id/approve": {
+   "access": "authenticated",
+   "auth": [
+    "ops-api-key"
+   ],
+   "optionalAuth": [],
+   "permissions": [
+    "APPROVE_POLICY_CHANGE"
+   ],
+   "rateLimitBuckets": [
+    "ops_admin"
+   ],
+   "ipAllowlist": true,
+   "planeGates": [
+    "opsPlaneGate"
+   ],
+   "mfaStepUp": "all mutations",
+   "exceptions": []
+  },
+  "POST /v1/policy/governance/:id/reject": {
+   "access": "authenticated",
+   "auth": [
+    "ops-api-key"
+   ],
+   "optionalAuth": [],
+   "permissions": [
+    "APPROVE_POLICY_CHANGE"
+   ],
+   "rateLimitBuckets": [
+    "ops_admin"
+   ],
+   "ipAllowlist": true,
+   "planeGates": [
+    "opsPlaneGate"
+   ],
+   "mfaStepUp": "all mutations",
+   "exceptions": []
+  },
+  "POST /v1/policy/governance/:id/schedule": {
+   "access": "authenticated",
+   "auth": [
+    "ops-api-key"
+   ],
+   "optionalAuth": [],
+   "permissions": [
+    "APPROVE_POLICY_CHANGE"
+   ],
+   "rateLimitBuckets": [
+    "ops_admin"
+   ],
+   "ipAllowlist": true,
+   "planeGates": [
+    "opsPlaneGate"
+   ],
+   "mfaStepUp": "all mutations",
+   "exceptions": []
+  },
+  "POST /v1/policy/governance/:id/publish": {
+   "access": "authenticated",
+   "auth": [
+    "ops-api-key"
+   ],
+   "optionalAuth": [],
+   "permissions": [
+    "PUBLISH_POLICY_CHANGE"
+   ],
+   "rateLimitBuckets": [
+    "ops_admin"
+   ],
+   "ipAllowlist": true,
+   "planeGates": [
+    "opsPlaneGate"
+   ],
+   "mfaStepUp": "all mutations",
+   "exceptions": []
+  },
+  "POST /v1/policy/governance/:id/withdraw": {
+   "access": "authenticated",
+   "auth": [
+    "ops-api-key"
+   ],
+   "optionalAuth": [],
+   "permissions": [
+    "PROPOSE_POLICY_CHANGE"
+   ],
+   "rateLimitBuckets": [
+    "ops_admin"
+   ],
+   "ipAllowlist": true,
+   "planeGates": [
+    "opsPlaneGate"
+   ],
+   "mfaStepUp": "all mutations",
+   "exceptions": []
+  },
+  "POST /v1/policy/governance/rollback": {
+   "access": "authenticated",
+   "auth": [
+    "ops-api-key"
+   ],
+   "optionalAuth": [],
+   "permissions": [
+    "REQUEST_POLICY_ROLLBACK"
+   ],
+   "rateLimitBuckets": [
+    "ops_admin"
+   ],
+   "ipAllowlist": true,
+   "planeGates": [
+    "opsPlaneGate"
+   ],
+   "mfaStepUp": "all mutations",
+   "exceptions": []
+  },
+  "POST /v1/policy/governance/:id/rollback/approve": {
+   "access": "authenticated",
+   "auth": [
+    "ops-api-key"
+   ],
+   "optionalAuth": [],
+   "permissions": [
+    "APPROVE_POLICY_ROLLBACK"
+   ],
+   "rateLimitBuckets": [
+    "ops_admin"
+   ],
+   "ipAllowlist": true,
+   "planeGates": [
+    "opsPlaneGate"
+   ],
+   "mfaStepUp": "all mutations",
+   "exceptions": []
+  },
+  "POST /v1/policy/governance/emergency/activate": {
+   "access": "authenticated",
+   "auth": [
+    "ops-api-key"
+   ],
+   "optionalAuth": [],
+   "permissions": [
+    "EMERGENCY_POLICY_OVERRIDE"
+   ],
+   "rateLimitBuckets": [
+    "ops_admin"
+   ],
+   "ipAllowlist": true,
+   "planeGates": [
+    "opsPlaneGate"
+   ],
+   "mfaStepUp": "all mutations",
+   "exceptions": []
+  },
+  "POST /v1/policy/governance/emergency/:id/retro-approve": {
+   "access": "authenticated",
+   "auth": [
+    "ops-api-key"
+   ],
+   "optionalAuth": [],
+   "permissions": [
+    "APPROVE_EMERGENCY_POLICY"
+   ],
+   "rateLimitBuckets": [
+    "ops_admin"
+   ],
+   "ipAllowlist": true,
+   "planeGates": [
+    "opsPlaneGate"
+   ],
+   "mfaStepUp": "all mutations",
+   "exceptions": []
+  },
+  "POST /v1/policy/governance/emergency/sweep-expired": {
+   "access": "authenticated",
+   "auth": [
+    "ops-api-key"
+   ],
+   "optionalAuth": [],
+   "permissions": [
+    "EMERGENCY_POLICY_OVERRIDE"
+   ],
+   "rateLimitBuckets": [
+    "ops_admin"
+   ],
+   "ipAllowlist": true,
+   "planeGates": [
+    "opsPlaneGate"
+   ],
+   "mfaStepUp": "all mutations",
+   "exceptions": []
+  },
+  "POST /v1/policy/visual/graph": {
+   "access": "authenticated",
+   "auth": [
+    "ops-api-key"
+   ],
+   "optionalAuth": [],
+   "permissions": [
+    "READ_POLICIES"
+   ],
+   "rateLimitBuckets": [
+    "ops_admin"
+   ],
+   "ipAllowlist": true,
+   "planeGates": [
+    "opsPlaneGate"
+   ],
+   "mfaStepUp": "all mutations",
+   "exceptions": []
+  },
+  "POST /v1/policy/visual/tree": {
+   "access": "authenticated",
+   "auth": [
+    "ops-api-key"
+   ],
+   "optionalAuth": [],
+   "permissions": [
+    "READ_POLICIES"
+   ],
+   "rateLimitBuckets": [
+    "ops_admin"
+   ],
+   "ipAllowlist": true,
+   "planeGates": [
+    "opsPlaneGate"
+   ],
+   "mfaStepUp": "all mutations",
+   "exceptions": []
+  },
+  "POST /v1/policy/visual/deps": {
+   "access": "authenticated",
+   "auth": [
+    "ops-api-key"
+   ],
+   "optionalAuth": [],
+   "permissions": [
+    "READ_POLICIES"
+   ],
+   "rateLimitBuckets": [
+    "ops_admin"
+   ],
+   "ipAllowlist": true,
+   "planeGates": [
+    "opsPlaneGate"
+   ],
+   "mfaStepUp": "all mutations",
+   "exceptions": []
+  },
+  "POST /v1/policy/visual/stats": {
+   "access": "authenticated",
+   "auth": [
+    "ops-api-key"
+   ],
+   "optionalAuth": [],
+   "permissions": [
+    "READ_POLICIES"
+   ],
+   "rateLimitBuckets": [
+    "ops_admin"
+   ],
+   "ipAllowlist": true,
+   "planeGates": [
+    "opsPlaneGate"
+   ],
+   "mfaStepUp": "all mutations",
+   "exceptions": []
+  },
+  "POST /v1/policy/visual/highlight": {
+   "access": "authenticated",
+   "auth": [
+    "ops-api-key"
+   ],
+   "optionalAuth": [],
+   "permissions": [
+    "READ_POLICIES"
+   ],
+   "rateLimitBuckets": [
+    "ops_admin"
+   ],
+   "ipAllowlist": true,
+   "planeGates": [
+    "opsPlaneGate"
+   ],
+   "mfaStepUp": "all mutations",
+   "exceptions": []
+  },
+  "GET /v1/policy/visual/flow": {
+   "access": "authenticated",
+   "auth": [
+    "ops-api-key"
+   ],
+   "optionalAuth": [],
+   "permissions": [
+    "READ_POLICIES"
+   ],
+   "rateLimitBuckets": [
+    "ops_admin"
+   ],
+   "ipAllowlist": true,
+   "planeGates": [
+    "opsPlaneGate"
+   ],
+   "mfaStepUp": "all mutations",
+   "exceptions": []
+  },
+  "POST /v1/policy/visual/export": {
+   "access": "authenticated",
+   "auth": [
+    "ops-api-key"
+   ],
+   "optionalAuth": [],
+   "permissions": [
+    "READ_POLICIES"
+   ],
+   "rateLimitBuckets": [
+    "ops_admin"
+   ],
+   "ipAllowlist": true,
+   "planeGates": [
+    "opsPlaneGate"
+   ],
+   "mfaStepUp": "all mutations",
+   "exceptions": []
+  },
+  "POST /v1/policy/simulate": {
+   "access": "authenticated",
+   "auth": [
+    "ops-api-key"
+   ],
+   "optionalAuth": [],
+   "permissions": [
+    "READ_POLICIES"
+   ],
+   "rateLimitBuckets": [
+    "ops_admin"
+   ],
+   "ipAllowlist": true,
+   "planeGates": [
+    "opsPlaneGate"
+   ],
+   "mfaStepUp": "all mutations",
+   "exceptions": []
+  },
+  "POST /v1/policy/compare": {
+   "access": "authenticated",
+   "auth": [
+    "ops-api-key"
+   ],
+   "optionalAuth": [],
+   "permissions": [
+    "READ_POLICIES"
+   ],
+   "rateLimitBuckets": [
+    "ops_admin"
+   ],
+   "ipAllowlist": true,
+   "planeGates": [
+    "opsPlaneGate"
+   ],
+   "mfaStepUp": "all mutations",
+   "exceptions": []
+  },
+  "POST /v1/policy/simulate/batch": {
+   "access": "authenticated",
+   "auth": [
+    "ops-api-key"
+   ],
+   "optionalAuth": [],
+   "permissions": [
+    "READ_POLICIES"
+   ],
+   "rateLimitBuckets": [
+    "ops_admin"
+   ],
+   "ipAllowlist": true,
+   "planeGates": [
+    "opsPlaneGate"
+   ],
+   "mfaStepUp": "all mutations",
+   "exceptions": []
+  },
+  "GET /v1/admin/dsr": {
+   "access": "authenticated",
+   "auth": [
+    "ops-api-key"
+   ],
+   "optionalAuth": [],
+   "permissions": [
+    "READ_DSR"
+   ],
+   "rateLimitBuckets": [
+    "ops_admin"
+   ],
+   "ipAllowlist": true,
+   "planeGates": [
+    "opsPlaneGate"
+   ],
+   "mfaStepUp": "all mutations",
+   "exceptions": []
+  },
+  "GET /v1/admin/dsr/:id": {
+   "access": "authenticated",
+   "auth": [
+    "ops-api-key"
+   ],
+   "optionalAuth": [],
+   "permissions": [
+    "READ_DSR"
+   ],
+   "rateLimitBuckets": [
+    "ops_admin"
+   ],
+   "ipAllowlist": true,
+   "planeGates": [
+    "opsPlaneGate"
+   ],
+   "mfaStepUp": "all mutations",
+   "exceptions": []
+  },
+  "POST /v1/admin/dsr": {
+   "access": "authenticated",
+   "auth": [
+    "ops-api-key"
+   ],
+   "optionalAuth": [],
+   "permissions": [
+    "MANAGE_DSR"
+   ],
+   "rateLimitBuckets": [
+    "ops_admin"
+   ],
+   "ipAllowlist": true,
+   "planeGates": [
+    "opsPlaneGate"
+   ],
+   "mfaStepUp": "all mutations",
+   "exceptions": []
+  },
+  "POST /v1/admin/dsr/:id/verify-identity": {
+   "access": "authenticated",
+   "auth": [
+    "ops-api-key"
+   ],
+   "optionalAuth": [],
+   "permissions": [
+    "MANAGE_DSR"
+   ],
+   "rateLimitBuckets": [
+    "ops_admin"
+   ],
+   "ipAllowlist": true,
+   "planeGates": [
+    "opsPlaneGate"
+   ],
+   "mfaStepUp": "all mutations",
+   "exceptions": []
+  },
+  "POST /v1/admin/dsr/:id/approve": {
+   "access": "authenticated",
+   "auth": [
+    "ops-api-key"
+   ],
+   "optionalAuth": [],
+   "permissions": [
+    "MANAGE_DSR"
+   ],
+   "rateLimitBuckets": [
+    "ops_admin"
+   ],
+   "ipAllowlist": true,
+   "planeGates": [
+    "opsPlaneGate"
+   ],
+   "mfaStepUp": "all mutations",
+   "exceptions": []
+  },
+  "POST /v1/admin/dsr/:id/rectify": {
+   "access": "authenticated",
+   "auth": [
+    "ops-api-key"
+   ],
+   "optionalAuth": [],
+   "permissions": [
+    "MANAGE_DSR"
+   ],
+   "rateLimitBuckets": [
+    "ops_admin"
+   ],
+   "ipAllowlist": true,
+   "planeGates": [
+    "opsPlaneGate"
+   ],
+   "mfaStepUp": "all mutations",
+   "exceptions": []
+  },
+  "POST /v1/admin/dsr/:id/erase": {
+   "access": "authenticated",
+   "auth": [
+    "ops-api-key"
+   ],
+   "optionalAuth": [],
+   "permissions": [
+    "MANAGE_DSR"
+   ],
+   "rateLimitBuckets": [
+    "ops_admin"
+   ],
+   "ipAllowlist": true,
+   "planeGates": [
+    "opsPlaneGate"
+   ],
+   "mfaStepUp": "all mutations",
+   "exceptions": []
+  },
+  "POST /v1/admin/dsr/:id/restrict": {
+   "access": "authenticated",
+   "auth": [
+    "ops-api-key"
+   ],
+   "optionalAuth": [],
+   "permissions": [
+    "MANAGE_DSR"
+   ],
+   "rateLimitBuckets": [
+    "ops_admin"
+   ],
+   "ipAllowlist": true,
+   "planeGates": [
+    "opsPlaneGate"
+   ],
+   "mfaStepUp": "all mutations",
+   "exceptions": []
+  },
+  "POST /v1/admin/dsr/:id/lift": {
+   "access": "authenticated",
+   "auth": [
+    "ops-api-key"
+   ],
+   "optionalAuth": [],
+   "permissions": [
+    "MANAGE_DSR"
+   ],
+   "rateLimitBuckets": [
+    "ops_admin"
+   ],
+   "ipAllowlist": true,
+   "planeGates": [
+    "opsPlaneGate"
+   ],
+   "mfaStepUp": "all mutations",
+   "exceptions": []
+  },
+  "POST /v1/admin/dsr/:id/export": {
+   "access": "authenticated",
+   "auth": [
+    "ops-api-key"
+   ],
+   "optionalAuth": [],
+   "permissions": [
+    "MANAGE_DSR"
+   ],
+   "rateLimitBuckets": [
+    "ops_admin"
+   ],
+   "ipAllowlist": true,
+   "planeGates": [
+    "opsPlaneGate"
+   ],
+   "mfaStepUp": "all mutations",
+   "exceptions": []
+  },
+  "POST /v1/ai/chat/stream": {
+   "access": "authenticated",
+   "auth": [
+    "signed-artifact(in handler)"
+   ],
+   "optionalAuth": [],
+   "permissions": [],
+   "rateLimitBuckets": [
+    "ai_chat_ip"
+   ],
+   "ipAllowlist": false,
+   "planeGates": [],
+   "mfaStepUp": null,
+   "exceptions": [
+    "signed-artifact-pre-auth"
+   ]
+  },
+  "POST /v1/ai/chat": {
+   "access": "authenticated",
+   "auth": [
+    "signed-artifact(in handler)"
+   ],
+   "optionalAuth": [],
+   "permissions": [],
+   "rateLimitBuckets": [
+    "ai_chat_ip"
+   ],
+   "ipAllowlist": false,
+   "planeGates": [],
+   "mfaStepUp": null,
+   "exceptions": [
+    "signed-artifact-pre-auth"
+   ]
+  },
+  "POST /v1/verify/v2": {
+   "access": "authenticated",
+   "auth": [
+    "signed-artifact(in handler)"
+   ],
+   "optionalAuth": [],
+   "permissions": [],
+   "rateLimitBuckets": [
+    "verify_v2"
+   ],
+   "ipAllowlist": false,
+   "planeGates": [],
+   "mfaStepUp": null,
+   "exceptions": [
+    "signed-artifact-pre-auth"
+   ]
+  },
+  "POST /v1/verify": {
+   "access": "authenticated",
+   "auth": [
+    "signed-artifact(in handler)"
+   ],
+   "optionalAuth": [],
+   "permissions": [],
+   "rateLimitBuckets": [
+    "verify_public"
+   ],
+   "ipAllowlist": false,
+   "planeGates": [],
+   "mfaStepUp": null,
+   "exceptions": [
+    "signed-artifact-pre-auth"
+   ]
+  },
+  "GET /v1/evidence/package/:artifactId": {
+   "access": "authenticated",
+   "auth": [
+    "ops-api-key"
+   ],
+   "optionalAuth": [],
+   "permissions": [
+    "GENERATE_EVIDENCE"
+   ],
+   "rateLimitBuckets": [
+    "ops_admin",
+    "evidence"
+   ],
+   "ipAllowlist": true,
+   "planeGates": [
+    "opsPlaneGate"
+   ],
+   "mfaStepUp": "all mutations",
+   "exceptions": []
+  },
+  "GET /v1/evidence/package/:artifactId/json": {
+   "access": "authenticated",
+   "auth": [
+    "ops-api-key"
+   ],
+   "optionalAuth": [],
+   "permissions": [
+    "GENERATE_EVIDENCE"
+   ],
+   "rateLimitBuckets": [
+    "ops_admin",
+    "evidence"
+   ],
+   "ipAllowlist": true,
+   "planeGates": [
+    "opsPlaneGate"
+   ],
+   "mfaStepUp": "all mutations",
+   "exceptions": []
+  },
+  "GET /v1/evidence/package/:artifactId/pdf": {
+   "access": "authenticated",
+   "auth": [
+    "ops-api-key"
+   ],
+   "optionalAuth": [],
+   "permissions": [
+    "GENERATE_EVIDENCE"
+   ],
+   "rateLimitBuckets": [
+    "ops_admin",
+    "evidence"
+   ],
+   "ipAllowlist": true,
+   "planeGates": [
+    "opsPlaneGate"
+   ],
+   "mfaStepUp": "all mutations",
+   "exceptions": []
+  },
+  "GET /v1/evidence/package/:artifactId/audit": {
+   "access": "authenticated",
+   "auth": [
+    "ops-api-key"
+   ],
+   "optionalAuth": [],
+   "permissions": [
+    "GENERATE_EVIDENCE"
+   ],
+   "rateLimitBuckets": [
+    "ops_admin",
+    "evidence"
+   ],
+   "ipAllowlist": true,
+   "planeGates": [
+    "opsPlaneGate"
+   ],
+   "mfaStepUp": "all mutations",
+   "exceptions": []
+  },
+  "GET /v1/evidence/package/:artifactId/verify": {
+   "access": "authenticated",
+   "auth": [
+    "ops-api-key"
+   ],
+   "optionalAuth": [],
+   "permissions": [
+    "GENERATE_EVIDENCE"
+   ],
+   "rateLimitBuckets": [
+    "ops_admin",
+    "evidence"
+   ],
+   "ipAllowlist": true,
+   "planeGates": [
+    "opsPlaneGate"
+   ],
+   "mfaStepUp": "all mutations",
+   "exceptions": []
+  },
+  "GET /v1/evidence/package/:artifactId/bundle": {
+   "access": "authenticated",
+   "auth": [
+    "ops-api-key"
+   ],
+   "optionalAuth": [],
+   "permissions": [
+    "GENERATE_EVIDENCE"
+   ],
+   "rateLimitBuckets": [
+    "ops_admin",
+    "evidence"
+   ],
+   "ipAllowlist": true,
+   "planeGates": [
+    "opsPlaneGate"
+   ],
+   "mfaStepUp": "all mutations",
+   "exceptions": []
+  },
+  "GET /v1/transparency/entry/:transparencyId": {
+   "access": "public",
+   "auth": [],
+   "optionalAuth": [],
+   "permissions": [],
+   "rateLimitBuckets": [
+    "transparency"
+   ],
+   "ipAllowlist": false,
+   "planeGates": [],
+   "mfaStepUp": null,
+   "exceptions": []
+  },
+  "GET /v1/transparency/receipt/:requestId": {
+   "access": "public",
+   "auth": [],
+   "optionalAuth": [],
+   "permissions": [],
+   "rateLimitBuckets": [
+    "transparency"
+   ],
+   "ipAllowlist": false,
+   "planeGates": [],
+   "mfaStepUp": null,
+   "exceptions": []
+  },
+  "GET /v1/transparency/entries": {
+   "access": "public",
+   "auth": [],
+   "optionalAuth": [],
+   "permissions": [],
+   "rateLimitBuckets": [
+    "transparency"
+   ],
+   "ipAllowlist": false,
+   "planeGates": [],
+   "mfaStepUp": null,
+   "exceptions": []
+  },
+  "GET /v1/transparency/root": {
+   "access": "public",
+   "auth": [],
+   "optionalAuth": [],
+   "permissions": [],
+   "rateLimitBuckets": [
+    "transparency"
+   ],
+   "ipAllowlist": false,
+   "planeGates": [],
+   "mfaStepUp": null,
+   "exceptions": []
+  },
+  "GET /v1/transparency/roots": {
+   "access": "public",
+   "auth": [],
+   "optionalAuth": [],
+   "permissions": [],
+   "rateLimitBuckets": [
+    "transparency"
+   ],
+   "ipAllowlist": false,
+   "planeGates": [],
+   "mfaStepUp": null,
+   "exceptions": []
+  },
+  "GET /v1/transparency/verify/:transparencyId": {
+   "access": "public",
+   "auth": [],
+   "optionalAuth": [
+    "ops-api-key(optional)[READ_TRANSPARENCY_LOG]"
+   ],
+   "permissions": [],
+   "rateLimitBuckets": [
+    "transparency",
+    "public_verify"
+   ],
+   "ipAllowlist": false,
+   "planeGates": [],
+   "mfaStepUp": null,
+   "exceptions": [
+    "ephemeral-unless-authenticated"
+   ]
+  },
+  "GET /v1/transparency/proof/:transparencyId": {
+   "access": "public",
+   "auth": [],
+   "optionalAuth": [],
+   "permissions": [],
+   "rateLimitBuckets": [
+    "transparency"
+   ],
+   "ipAllowlist": false,
+   "planeGates": [],
+   "mfaStepUp": null,
+   "exceptions": [
+    "idempotent-merkle-checkpoint"
+   ]
+  },
+  "GET /v1/transparency/consistency/:fromRootId/:toRootId": {
+   "access": "public",
+   "auth": [],
+   "optionalAuth": [],
+   "permissions": [],
+   "rateLimitBuckets": [
+    "transparency"
+   ],
+   "ipAllowlist": false,
+   "planeGates": [],
+   "mfaStepUp": null,
+   "exceptions": []
+  },
+  "GET /v1/transparency/admin/stats": {
+   "access": "authenticated",
+   "auth": [
+    "ops-api-key"
+   ],
+   "optionalAuth": [],
+   "permissions": [
+    "READ_TRANSPARENCY_LOG"
+   ],
+   "rateLimitBuckets": [
+    "ops_admin",
+    "transparency_admin"
+   ],
+   "ipAllowlist": true,
+   "planeGates": [
+    "opsPlaneGate"
+   ],
+   "mfaStepUp": "all mutations",
+   "exceptions": []
+  },
+  "GET /v1/transparency/admin/chain/validate": {
+   "access": "authenticated",
+   "auth": [
+    "ops-api-key"
+   ],
+   "optionalAuth": [],
+   "permissions": [
+    "READ_TRANSPARENCY_LOG"
+   ],
+   "rateLimitBuckets": [
+    "ops_admin",
+    "transparency_admin"
+   ],
+   "ipAllowlist": true,
+   "planeGates": [
+    "opsPlaneGate"
+   ],
+   "mfaStepUp": "all mutations",
+   "exceptions": []
+  },
+  "POST /v1/transparency/register": {
+   "access": "authenticated",
+   "auth": [
+    "ops-api-key"
+   ],
+   "optionalAuth": [],
+   "permissions": [
+    "MANAGE_TRANSPARENCY_LOG"
+   ],
+   "rateLimitBuckets": [
+    "ops_admin",
+    "transparency_admin"
+   ],
+   "ipAllowlist": true,
+   "planeGates": [
+    "opsPlaneGate"
+   ],
+   "mfaStepUp": "all mutations",
+   "exceptions": []
+  },
+  "POST /v1/transparency/admin/roots/generate": {
+   "access": "authenticated",
+   "auth": [
+    "ops-api-key"
+   ],
+   "optionalAuth": [],
+   "permissions": [
+    "MANAGE_TRANSPARENCY_LOG"
+   ],
+   "rateLimitBuckets": [
+    "ops_admin",
+    "transparency_admin"
+   ],
+   "ipAllowlist": true,
+   "planeGates": [
+    "opsPlaneGate"
+   ],
+   "mfaStepUp": "all mutations",
+   "exceptions": []
+  },
+  "POST /v1/portal/verify": {
+   "access": "public",
+   "auth": [],
+   "optionalAuth": [
+    "ops-api-key(optional)[MANAGE_VERIFICATION_PORTAL]"
+   ],
+   "permissions": [],
+   "rateLimitBuckets": [
+    "portal",
+    "public_verify"
+   ],
+   "ipAllowlist": false,
+   "planeGates": [],
+   "mfaStepUp": null,
+   "exceptions": [
+    "ephemeral-unless-authenticated"
+   ]
+  },
+  "GET /v1/portal/result/:verificationId": {
+   "access": "public",
+   "auth": [],
+   "optionalAuth": [],
+   "permissions": [],
+   "rateLimitBuckets": [
+    "portal"
+   ],
+   "ipAllowlist": false,
+   "planeGates": [],
+   "mfaStepUp": null,
+   "exceptions": []
+  },
+  "GET /v1/portal/report/:verificationId": {
+   "access": "public",
+   "auth": [],
+   "optionalAuth": [],
+   "permissions": [],
+   "rateLimitBuckets": [
+    "portal"
+   ],
+   "ipAllowlist": false,
+   "planeGates": [],
+   "mfaStepUp": null,
+   "exceptions": []
+  },
+  "GET /v1/portal/admin/history": {
+   "access": "authenticated",
+   "auth": [
+    "ops-api-key"
+   ],
+   "optionalAuth": [],
+   "permissions": [
+    "READ_VERIFICATION_PORTAL"
+   ],
+   "rateLimitBuckets": [
+    "ops_admin",
+    "portal_admin"
+   ],
+   "ipAllowlist": true,
+   "planeGates": [
+    "opsPlaneGate"
+   ],
+   "mfaStepUp": null,
+   "exceptions": []
+  },
+  "GET /v1/portal/admin/stats": {
+   "access": "authenticated",
+   "auth": [
+    "ops-api-key"
+   ],
+   "optionalAuth": [],
+   "permissions": [
+    "READ_VERIFICATION_PORTAL"
+   ],
+   "rateLimitBuckets": [
+    "ops_admin",
+    "portal_admin"
+   ],
+   "ipAllowlist": true,
+   "planeGates": [
+    "opsPlaneGate"
+   ],
+   "mfaStepUp": null,
+   "exceptions": []
+  },
+  "GET /v1/portal/evidence/:verificationId": {
+   "access": "authenticated",
+   "auth": [
+    "ops-api-key"
+   ],
+   "optionalAuth": [],
+   "permissions": [
+    "READ_VERIFICATION_PORTAL"
+   ],
+   "rateLimitBuckets": [
+    "ops_admin",
+    "portal_admin"
+   ],
+   "ipAllowlist": true,
+   "planeGates": [
+    "opsPlaneGate"
+   ],
+   "mfaStepUp": null,
+   "exceptions": []
+  },
+  "GET /openapi.json": {
+   "access": "public",
+   "auth": [],
+   "optionalAuth": [],
+   "permissions": [],
+   "rateLimitBuckets": [
+    "public_docs"
+   ],
+   "ipAllowlist": false,
+   "planeGates": [],
+   "mfaStepUp": null,
+   "exceptions": []
+  },
+  "GET /openapi.yaml": {
+   "access": "public",
+   "auth": [],
+   "optionalAuth": [],
+   "permissions": [],
+   "rateLimitBuckets": [
+    "public_docs"
+   ],
+   "ipAllowlist": false,
+   "planeGates": [],
+   "mfaStepUp": null,
+   "exceptions": []
+  },
+  "GET /docs": {
+   "access": "public",
+   "auth": [],
+   "optionalAuth": [],
+   "permissions": [],
+   "rateLimitBuckets": [
+    "public_docs"
+   ],
+   "ipAllowlist": false,
+   "planeGates": [],
+   "mfaStepUp": null,
+   "exceptions": []
+  },
+  "GET /docs/assets/:name": {
+   "access": "public",
+   "auth": [],
+   "optionalAuth": [],
+   "permissions": [],
+   "rateLimitBuckets": [
+    "public_docs"
+   ],
+   "ipAllowlist": false,
+   "planeGates": [],
+   "mfaStepUp": null,
+   "exceptions": []
+  },
+  "GET /docs #2": {
+   "access": "public",
+   "auth": [],
+   "optionalAuth": [],
+   "permissions": [],
+   "rateLimitBuckets": [
+    "public_docs"
+   ],
+   "ipAllowlist": false,
+   "planeGates": [],
+   "mfaStepUp": null,
+   "exceptions": []
+  }
+ }
+}

@@ -1,0 +1,52 @@
+# QODIQA distributed-mode ConfigMap — additive overrides for deployment.yaml
+#
+# Deliberately a SEPARATE ConfigMap from qodiqa-config (base/configmap.yaml),
+# not new keys added to it: qodiqa-config is also envFrom'd by
+# overlays/single-node/statefulset.yaml, and
+# QODIQA_DEPLOYMENT_MODE=distributed must never reach those pods — each
+# StatefulSet pod owns its own exclusive audit-log volume and expects
+# single-node (process-local in-memory) ordering; see
+# docs/protocol/AUDIT-SCHEMA-V8.md. Only this overlay's
+# deployment.yaml references this ConfigMap.
+#
+# QODIQA_PG_PASSWORD is NOT here — it's a secret (see base/secret.yaml
+# postgres-password, wired via secretKeyRef directly in deployment.yaml).
+#
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: qodiqa-config-distributed
+  namespace: qodiqa
+  labels:
+    app.kubernetes.io/name:      qodiqa
+    app.kubernetes.io/component: config
+    topology:                    distributed
+data:
+  # QODIQA_DEPLOYMENT_MODE is the single authoritative deployment
+  # switch — it resolves PostgreSQL enablement, distributed audit-chain
+  # ordering, the PG audit backend, and migration verification
+  # automatically, superseding the legacy QODIQA_AUDIT_ORDERING_MODE /
+  # QODIQA_PG_ENABLED pair (SCAL-11's original remediation — still supported
+  # as compatibility overrides, but deployment mode takes precedence). See
+  # src/infra/config/deploymentMode.js and src/core/audit/distributedOrdering.js.
+  QODIQA_DEPLOYMENT_MODE: "distributed"
+
+  # production REFUSES this overlay — the distributed audit chain has no signed
+  # checkpoints or witness anchors yet, and there is no waiver. deploy:validate asserts that refusal (and only
+  # that one). Use overlays/single-node (anchored) for production until lands.
+
+  # No QODIQA_PG_AUTO_MIGRATE here: multiple replicas starting concurrently
+  # would each independently race to apply pending migrations against the
+  # same database. Apply migration 026 as a one-time, explicit step before
+  # rolling this overlay out — see this directory's kustomization.yaml
+  # prerequisites (node src/infra/postgres/migrate.js, then, if migrating an
+  # existing file-only deployment, scripts/seed-audit-chain-head.js).
+
+  # PostgreSQL connection (non-secret parts — password comes from
+  # base/secret.yaml's postgres-password key). Point these at your managed
+  # Postgres instance.
+  QODIQA_PG_HOST:     "postgres-service.qodiqa.svc.cluster.local"
+  QODIQA_PG_PORT:     "5432"
+  QODIQA_PG_DATABASE: "qodiqa"
+  QODIQA_PG_USER:     "qodiqa_app"
+  QODIQA_PG_SSL:      "true"

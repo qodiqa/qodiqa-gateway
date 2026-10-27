@@ -1,0 +1,25 @@
+# the selector used to be name+component only, which matches BOTH the `qodiqa`
+# ClusterIP Service and the `qodiqa-headless` governing Service of the single-node overlay, so every pod was scraped
+# twice (duplicate series). It now selects `qodiqa.com/scrape: "true"`, a label only overlays/single-node/service.yaml
+# carries. Network path: networkpolicy-prometheus.yaml.
+apiVersion: monitoring.coreos.com/v1
+kind: ServiceMonitor
+metadata:
+  name: qodiqa
+  namespace: qodiqa
+  labels:
+    app.kubernetes.io/name: qodiqa
+spec:
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: qodiqa
+      app.kubernetes.io/component: gateway
+      qodiqa.com/scrape: "true"
+  endpoints:
+    - port: http
+      path: /metrics
+      interval: 30s
+      scrapeTimeout: 10s
+      bearerTokenSecret:
+        name: qodiqa-prometheus-scrape
+        key: token

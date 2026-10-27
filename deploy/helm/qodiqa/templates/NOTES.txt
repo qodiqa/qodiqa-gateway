@@ -1,0 +1,14 @@
+QODIQA gateway {{ .Chart.AppVersion }} installed as "{{ include "qodiqa.fullname" . }}" (profile: {{ .Values.profile }}).
+
+  kubectl -n {{ .Release.Namespace }} rollout status deployment/{{ include "qodiqa.fullname" . }}
+  kubectl -n {{ .Release.Namespace }} port-forward svc/{{ include "qodiqa.fullname" . }} 8080:{{ .Values.service.port }}
+  curl -s localhost:8080/ready
+
+{{- if eq .Values.profile "development" }}
+
+DEVELOPMENT profile: plain-text PostgreSQL/Redis, throw-away secrets, NODE_ENV=development. Not for real traffic.
+{{- else }}
+
+Production profile: the gateway refuses to start unless its boot rules are satisfied (TLS to PostgreSQL and Redis, a provisioned MAC keyring, strong secrets).
+First run on a fresh database: the migration role needs the bootstrap sequence in docs/operations/database-role-management.md.
+{{- end }}

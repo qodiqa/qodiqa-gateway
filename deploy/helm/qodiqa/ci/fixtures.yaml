@@ -1,0 +1,106 @@
+# Test fixtures for a LOCAL cluster (kind): PostgreSQL and Redis without TLS or persistence, for the chart's development profile. NEVER for real use.
+#   kubectl create namespace qodiqa; kubectl -n qodiqa apply -f deploy/helm/qodiqa/ci/fixtures.yaml
+# The PostgreSQL superuser "qodiqa" doubles as the migration identity on this throw-away cluster (see migrations.user in dev-values.yaml).
+apiVersion: v1
+kind: Service
+metadata:
+  name: pg
+spec:
+  selector: { app: pg }
+  ports: [{ port: 5432, targetPort: 5432 }]
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: pg
+spec:
+  replicas: 1
+  selector:
+    matchLabels: { app: pg }
+  template:
+    metadata:
+      labels: { app: pg }
+    spec:
+      containers:
+        - name: postgres
+          image: postgres:16-alpine@sha256:f4610795587492cd4fb887c2dc3de301b813278bb6f616992061141b5f15ac36
+          env:
+            - { name: POSTGRES_USER, value: qodiqa }
+            - { name: POSTGRES_PASSWORD, value: dev-pg-mig }
+            - { name: POSTGRES_DB, value: qodiqa }
+          ports: [{ containerPort: 5432 }]
+          readinessProbe:
+            exec: { command: ["pg_isready", "-U", "qodiqa", "-d", "qodiqa"] }
+            periodSeconds: 3
+          volumeMounts:
+            - { name: data, mountPath: /var/lib/postgresql/data }
+      volumes:
+        - name: data
+          emptyDir: {}
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: redis
+spec:
+  selector: { app: redis }
+  ports: [{ port: 6379, targetPort: 6379 }]
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: redis
+spec:
+  replicas: 1
+  selector:
+    matchLabels: { app: redis }
+  template:
+    metadata:
+      labels: { app: redis }
+    spec:
+      containers:
+        - name: redis
+          image: redis:7.4.11-alpine@sha256:ff02b58f971e7d7d156a1267e283fcbbeee91773b6aa36c49dac28ecfe28eadf
+          # the ACL user and password the chart's development Secret hands to the gateway (REDIS_USERNAME qodiqa / redis-password dev-redis); the default user is off
+          command: ["redis-server", "--user", "default", "off", "--user", "qodiqa", "on", ">dev-redis", "~*", "&*", "+@all"]
+          ports: [{ containerPort: 6379 }]
+          readinessProbe:
+            exec: { command: ["redis-cli", "--user", "qodiqa", "--pass", "dev-redis", "--no-auth-warning", "ping"] }
+            periodSeconds: 3
+---
+# The sandbox AI provider (scripts/dev/sandboxProvider.js) so that the gateway has a valid provider and /ai/chat can be tried. The script comes from a ConfigMap created beside this file:
+#   kubectl -n qodiqa create configmap sandbox-provider --from-file=sandboxProvider.js=scripts/dev/sandboxProvider.js
+apiVersion: v1
+kind: Service
+metadata:
+  name: sandbox-provider
+spec:
+  selector: { app: sandbox-provider }
+  ports: [{ port: 8080, targetPort: 8080 }]
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: sandbox-provider
+spec:
+  replicas: 1
+  selector:
+    matchLabels: { app: sandbox-provider }
+  template:
+    metadata:
+      labels: { app: sandbox-provider }
+    spec:
+      containers:
+        - name: provider
+          image: qodiqa:local
+          imagePullPolicy: Never
+          command: ["node", "-e", "require('/provider/sandboxProvider.js').start({ port: 8080, host: '0.0.0.0' }).then((s) => console.log('sandbox provider on', s.url))"]
+          ports: [{ containerPort: 8080 }]
+          readinessProbe:
+            tcpSocket: { port: 8080 }
+            periodSeconds: 2
+          volumeMounts:
+            - { name: script, mountPath: /provider, readOnly: true }
+      volumes:
+        - name: script
+          configMap: { name: sandbox-provider }

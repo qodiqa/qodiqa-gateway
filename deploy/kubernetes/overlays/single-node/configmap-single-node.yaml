@@ -1,0 +1,60 @@
+# QODIQA single-node-mode ConfigMap — PG mirror enablement
+#
+# Deliberately a SEPARATE ConfigMap from qodiqa-config (base/configmap.yaml),
+# mirroring the distributed overlay's configmap-distributed.yaml pattern:
+# base config stays topology-neutral; each overlay adds its own additive
+# keys. Only this overlay's statefulset.yaml references this ConfigMap.
+#
+# What this enables: the base configmap stamps NODE_ENV=production, and the
+# boot gate refuses a production boot without a ready PostgreSQL
+# (EVIDENCE_DURABILITY_VIOLATION). This overlay therefore runs single-node
+# audit ordering (the pod's own audit.log on its exclusive PVC remains the
+# chain-ordering authority) WITH PostgreSQL as the durable evidence store
+# (transparency/consent/evidence) and audit-chain mirror. Legal only at
+# replicas: 1 — see statefulset.yaml's header comment and
+# 
+#
+# QODIQA_DEPLOYMENT_MODE is deliberately ABSENT here: setting it to
+# "distributed" would hand chain ordering to PostgreSQL, which is the other
+# overlay. QODIQA_PG_ENABLED=true alone enables the mirror + evidence
+# stores while keeping single-node ordering.
+#
+# QODIQA_PG_PASSWORD is NOT here — it's a secret (base/secret.yaml
+# postgres-password, wired via secretKeyRef in statefulset.yaml).
+#
+# Prerequisite: a migrated database (node src/infra/postgres/migrate.js) —
+# same one-time step the distributed overlay documents.
+#
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: qodiqa-config-single-node
+  namespace: qodiqa
+  labels:
+    app.kubernetes.io/name:      qodiqa
+    app.kubernetes.io/component: config
+    topology:                    single-node
+data:
+  QODIQA_PG_ENABLED: "true"
+
+  # PostgreSQL connection (non-secret parts — password comes from
+  # base/secret.yaml's postgres-password key). Point these at your managed
+  # Postgres instance.
+  QODIQA_PG_HOST:     "postgres-service.qodiqa.svc.cluster.local"
+  QODIQA_PG_PORT:     "5432"
+  QODIQA_PG_DATABASE: "qodiqa"
+  QODIQA_PG_USER:     "qodiqa_app"
+  QODIQA_PG_SSL:      "true"
+
+  # audit anchoring is REQUIRED in production. Each signed checkpoint is co-signed by a witness
+  # and appended to the anchor export; the boot check fails closed on deleted/replaced checkpoints or a rollback.
+  # The witness key + its public-key set come from Secret qodiqa-witness (provisioned by the operator — ideally a
+  # party other than the gateway's own operators; for a witness in another trust domain use QODIQA_WITNESS_MODE=exec).
+  # The anchor export lives on its own per-pod volume; copy it off-cluster to customer-held storage (see
+  # docs/security/audit-anchoring.md).
+  QODIQA_WITNESS_MODE:        "local"
+  QODIQA_WITNESS_ID:          "qodiqa-witness-1"
+  QODIQA_WITNESS_KEY_PATH:    "/etc/qodiqa-witness/witness-key.json"
+  QODIQA_WITNESS_PUBLIC_KEYS: "/etc/qodiqa-witness/witness-public-keys.json"
+  QODIQA_WITNESS_LOG_PATH:    "/opt/qodiqa/anchors/witness-log.jsonl"
+  QODIQA_ANCHOR_EXPORT_PATH:  "/opt/qodiqa/anchors/anchors.jsonl"

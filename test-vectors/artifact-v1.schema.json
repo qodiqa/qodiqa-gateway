@@ -1,0 +1,124 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "https://qodiqa.internal/test-vectors/artifact-v1.schema.json",
+  "title": "QODIQA Local Artifact & Transparency-Proof Verification Conformance Vectors",
+  "description": "Schema for test-vectors/artifact-v1.json. Every SDK implementation (present and future) consumes vectors matching this schema without any language-specific transformation of the file itself. See test-vectors/README-artifact.md for the full contract.",
+  "type": "object",
+  "required": ["protocolVersion", "generatedBy", "vectorCount", "artifactVectors", "transparencyVectors"],
+  "additionalProperties": true,
+  "properties": {
+    "protocolVersion": {
+      "type": "string",
+      "description": "Artifact/transparency verification protocol version these vectors describe. Bump this (and the filename, e.g. artifact-v2.json) if the wire protocol ever intentionally changes.",
+      "const": "v1"
+    },
+    "description": { "type": "string" },
+    "generatedBy": {
+      "type": "object",
+      "required": ["generatorScript", "serverImplementation", "generatedAt"],
+      "properties": {
+        "generatorScript": { "type": "string" },
+        "serverImplementation": {
+          "description": "The production module(s) whose output is captured in this file.",
+          "oneOf": [{ "type": "string" }, { "type": "array", "items": { "type": "string" } }]
+        },
+        "generatedAt": { "type": "string", "format": "date-time" }
+      }
+    },
+    "vectorCount": {
+      "type": "object",
+      "required": ["artifact", "transparency"],
+      "properties": {
+        "artifact": { "type": "integer", "minimum": 0 },
+        "transparency": { "type": "integer", "minimum": 0 }
+      }
+    },
+    "artifactVectors": {
+      "type": "array",
+      "minItems": 1,
+      "items": { "$ref": "#/definitions/artifactVector" }
+    },
+    "transparencyVectors": {
+      "type": "array",
+      "minItems": 1,
+      "items": { "$ref": "#/definitions/transparencyVector" }
+    }
+  },
+  "definitions": {
+    "artifactVector": {
+      "type": "object",
+      "description": "One case for the local artifact verifier (ArtifactVerifier.verify() / verify_artifact()).",
+      "required": ["id", "description", "tags", "artifact", "keySet", "verifyAt", "clockToleranceMs", "expected"],
+      "additionalProperties": false,
+      "properties": {
+        "id": {
+          "type": "string",
+          "description": "Unique, stable, kebab-case identifier. Do not reuse or repurpose an id once published — add a new vector instead.",
+          "pattern": "^[a-z0-9]+(-[a-z0-9]+)*$"
+        },
+        "description": { "type": "string" },
+        "tags": { "type": "array", "items": { "type": "string" } },
+        "artifact": {
+          "type": "object",
+          "description": "The exact object to pass to verify(). May be structurally malformed for negative vectors — pass it through unmodified, do not coerce types."
+        },
+        "keySet": {
+          "type": "array",
+          "description": "Trust bundle to configure the artifact-key provider (StaticKeyProvider) with for this vector.",
+          "items": {
+            "type": "object",
+            "required": ["keyId", "algorithm", "publicKey", "status"],
+            "properties": {
+              "keyId": { "type": "string" },
+              "algorithm": { "type": "string", "const": "ed25519" },
+              "publicKey": { "type": "string", "description": "Base64-encoded SPKI DER public key." },
+              "status": { "type": "string", "enum": ["active", "deprecated", "revoked"] }
+            }
+          }
+        },
+        "verifyAt": { "type": "integer", "description": "Unix ms epoch to pass as the verifier's `_now` override." },
+        "clockToleranceMs": { "type": "integer", "minimum": 0 },
+        "transparencyProof": { "description": "Reserved for future combined artifact+proof vectors; currently always null.", "type": "null" },
+        "expected": {
+          "type": "object",
+          "description": "Subset of ArtifactVerificationResult fields to assert (camelCase field names; map to each SDK's own naming convention). Fields not present are not asserted by the conformance suite.",
+          "additionalProperties": true
+        }
+      }
+    },
+    "transparencyVector": {
+      "type": "object",
+      "description": "One case for the local transparency-proof verifier.",
+      "required": ["id", "description", "tags", "proof", "transparencyKeySet", "expected"],
+      "additionalProperties": false,
+      "properties": {
+        "id": { "type": "string", "pattern": "^[a-z0-9]+(-[a-z0-9]+)*$" },
+        "description": { "type": "string" },
+        "tags": { "type": "array", "items": { "type": "string" } },
+        "proof": {
+          "description": "The TransparencyInclusionProof wire object to verify, or null for the 'no proof supplied' case.",
+          "oneOf": [{ "type": "object" }, { "type": "null" }]
+        },
+        "transparencyKeySet": {
+          "type": "array",
+          "description": "Trust bundle to configure the transparency-key provider with — a separate trust domain from artifactVectors[].keySet.",
+          "items": {
+            "type": "object",
+            "required": ["keyId", "algorithm", "publicKey", "status"],
+            "properties": {
+              "keyId": { "type": "string" },
+              "algorithm": { "type": "string", "const": "ed25519" },
+              "publicKey": { "type": "string" },
+              "status": { "type": "string", "enum": ["active", "deprecated", "revoked"] }
+            }
+          }
+        },
+        "expected": {
+          "type": "object",
+          "description": "Subset of TransparencyVerificationDetail fields plus transparencyVerified to assert. When `proof` is null, only transparencyVerified is meaningful.",
+          "additionalProperties": true
+        }
+      }
+    }
+  }
+}

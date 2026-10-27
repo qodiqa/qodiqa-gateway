@@ -1,0 +1,163 @@
+# QODIQA ConfigMap — non-secret runtime configuration
+#
+# Shared by both topology overlays (single-node and distributed) — the
+# distributed overlay additionally envFrom's overlays/distributed/
+# configmap-distributed.yaml for its topology-specific, additive-only keys
+# (QODIQA_AUDIT_ORDERING_MODE, QODIQA_PG_*). This file must never gain a
+# QODIQA_AUDIT_ORDERING_MODE key — see that file's header comment for why.
+#
+# Policies are imported from policies.json only to seed an empty control-plane store; SIGHUP re-reads the control plane, not this file.
+# Update the policies data below and apply with:
+#   kubectl apply -f base/configmap.yaml
+#   kubectl rollout restart -n qodiqa -k overlays/<single-node|distributed>
+#
+# Alternatively, send SIGHUP to the running pod to reload policies without restart:
+#   kubectl exec -n qodiqa <pod> -- kill -HUP 1
+#
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: qodiqa-config
+  namespace: qodiqa
+  labels:
+    app.kubernetes.io/name:      qodiqa
+    app.kubernetes.io/component: config
+data:
+  # ── Runtime configuration ─────────────────────────────────────────────────
+  NODE_ENV:                    "production"
+  PORT:                        "3000"
+  STRICT_REPLAY_PROTECTION:    "true"
+  REDIS_URL:                   "rediss://redis-service.qodiqa.svc.cluster.local:6380"
+  REDIS_TLS:                   "true"
+  REDIS_TLS_CA:                "/etc/qodiqa-tls/ca.crt"
+  REDIS_TLS_CERT:              "/etc/qodiqa-tls/client.crt"
+  REDIS_TLS_KEY:               "/etc/qodiqa-tls/client.key"
+  REDIS_USERNAME:              "qodiqa"
+  REDIS_CONNECT_TIMEOUT_MS:    "5000"
+  SHUTDOWN_TIMEOUT_MS:         "30000"
+  AI_CHAT_TIMEOUT_MS:          "30000"
+  VERIFY_TIMEOUT_MS:           "5000"
+  AUDIT_TIMEOUT_MS:            "10000"
+  OPENAI_TIMEOUT_MS:           "30000"
+  QODIQA_AUDIT_LOG:            "/opt/qodiqa/logs/audit.log"
+  QODIQA_KEYS_PATH:            "/opt/qodiqa/data/keys.json"
+  POLICY_FILE:                 "/opt/qodiqa/config/policies.json"
+  # NO proxy is trusted by default. Shipping the broad private ranges together with a pre-set
+  # QODIQA_TRUSTED_PROXY_BROAD_ACK made the production check inert for every deployment and let any pod in a private
+  # range forge X-Forwarded-For. With loopback only, IP-keyed controls (lockout, rate limits, ops allowlist) key on the
+  # ingress pod's address — coarse, but unspoofable. Set TRUSTED_PROXY to YOUR ingress controller's pod CIDR in an
+  # overlay patch you own; acknowledge a broad range there only
+  # after verifying that your CNI enforces networkpolicy.yaml.
+  TRUSTED_PROXY:               "loopback"
+
+  # (Compose/Kubernetes parity gap): src/core/rbac/store.js and
+  # customRoleStore.js default QODIQA_RBAC_STORE_PATH /
+  # QODIQA_RBAC_CUSTOM_ROLE_STORE_PATH to a path relative to their own module
+  # location, resolving under /app, the read-only root filesystem -- the
+  # exact defect already fixed for this pair in
+  # deploy/docker/docker-compose.prod.yml, but that fix was never mirrored
+  # here. Without these, the bootstrap-admin RBAC user can never be
+  # persisted (RBAC_BOOTSTRAP_FAILED at every boot) -- non-fatal (the
+  # existing /health and /ready checks stay healthy regardless) but leaves
+  # RBAC permanently unprovisioned in this topology specifically. Same
+  # keystore PVC, same pattern as QODIQA_KEYS_PATH above.
+  QODIQA_RBAC_STORE_PATH:        "/opt/qodiqa/data/rbac-users.json"
+  QODIQA_RBAC_CUSTOM_ROLE_STORE_PATH: "/opt/qodiqa/data/rbac-custom-roles.json"
+
+  # these three were never set anywhere in this manifest. Each of the
+  # three subsystems below defaults, on its own, to a path under this
+  # repository's own source tree (e.g. data/tenants.json resolved relative
+  # to the module's own __dirname) — which resolves to somewhere under the
+  # read-only /app root at runtime, with no matching volume mount. Every one
+  # of the three is loaded eagerly during startup (transparency keystore
+  # auto-provisioning, the non-semantic policy store's bootstrap import, and
+  # the tenant registry's own bootstrap), so an unset/wrong value here is a
+  # FATAL crash, not a lazily-discovered gap — confirmed by direct
+  # reproduction: three separate FATAL boots in
+  # sequence, one per variable, each only visible once the one before it was
+  # fixed. All three point at the same already-mounted, already-writable
+  # keystore PVC (/opt/qodiqa/data — see QODIQA_KEYS_PATH above and
+  # base/pvc.yaml's qodiqa-keystore), matching QODIQA_KEYS_PATH's own
+  # existing pattern rather than introducing a new volume.
+  QODIQA_TRANSPARENCY_KEYS_PATH: "/opt/qodiqa/data/transparency-keys.json"
+  QODIQA_POLICY_STORE:           "/opt/qodiqa/data/policy-store.json"
+  TENANT_STORE_PATH:             "/opt/qodiqa/data/tenants.json"
+
+  # a fourth instance of the same class of gap, found during the CI
+  # boot-gate's local rehearsal (not one of the three named above). Unlike
+  # those three this one is non-fatal — the persistence-recovery journal
+  # worker's own EACCES is caught and logged as BACKGROUND_TASK_FAILED
+  # rather than crashing the process — but it is marked "criticality":
+  # "critical" in its own log line and recurs every 5s indefinitely, which
+  # contradicts's "genuinely ... request-serving deployment" bar even
+  # though /health and /ready both report healthy regardless. Root cause is
+  # identical in shape: src/core/persistenceRecovery/journal.js's JOURNAL_DIR
+  # defaults to a path under this repository's own source tree (data/
+  # prq-journal resolved relative to the module's __dirname), which resolves
+  # under the read-only /app root at runtime. Same keystore PVC, same pattern.
+  QODIQA_PRQ_JOURNAL_DIR:        "/opt/qodiqa/data/prq-journal"
+
+  # a fifth instance of the same class of gap. src/core/signing/
+  # signingIdentityStore.js's QODIQA_SIGNING_STORE_PATH defaults to
+  # path.join(process.cwd(), 'data', 'signing-identities.json'), which
+  # resolves under the read-only /app root at runtime, same as the others
+  # above. Unlike QODIQA_PRQ_JOURNAL_DIR this is not merely non-fatal
+  # background-task noise: it makes POST /sign's entire individually-issued
+  # signing-identity authentication path (README.md's documented
+  # replacement for the removed shared sign token) non-functional --
+  # reproduced directly, a provisioned identity's API key was rejected with
+  # a generic 401 UNAUTHORIZED with no diagnostic pointing at the cause.
+  # Same keystore PVC, same pattern.
+  QODIQA_SIGNING_STORE_PATH:     "/opt/qodiqa/data/signing-identities.json"
+
+  # ── /health and /ready probe hardening (optional) ──────────────────────────
+  # Defaults (unset = false) leave /health and /ready unauthenticated and
+  # reachable from any pod-network source, which is REQUIRED for the
+  # startupProbe/livenessProbe/readinessProbe below to function — kubelet
+  # cannot supply the QODIQA_OPS_TOKEN bearer credential used by /metrics and
+  # /diagnostics. See docs/deployment/kubernetes-probes.md for the full security model
+  # and rationale, and for how to configure httpHeaders if you enable
+  # QODIQA_HEALTH_PROBE_AUTH_REQUIRED.
+  # QODIQA_HEALTH_PROBE_AUTH_REQUIRED: "false"
+  # QODIQA_HEALTH_REQUIRE_LOOPBACK:    "false"   # Docker/bare-metal only — breaks Kubernetes probes if true
+  # QODIQA_HEALTH_RATE_LIMIT_MAX:        "240"   # requests per client IP per window
+  # QODIQA_HEALTH_RATE_LIMIT_WINDOW_MS: "60000"
+
+  # ── Policy file ───────────────────────────────────────────────────────────
+  # Edit this to match your production enforcement rules.
+  # See policies.json in the repository root for the full schema.
+  #
+  # the previous example here was invalid twice over against the real
+  # loader (services/policy/loader.js), confirmed by direct reproduction —
+  # this manifest's own shipped example had never been booted against real
+  # code: (1) a bare JSON array at the document root, where the loader
+  # requires an object (`PolicyLoader: document root must be a plain
+  # object`); (2) even wrapped correctly, no enabled REQUIRE_CONSENT policy,
+  # which the loader also mandates unconditionally (`PolicyLoader: at least
+  # one enabled REQUIRE_CONSENT policy is required`). The shape below
+  # mirrors the repository root's own real policies.json (POL-001/POL-002)
+  # exactly and was verified to load cleanly through the real loader.
+  policies.json: |
+    {
+      "policies": [
+        {
+          "id": "POL-001",
+          "type": "REQUIRE_CONSENT",
+          "priority": 10,
+          "enabled": true,
+          "config": {
+            "requireValidArtifact": true
+          }
+        },
+        {
+          "id": "POL-002",
+          "type": "BLOCK_IP",
+          "priority": 20,
+          "enabled": true,
+          "config": {
+            "blocklist": [],
+            "cidrs": []
+          }
+        }
+      ]
+    }

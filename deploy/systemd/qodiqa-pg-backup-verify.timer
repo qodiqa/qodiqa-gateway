@@ -1,0 +1,11 @@
+# Fires qodiqa-pg-backup-verify.service — 30 minutes after the daily backup.
+[Unit]
+Description=QODIQA PostgreSQL backup verification schedule
+
+[Timer]
+OnCalendar=*-*-* 02:30:00
+Persistent=true
+RandomizedDelaySec=60
+
+[Install]
+WantedBy=timers.target

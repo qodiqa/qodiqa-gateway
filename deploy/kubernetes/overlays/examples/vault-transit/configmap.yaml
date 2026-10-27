@@ -1,0 +1,19 @@
+# Vault Transit non-secret configuration — src/infra/keys/providers/vault.js.
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: qodiqa-vault-transit-config
+  namespace: qodiqa
+  labels:
+    app.kubernetes.io/name:      qodiqa
+    app.kubernetes.io/component: config
+data:
+  VAULT_ADDR: "https://vault.internal:8200"
+  # KV v2 path/mount for the KEK (still used — see ../README.md — unless you
+  # also set QODIQA_KMS_KEK_PROVIDER=vault-kv/aws-kms/azure-kv/gcp-kms).
+  VAULT_KEK_PATH: "qodiqa/kek"
+  VAULT_KEK_MOUNT: "secret"
+  # Transit mount used for native Ed25519 signing.
+  VAULT_TRANSIT_MOUNT: "transit"
+  # Vault Enterprise namespace — remove this key entirely for Vault OSS.
+  VAULT_NAMESPACE: "qodiqa"

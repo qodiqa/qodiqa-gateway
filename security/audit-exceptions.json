@@ -1,0 +1,19 @@
+{
+  "about": "Documented exceptions for the dependency audit gate (scripts/audit-gate.js). Each entry names the advisory, the packages it reaches, why it does not affect the shipped configuration, and the date by which it must be reviewed. Upgrading the affected packages removes the entry.",
+  "exceptions": [
+    {
+      "advisory": "GHSA-mrhx-c7xc-m3w5",
+      "packages": ["zod", "openai"],
+      "summary": "Zod can exhaust memory while validating oversized constrained collections.",
+      "assessment": "Request bodies are bounded by the gateway body-size limit before validation, so a collection large enough to exhaust memory cannot reach a schema. The fixed release is a new major version (4.x) whose changes affect every request schema, the OpenAPI generation and validation messages; the upgrade is planned as its own change.",
+      "reviewBy": "2026-12-31"
+    },
+    {
+      "advisory": "GHSA-xcx6-jx8p-x3h5",
+      "packages": ["@azure/msal-node", "@azure/identity"],
+      "summary": "MSAL Node authorization code flow may disclose parameters to an attacker-controlled endpoint.",
+      "assessment": "Only the optional Azure Key Vault provider uses the package, through the default credential chain. The authorization code flow is not used by the gateway, and the Azure adapter is experimental. The upgrade is planned together with the adapter work.",
+      "reviewBy": "2026-12-31"
+    }
+  ]
+}

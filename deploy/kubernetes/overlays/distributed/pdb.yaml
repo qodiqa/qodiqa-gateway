@@ -1,0 +1,24 @@
+# voluntary disruptions (node drains, cluster upgrades) may take down at most
+# one of the three gateway replicas at a time, so the distributed topology keeps serving during maintenance.
+# Distributed overlay only: the single-node StatefulSet runs replicas: 1 by design (a correctness bound), where a
+# PDB would only block node drains.
+#
+# this overlay sets no `namespace:` (only base does, for base resources), so without
+# an explicit metadata.namespace the PDB rendered namespace-less and, applied into whatever namespace the kubectl
+# context pointed at, protected nothing. The selector also carries `topology: distributed`, matching the Deployment.
+apiVersion: policy/v1
+kind: PodDisruptionBudget
+metadata:
+  name: qodiqa-gateway
+  namespace: qodiqa
+  labels:
+    app.kubernetes.io/name:      qodiqa
+    app.kubernetes.io/component: gateway
+    topology:                    distributed
+spec:
+  maxUnavailable: 1
+  selector:
+    matchLabels:
+      app.kubernetes.io/name:      qodiqa
+      app.kubernetes.io/component: gateway
+      topology:                    distributed

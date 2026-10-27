@@ -1,0 +1,422 @@
+# SECRETS MANAGEMENT
+
+This document covers the secret inventory, key encryption key (KEK) lifecycle, Ed25519 signing key rotation, revocation, and operational procedures for QODIQA secrets.
+
+---
+
+## Secret inventory
+
+QODIQA has four required secrets, one required-but-provider-specific credential (at least one of six), and one optional secret:
+
+| Secret | Variable | Classification | Purpose |
+|---|---|---|---|
+| Key Encryption Key | `QODIQA_KEY_ENCRYPTION_KEY` | Critical | AES-256-GCM encryption key for the Ed25519 signing key store |
+| Signing identity keys | none (per-identity `sk_...` keys, not an env var) | High | Per-caller signing API keys — control who can issue artifacts. See "Signing identity keys" below. |
+| AI provider credential (at least one required) | `OPENAI_API_KEY`, `ANTHROPIC_API_KEY`, `GEMINI_API_KEY`, `MISTRAL_API_KEY`, `LLAMA_BASE_URL` (+ optional `LLAMA_API_KEY`), or `LOCAL_BASE_URL` (+ optional `LOCAL_API_KEY`) | High | Authentication for the corresponding AI provider's API; billing exposure on leak for the four commercial providers. See [Provider architecture](../../README.md). |
+| Client identifier | `QODIQA_CLIENT_ID` | Not a secret | Identifies this deployment in artifacts and audit logs; appears in plaintext in headers |
+| Redis password | `REDIS_PASSWORD` | High | Redis ACL authentication; optional but required in production |
+| Retention role password | `QODIQA_PG_RETENTION_PASSWORD` | High | PostgreSQL authentication for the dedicated, least-privilege `qodiqa_retention` role used only by the automated audit-retention cleanup cycle; required whenever `QODIQA_PG_ENABLED=true` |
+| Migration role password | `QODIQA_PG_MIG_PASSWORD` | High | **: migration job / operator shell ONLY — never in the gateway environment (a production gateway boot refuses it; the shipped compose/Kubernetes gateways no longer receive it; the gateway config-secrets provider no longer manages it).** PostgreSQL authentication for the dedicated `qodiqa_mig` role (`src/infra/postgres/migrate.js`), which holds schema-modifying DDL rights that the request-serving `qodiqa_app` role does not; distinct from and never shared with `QODIQA_PG_PASSWORD`. Falls back to `QODIQA_PG_PASSWORD` if unset — set it explicitly once a dedicated migration credential is provisioned. |
+
+`QODIQA_CLIENT_ID` is not a secret. It appears in artifact headers and audit logs in plaintext. It must be meaningful and stable but does not require secret-management controls.
+
+The two required secrets (`QODIQA_KEY_ENCRYPTION_KEY`, `QODIQA_CLIENT_ID`) and at least one AI provider credential must be present at startup. The server exits with `process.exit(1)` before any initialization if either is missing, or if `hasAnyProvider()` finds zero enabled providers (`NO_PROVIDER_CONFIGURED`; `server.js`). There is no startup check for signing identity keys — removed the shared `QODIQA_SIGN_TOKEN` secret; a server with zero signing identities provisioned boots normally and simply rejects every `POST /sign` call with `401 UNAUTHORIZED` (see `docs/configuration/reference.md`).
+
+### Signing identity keys
+
+`POST /sign` authenticates via `Authorization: Bearer <sk_...>` — a per-identity signing API key, not a shared secret. Each key is always server-generated via `crypto.randomBytes(32)` (`src/core/signing/signingIdentityStore.js:88-94`, `API_KEY_PREFIX = 'sk_'`, `API_KEY_BYTES = 32`), never user-supplied, and stored only as a hash. Provision one with:
+
+```bash
+node scripts/provision-signing-identity.js \
+  --name ci-pipeline --tenant-id default --environment production \
+  [--providers openai,anthropic] [--max-ttl-ms 300000] [--rotate]
+```
+
+The plaintext key is printed exactly once (`apiKey` field of the JSON output) and is never stored in plaintext anywhere — store it in a secrets manager immediately. Re-running with `--rotate` issues a new key and immediately invalidates the previous one for that identity. See `scripts/provision-signing-identity.js`'s own header comment for the alternative HTTP-based provisioning path (`POST /signing-identities`, for an already-bootstrapped RBAC admin).
+
+Rotating any of the PostgreSQL role passwords above (`ALTER ROLE ... PASSWORD ...` + the matching `.env` update) is a permitted manual operator action — but changing what a role is allowed to *do* (`CREATEDB`/`CREATEROLE`/`BYPASSRLS`/role-membership grants, etc.) is not: those attribute changes must land as a migration file, never a manual `psql` statement. See [docs/operations/database-role-management.md](../operations/database-role-management.md) for the full policy, the one documented bootstrap exception, and two historical incidents this rule exists to prevent.
+
+---
+
+## Repository & build-context hygiene
+
+QODIQA's runtime writes several classes of operational data to disk (RBAC/org/tenant
+config, policy-store snapshots, key archives, audit and nonce logs) and, in local
+dev, Redis persists to an AOF directory. None of this is source — it is
+regenerated by the running application — and it must never be repo-resident or
+enter a Docker build context. `.gitignore` and `.dockerignore` enforce this as a
+default-deny, not a manually-maintained allowlist.
+
+### Protected runtime directories and files
+
+| Category | Pattern(s) | Where enforced |
+|---|---|---|
+| Operational data directory | `data/` (directory-level; individual `data/keys.json`-style entries are kept as documentation but are now redundant with this rule) | `.gitignore`, `.dockerignore` |
+| Redis persistence | `appendonlydir/`, `dump.rdb`, `*.rdb`, `*.aof`, `*.aof.*` | `.gitignore`, `.dockerignore`, `deploy/docker/backup.Dockerfile.dockerignore`, both Dockerfiles' `RUN rm -rf` (defense-in-depth) |
+| Environment files | `.env.*` (anything starting with the literal `.env.` prefix — e.g. `.env.backup`) | `.gitignore`. `deploy/env/production.env.example` and `deploy/systemd/backup.env.example` are unaffected: neither starts with `.env.`, and both are placeholder-only files that are safe and intended to be committed. |
+| Developer backup copies | `*.backup` | `.gitignore`, `.dockerignore`, `deploy/docker/backup.Dockerfile.dockerignore`. **Exception:** `deploy/docker/backup.Dockerfile` is explicitly re-included in `.gitignore` (`!deploy/docker/backup.Dockerfile`) — it is a real, deliberately-tracked second production Dockerfile (see its own header comment for why a DR/backup image needs a separate Dockerfile), not an accidental backup file. It does not need a matching `.dockerignore` exception: excluding it from a build context has no effect, since a Dockerfile is read directly from disk by `docker build -f`, never `COPY`'d into an image. |
+| Cryptographic key material | `*.pem`, `*.kek`, `*.key.bin`, `*.privkey`, `data/keys.json`, `data/kek.*` | `.gitignore` (pre-existing, unchanged) |
+
+If an intentional fixture ever needs to ship inside `data/`, re-include it
+explicitly (`!data/fixtures/`, `!data/fixtures/**`) rather than loosening the
+directory-level rule.
+
+### Pre-commit enforcement
+
+A git hook runs `scripts/scan-secrets.sh --staged` (gitleaks against staged
+changes only) before every commit and blocks it with a non-zero exit on any
+match. There is no Husky dependency in this repo, so the hook is wired the
+plain, repository-native way:
+
+- `.githooks/pre-commit` is a tracked script that invokes the scan.
+- `npm install` runs the `prepare` script (`git config core.hooksPath .githooks`),
+  which points git at that directory instead of the default `.git/hooks/`.
+
+Run `npm install` once after cloning (or `npm run prepare` directly) to activate
+it; no other setup is required. A commit that stages a secret-shaped string
+(per `.gitleaks.toml`'s rules — AWS/GCP/Azure keys, the QODIQA-specific KEK/
+token/API-key patterns, PEM private keys, Redis/Postgres passwords, etc.) is
+rejected locally before it ever reaches a remote.
+
+### CI enforcement
+
+`.github/workflows/security.yml`'s `secret-scan` job runs on every push and
+pull request to `main`/`master`/`release/**`/`hotfix/**` and executes
+`npm run security:scan-secrets` (the same `scripts/scan-secrets.sh` entry
+point the local hook uses) as a required step — a secret introduced via a PR
+that bypassed the local hook (e.g. `--no-verify`, or a hook never installed)
+still fails CI red. The job additionally runs `gitleaks-action` for GitHub
+Security-tab SARIF integration, but that is supplementary; the `npm run`
+step is the actual required gate.
+
+### Developer workflow
+
+- Never write real secrets into any file inside `data/`, `.env*` (other than
+  the untracked, git-ignored `.env` itself), or anywhere matching the patterns
+  above — they will not be committed, but treat "won't be committed" as a
+  backstop, not a substitute for not creating them in a repo-adjacent path.
+- Run `npm run security:scan-secrets` locally at any time to scan HEAD +
+  working tree; `npm run security:scan-secrets:staged` scans only what's
+  staged (what the pre-commit hook runs).
+- If `scan-secrets.sh` reports a false positive (e.g. a legitimate high-entropy
+  test fixture), add a narrowly-scoped path or regex entry to `.gitleaks.toml`'s
+  `[allowlist]` — never disable the hook or the CI job to work around a finding.
+
+---
+
+## Generating secrets
+
+```bash
+# KEK — 64 hex characters (256 bits / 32 bytes)
+openssl rand -hex 32
+
+# REDIS_PASSWORD — minimum 16 characters
+openssl rand -base64 32
+```
+
+Signing identity keys are not generated with `openssl` — they are always minted server-side by `scripts/provision-signing-identity.js` (or the equivalent `POST /signing-identities` admin call), never assembled by hand. See "Signing identity keys" above.
+
+### KEK format requirements
+
+`QODIQA_KEY_ENCRYPTION_KEY` must be exactly 64 hexadecimal characters. The value is decoded to a 32-byte Buffer by `secretsProvider.js` using `Buffer.from(raw, 'hex')`. The server exits at startup if the format is invalid.
+
+The following patterns are rejected as weak in production (`NODE_ENV=production`):
+- All zeros (`0000...`)
+- Any single character repeated 64 times (e.g. all-F's)
+- Any 2-character byte pattern repeated 32 times
+
+### REDIS_PASSWORD requirements
+
+Minimum 16 characters when set. Known placeholder values are rejected at startup in production.
+
+---
+
+## Key Encryption Key (KEK) lifecycle
+
+The KEK is loaded once at startup by `secretsProvider.js` and cached in memory (`_cachedKek`). It is never re-read from the environment during the process lifetime.
+
+`secretsProvider.js` is the single authoritative KEK accessor — **no component should read `QODIQA_KEY_ENCRYPTION_KEY` directly.** Its default provider reads that env var. In production, `src/infra/keys/keyProviderFactory.js` (see "KMS/Vault backend configuration" below and `docs/security/key-management.md`) can wire an external KMS backend (HashiCorp Vault, AWS/Azure/GCP KMS, or a PKCS#11 HSM) into `secretsProvider` at startup via `_setExternalKek()`, selected by `QODIQA_KMS_PROVIDER`; in that case `QODIQA_KEY_ENCRYPTION_KEY` is not read at all. The provider name (`env:QODIQA_KEY_ENCRYPTION_KEY`, `vault-kv`, `aws-kms`, etc.) appears in `KEY_MANAGER_READY` log events.
+
+**What the KEK protects**: every encrypted-at-rest secret class in the codebase resolves its KEK through `secretsProvider.getKeyEncryptionKey()`, so all of them share the same key material and the same KMS backend selection:
+- The active Ed25519 signing key's private material (`services/artifact/keyEncryption.js`) — a fresh 12-byte random IV per encryption, AES-256-GCM with a 128-bit authentication tag. Deprecated and revoked keys carry only public key material.
+- Webhook signing secrets (`src/core/webhooks/webhookSecrets.js`) — identical AES-256-GCM construction, stored as `secret_enc`/`secret_iv`/`secret_tag` on `webhook_endpoints`. Prior to remediation of finding this module bypassed `secretsProvider` and read `QODIQA_KEY_ENCRYPTION_KEY` directly, meaning webhook secrets were not protected by whichever external KMS was configured. If a deployment ever ran with that bug and an external `QODIQA_KMS_PROVIDER`, run `scripts/migrate-webhook-secrets-kek.js` once (dry-run by default) to re-encrypt any webhook secrets still under the old raw-env-var KEK.
+
+**KEK rotation**: `keyProviderFactory.rotateWrappingKey()` calls the active provider's own `rotateWrappingKey()` and then re-wires the new KEK into `secretsProvider` (the same `_setExternalKek()` call made at startup), so a rotation actually takes effect for subsequent encryptions in the same process — prior to remediation of finding this function existed but had no caller anywhere and never propagated its result, making it effectively dead code. It is reachable two ways: `POST /key-admin/kek/rotate` (ops-authenticated, lock-protected via the same distributed rotation lock the per-client key rotation routes use — a KEK rotation cannot race a concurrent KEK rotation) and calling `keyProviderFactory.rotateWrappingKey()` directly from an operational script. After rotating, existing ciphertext encrypted under the *old* KEK version does not automatically re-encrypt — for the local/env-var provider, rotation itself changes what's exported, so run `scripts/migrate-keys-json-kek.js` (dry-run by default; pass `--execute` to apply) to re-encrypt `keys.json`'s stored private-key material under the new KEK, mirroring the equivalent `scripts/migrate-webhook-secrets-kek.js` script for webhook secrets. Note that any secret class not yet migrated (including webhook secrets, migrated separately) will fail to decrypt after such a rotation unless the provider supports retrieving prior key versions — this is a shared characteristic of every KEK-protected secret class, not specific to any one of them.
+
+**KEK loss**: if the KEK is lost and the process has restarted, all KEK-protected material (Ed25519 private keys, webhook secrets) becomes irrecoverable. Recovery requires provisioning new secrets under a new KEK.
+
+---
+
+## KMS/Vault backend configuration
+
+`QODIQA_KMS_PROVIDER` selects which backend supplies the KEK (default `local`, reading `QODIQA_KEY_ENCRYPTION_KEY` directly). See `docs/configuration/reference.md`'s `QODIQA_KMS_PROVIDER` entry for the complete, source-verified table of required/optional variables per backend (`vault-kv`, `vault-transit`, `aws-kms`, `azure-kv`, `gcp-kms`, `hsm`) — that table previously listed variable names that did not match this codebase's actual provider files (`src/infra/keys/providers/*.js`); both are now kept in sync against source, not against each other.
+
+**Config validation**: `src/infra/keys/kmsConfig.js` centralizes validation of the selected backend's required fields (a Zod schema per provider). A missing or invalid field FATALs at startup naming the exact field — e.g. `AWS_KMS_KEY_ID is not set.` — before the provider is ever constructed, instead of surfacing later as an ad hoc error deep inside an async `initialize()` call.
+
+**SDK availability**: each cloud/Vault/HSM backend's client library is an `optionalDependency` in `package.json` — not installed by default, so a purely local deployment is never forced to pull in AWS/Azure/GCP/Vault/PKCS#11 packages it doesn't use. `src/infra/keys/sdkAvailability.js` checks whether the selected backend's SDK can be resolved and FATALs naming the backend, the missing package(s), and the exact `npm install` command if not — e.g. selecting `azure-kv` without `@azure/keyvault-keys` and `@azure/identity` installed FATALs listing both by name.
+
+**Entrypoints**: both `npm start` (`node server.js`) and `node start.js` initialize the selected KMS provider before any signing-key operation runs. This was not always true — `node server.js` run directly used to silently ignore `QODIQA_KMS_PROVIDER` entirely and boot against the local env-var KEK regardless of what was configured (Finding D), a gap closed as part of items 21/22.
+
+---
+
+## Application-config secrets provider
+
+Everything above this section (KEK, execution-invariant secret, Ed25519 signing keys) is cryptographic key material owned by `src/infra/keys/keyProviderFactory.js` and `services/secrets/secretsProvider.js`., every OTHER secret QODIQA reads — database/Redis passwords, AI provider API keys, the ops token, webhook/alerting credentials — came from `.env` with only shape/placeholder validation (`src/infra/secrets/secretValidation.js`), never from a secrets manager. adds a second, parallel, deliberately separate provider/factory (`src/infra/configSecrets/`) for exactly that class of secret.
+
+### Backend decision
+
+**HashiCorp Vault KV v2** — the same backend already used for the KEK (`src/infra/keys/providers/vault.js`'s `VaultKekProvider`), a different KV v2 path. Chosen over introducing a cloud-specific secrets manager (AWS Secrets Manager, Azure Key Vault, GCP Secret Manager) because it is the option that best satisfies every stated requirement simultaneously, on this codebase's own evidence:
+
+1. **Fits the existing provider/factory architecture** — Vault KV v2 is already production-integrated (KEK storage) with a proven AppRole-preferred auth pattern this codebase already operates; the new provider reuses the identical `{mount}/data/{path}` read shape and the same `VAULT_ADDR`/`VAULT_ROLE_ID`/`VAULT_SECRET_ID`/`VAULT_TOKEN`/`VAULT_NAMESPACE`/`VAULT_TLS_CA_CERT` credentials (same Vault deployment, a second KV path).
+2. **Minimizes new dependencies** — `node-vault` is already an `optionalDependency` (`package.json`); zero new packages were added for. A cloud-specific SDK (`@aws-sdk/client-secrets-manager`, `@azure/keyvault-secrets`, `@google-cloud/secret-manager`) would each be a brand-new dependency this repository has never needed.
+3. **Testable deterministically without live cloud credentials in CI** — `src/infra/configSecrets/providers/vaultKv.js` is unit-tested against a mocked `node-vault` client (`src/infra/configSecrets/__tests__/vaultKvProvider.test.js`), exactly mirroring `src/infra/keys/providers/__tests__/vault.provider.test.js`'s existing pattern; `configSecretsFactory._setProvider()` additionally lets any test inject a fully synthetic in-memory provider with no Vault involvement at all.
+4. **Supports production secret retrieval** — a single KV v2 read returns the entire application-config secret map at startup.
+5. **Preserves a clean provider abstraction for future backends** — `src/infra/configSecrets/providers/base.js`'s `ConfigSecretsProvider` contract (`fetchSecrets()`/`healthCheck()`/`initialize()`/`shutdown()`) is backend-agnostic; adding AWS/Azure/GCP later is a new file implementing that contract plus one `_buildProvider()` case in `configSecretsFactory.js`, not a redesign.
+6. **Does not weaken existing security invariants** — retrieved values still flow through the same `secretValidation.js` checks (see "Validation ordering" below); nothing here bypasses fail-closed startup behavior.
+
+### Secret inventory
+
+Full variable-by-variable classification lives. Summary:
+
+| Classification | Meaning | Examples |
+|---|---|---|
+| **A — Secret, managed by this provider** | Comes from the config-secrets provider in production; see `src/infra/configSecrets/managedSecrets.js` (`MANAGED_CONFIG_SECRETS`) for the authoritative, tested list of 23 names — Redis (`REDIS_PASSWORD`/`REDIS_USERNAME`), PostgreSQL (`QODIQA_PG_PASSWORD`/`_MIG_PASSWORD`/`_RETENTION_PASSWORD`), AI provider keys (`OPENAI_API_KEY` and five siblings), `QODIQA_OPS_TOKEN`, nine alerting/log-shipping credentials, `QODIQA_DSR_PSEUDONYM_PEPPER`, and the tenant-portal SSO pair `QODIQA_OIDC_CLIENT_SECRET`/`QODIQA_PORTAL_SESSION_SECRET`. |
+| **B — Non-secret configuration** | Stays as plain env/config — `QODIQA_CLIENT_ID` (documented above as not a secret), `NODE_ENV`, `PORT`, timeouts, feature flags, `QODIQA_PG_HOST`/`_PORT`/`_DATABASE`/`_USER` (identifiers, not credentials), `TRUSTED_PROXY`, etc. |
+| **C — Cryptographic material, already KMS-owned** | Untouched by this provider — `QODIQA_KEY_ENCRYPTION_KEY`, `QODIQA_EXECUTION_INVARIANT_SECRET`, and the `VAULT_*`/`AWS_KMS_*`/`AZURE_KEY_VAULT_*`/`GCP_KMS_*`/`HSM_*` KMS-provider config already covered above. |
+| **Out of reach of a Node-based provider** | `QODIQA_BACKUP_HMAC_KEY` (read only by `scripts/pg-backup.sh`/`pg-wal-archive.sh`/`backup-audit-log.sh` via shell parameter expansion — never by the Node process) and `HF_TOKEN` (developer tooling for Hugging Face downloads; no live reader in this codebase at all). Neither is managed by `configSecretsFactory.js` — injecting them into `process.env` here would have zero effect on a separately-invoked bash script. Documented as an explicit follow-up: inject via the orchestrator's own mechanism at the point those scripts run. |
+
+`VAULT_ADDR`/`VAULT_TOKEN`/`VAULT_ROLE_ID`/`VAULT_SECRET_ID`/`VAULT_NAMESPACE`/`VAULT_TLS_CA_CERT` are themselves excluded from the managed list — they are the credentials used to *reach* Vault; a secrets manager cannot supply its own connection bootstrap credentials (the same reason cloud KMS providers rely on ambient IAM rather than fetching their own).
+
+### Provider architecture
+
+```text
+application configuration
+        │
+        ▼
+configSecretsFactory (src/infra/configSecrets/configSecretsFactory.js)
+        │
+        ├── EnvConfigSecretsProvider   ("env", default — no-op)
+        │
+        └── VaultKvConfigSecretsProvider ("vault-kv")
+                    │
+                    ▼
+             Vault KV v2 read
+```
+
+Selected via `QODIQA_CONFIG_SECRETS_PROVIDER` (default `env`). The `env` provider's `fetchSecrets()` always returns `{}` — `configSecretsFactory.apply()` then makes **zero changes** to `process.env`, so local development, tests, and any deployment that injects secrets via its own orchestrator (Kubernetes Secret `secretKeyRef`, Docker secret, etc. — a legitimate pattern `secretValidation.js`'s existing KMS advisory already accepts for the KEK) behave exactly as they did.
+
+For any non-`env` provider, `apply()` treats it as the **exclusive** source of truth for every name in `MANAGED_CONFIG_SECRET_NAMES`: a name the provider returns is written to `process.env`; a name it does NOT return is **deleted** from `process.env`, even if `.env`/dotenv already populated it. This is the mechanism that satisfies "never silently fall back to plaintext `.env`" for the case where the secrets manager is reachable but simply lacks a particular key — the existing fail-closed checks downstream (`envValidation.js`, `secretValidation.js`, `pool.js`, `services/providers/config.js`'s `hasAnyProvider()`, etc.) then treat that name exactly as they already treat any other absent env var. `configSecretsFactory.js` deliberately does not re-implement per-variable requiredness itself — see its header comment.
+
+### Fail-closed behavior
+
+`configSecretsFactory.bootstrapOrExit()` (mirrors `keyProviderFactory.bootstrapOrExit()` exactly — same `[FATAL]`/`process.exit(1)` shape) calls `initialize()` then `apply()`. **Any** failure in either step — provider construction, Vault auth failure, Vault unreachable, a malformed/empty KV v2 response, a non-string value — writes a `[FATAL]` line to stderr and calls `process.exit(1)` immediately. There is no code path from a caught error back into "continue with whatever `process.env` already held." See `src/infra/configSecrets/__tests__/negativeFailClosed.test.js` for the mandatory negative-test coverage of this exact scenario (production + Vault unreachable + a plaintext secret already sitting in `process.env`).
+
+### Startup ordering
+
+`bootstrapOrExit()` must complete **before** `server.js`/`server/startup.js` is required, not merely before request-serving starts. Two consumer modules capture several managed names at **module-load time** (a top-level `const X = process.env.Y`, read once and never again):
+
+- `services/providers/config.js`'s `CONFIGS` (all six AI provider API keys) — required transitively the moment `server/startup.js` calls `hasAnyProvider()`.
+- `src/alerting/notification/channels/{Webhook,PagerDuty,SIEM,Slack,Teams}Channel.js` and `NotificationService.js` — required the moment `server/startup.js` does `require('../src/alerting')`.
+
+Because of this, the bootstrap cannot live inside `server/startup.js` itself (which is also constrained to be a synchronous CommonJS module, while a Vault fetch is inherently async) — it runs in exactly the two places `keyProviderFactory.bootstrapOrExit()` already runs, for the identical Finding-D reason:
+
+- **`start.js`** — `await csf.bootstrapOrExit();` immediately after the KMS bootstrap, before `require('./server.js')`.
+- **`server.js`** (Finding-D-style gate, for `node server.js`/`npm start` run directly) — independently gated alongside the existing KMS gate: `QODIQA_CONFIG_SECRETS_PROVIDER !== 'env' && !configSecretsFactory.isInitialized()`. When neither the KMS nor the config-secrets bootstrap is needed, `server.js` takes the exact same synchronous path it always has (verified by the pre-existing, unmodified `serverEntrypointGate.lockin.test.js`).
+
+Once applied, `server/startup.js`'s own `require('dotenv').config()` runs as before — dotenv's default behavior never overrides an already-set `process.env` key, so the Vault-sourced values survive it. A corollary: `VAULT_*` auth vars for a non-`env` provider must be present in the real process environment (shell export, Kubernetes Secret env, etc.) when using a non-default provider — `.env` has not been loaded yet at the point the config-secrets bootstrap runs, exactly the same pre-existing constraint the KMS Vault provider already has.
+
+### Validation ordering
+
+Retrieved values are validated exactly like any other: `apply()` runs during the KMS/config-secrets bootstrap (before `server/startup.js`'s requires), and `runSecretValidation()`/`runEnvValidation()` run later, inside `server/startup.js`, reading `process.env` — by which point it already reflects whatever the config-secrets provider applied. No validation was relaxed or bypassed for provider-sourced values; the ordering is retrieve → validate → available,'s requirement.
+
+### Security hardening
+
+`configSecretsFactory.apply()`'s own `CONFIG_SECRETS_APPLIED` log event carries only variable **names** and counts (`appliedCount`/`clearedCount`) — never values. `bootstrapOrExit()`'s `[FATAL]` stderr messages name the provider and the underlying error message, never a secret value. See `src/infra/configSecrets/__tests__/configSecretsFactory.test.js`'s "no secret leakage through logging" suite, which asserts this by serializing every captured log call and checking it never contains a fixture secret value.
+
+### Testing
+
+- Deterministic provider injection: `configSecretsFactory._setProvider(provider, type)` — no live Vault/cloud credentials needed in CI, mirrors `services/secrets/secretsProvider.js`'s existing `_setProvider()` pattern.
+- `src/infra/configSecrets/__tests__/`: `managedSecrets.test.js`, `envProvider.test.js`, `vaultKvProvider.test.js` (mocked `node-vault`, same pattern as `vault.provider.test.js`), `configSecretsFactory.test.js`, `negativeFailClosed.test.js` (the mandatory negative test), `serverEntrypointGate.test.js` (the branch of `server.js`'s entrypoint gate, alongside the pre-existing unmodified KMS `serverEntrypointGate.{lockin,findingD}.test.js`).
+
+---
+
+## Ed25519 signing key lifecycle
+
+### Key record format
+
+Each key record in the store has one of three statuses:
+- `active` — the current signing key. Has private key material (encrypted at rest) and full lifecycle timestamps.
+- `deprecated` — a previous active key. Public key material only. Used for verifying artifacts signed with this key until they expire.
+- `revoked` — permanently blocked from verification.
+
+`VERIFIABLE_STATUSES = Set(['active', 'deprecated'])` — only these two may be used for signature verification.
+
+Key IDs follow the format `<clientId>:key_v<version>` (e.g. `acmecorp-prod:key_v2`).
+
+### Key lifecycle constants
+
+| Constant | Value | Meaning |
+|---|---|---|
+| `ROTATION_DAYS` | 90 | Rotation is due 90 days after key creation |
+| `EXPIRY_DAYS` | 180 | Key expires 180 days after creation; signing blocked after this point |
+| `EXPIRY_WARNING_DAYS` | 30 | `KEY_EXPIRING_SOON` warning emitted when fewer than 30 days remain |
+
+### Startup key validation
+
+`keyManager.validateStartup()` runs at startup and is fail-closed:
+
+| Condition | Log event | Startup action |
+|---|---|---|
+| Structural violations (duplicate versions, ownership mismatch, multiple active, invalid lifecycle) | `KEY_STORE_VIOLATION` | Fatal — `process.exit(1)` |
+| Active key has expired (`expiresAt` in the past) | `KEY_EXPIRED_STARTUP` | Fatal — `process.exit(1)` |
+| Active key within 30 days of expiry | `KEY_EXPIRING_SOON` | Warning only — startup continues |
+| Active key past `rotationDeadline` but not expired | `KEY_ROTATION_OVERDUE` | Warning only — startup continues |
+| No active keys found after validation | `KEYSTORE_EMPTY` | Fatal — `process.exit(1)` |
+
+On successful validation: `KEY_MANAGER_READY` is emitted with `activeKeys`, `secretProvider`, and `encryptionAlgorithm`.
+
+---
+
+## Provisioning the first key
+
+The server will not start if no active signing key exists for `QODIQA_CLIENT_ID`. Run this before starting QODIQA for the first time:
+
+```bash
+# With QODIQA_KEY_ENCRYPTION_KEY, QODIQA_CLIENT_ID, and QODIQA_KEYS_PATH set:
+node -e "require('./services/artifact/keyManager').rotate(process.env.QODIQA_CLIENT_ID)"
+```
+
+This calls `rotateKey()`, which detects the empty store and calls `_provisionFirstKey()`. The first key is created as `<clientId>:key_v1`, written to the encrypted key store at `QODIQA_KEYS_PATH`, and `KEY_CREATED` is emitted.
+
+---
+
+## Key rotation
+
+Key rotation replaces the active key with a new Ed25519 key pair. The previous active key is deprecated (public key retained for verification; private key discarded immediately from memory). Both events are logged.
+
+```bash
+# With required env vars set:
+node -e "require('./services/artifact/keyManager').rotate(process.env.QODIQA_CLIENT_ID)"
+```
+
+Log events emitted:
+- `KEY_DEPRECATED` — previous active key is now deprecated
+- `KEY_ROTATED` — new active key ID and version
+
+The new key ID increments the version: `<clientId>:key_v<n+1>`.
+
+**Key store reload after rotation.** SIGHUP reloads policies only — it does not reload the key store. A rotation performed by the running process (scheduler or `/key-admin`) is visible to it immediately; a rotation done out-of-process (the `node -e` script above) is picked up by the rotation scheduler's periodic `keys.json` reload (`QODIQA_KEY_RELOAD_ENABLED`, default `true`; `QODIQA_KEY_ROTATION_RELOAD_INTERVAL_MS`, default 300000 ms — `services/artifact/rotationScheduler.js`), or immediately by a restart (`kubectl rollout restart statefulset/qodiqa -n qodiqa` — a brief full outage on the production single-replica StatefulSet). previously said the key store is held for the process lifetime and a rolling restart is required.
+
+Deprecated keys remain in the store for the full 180-day artifact lifetime. Artifacts signed with deprecated keys continue to verify successfully until they expire.
+
+### Key store write protocol
+
+`saveKeys()` writes atomically:
+1. `mkdirSync` — ensures the parent directory exists
+2. `writeFileSync` to `<DATA_PATH>.tmp` — serializes the full store
+3. `renameSync` temp → target — atomic replacement on POSIX; falls back to copy-then-unlink on Windows
+
+No partial state is ever written to the canonical path.
+
+---
+
+## Key revocation
+
+Revocation permanently blocks a key from being used for signing or verification **within QODIQA**. Unlike deprecation, revocation is irreversible. For deployments using a native signing provider (Vault Transit / HSM / KMS), QODIQA's revocation does not by itself guarantee the key is disabled at the provider — see `docs/security/key-management.md`'s "External Key Providers (Vault Transit / HSM / KMS)" section and the [Key Compromise Runbook](../operations/key-compromise-runbook.md) before relying on this as a complete compromise response.
+
+```bash
+# Revoke by key ID:
+node -e "require('./services/artifact/keyManager').revoke('<clientId>:<keyId>')"
+
+# Example:
+node -e "require('./services/artifact/keyManager').revoke('acmecorp-prod:key_v1')"
+```
+
+Log event emitted: `KEY_REVOKED`
+
+After revocation, all artifacts signed with the revoked key are blocked with `KEY_REVOKED` (the key still resolves) or `INVALID_SIGNATURE` (the key no longer resolves): HTTP 200 by default, 403 with `QODIQA_BLOCK_HTTP_MODE=status`.
+
+**When to revoke**: use revocation when private key material is confirmed compromised. For normal key retirement, rotation (which deprecates the old key) is sufficient.
+
+---
+
+## Key store file format
+
+`keys.json` structure:
+
+```json
+{
+  "version": 1,
+  "clients": {
+    "<clientId>": {
+      "<keyId>": {
+        "clientId": "...",
+        "keyId": "...",
+        "version": 1,
+        "algorithm": "ed25519",
+        "publicKeyDer": "<base64-encoded SPKI DER>",
+        "status": "active | deprecated | revoked",
+        "createdAt": "<ISO 8601>",
+        "rotationDeadline": "<ISO 8601>",
+        "expiresAt": "<ISO 8601>",
+        "encryptedPrivateKeyDer": {
+          "keyId": "<key identifier>",
+          "algorithm": "aes-256-gcm",
+          "encryptedPrivateKey": "<base64, AES-256-GCM encrypted PKCS8 DER>",
+          "iv": "<base64, 12 bytes / 96 bits>",
+          "authTag": "<base64, 16 bytes / 128-bit GCM auth tag>",
+          "createdAt": "<ISO 8601>",
+          "updatedAt": "<ISO 8601>"
+        }
+      }
+    }
+  },
+  "legacyMap": {}
+}
+```
+
+`encryptedPrivateKeyDer` is present only on `active` keys. Deprecated and revoked entries have no private key field — private key material is discarded from memory immediately on rotation or revocation.
+
+**Encryption**: AES-256-GCM with a 96-bit random IV and 128-bit authentication tag. The authentication tag is verified on every decrypt; any tampering is detected before key material is used.
+
+**Startup migration**: the system automatically detects and upgrades legacy storage formats at startup:
+
+| Legacy format | Detection | Action |
+|---|---|---|
+| `privateKeyDer` (plaintext base64) | `privateKeyDer` field present | Re-encrypt with AES-256-GCM |
+| Old field names (`ciphertext`/`tag`) | `ciphertext` present, `encryptedPrivateKey` absent | Rewrite with current field names |
+| Missing lifecycle timestamps | `rotationDeadline` or `expiresAt` absent | Backfill from `createdAt` |
+
+Migration emits: `KEY_MIGRATION_STARTED` → `KEY_MIGRATION_COMPLETED` (or `KEY_MIGRATION_FAILED` on error).
+
+After migration, a second validation pass re-reads the file and aborts startup if any `privateKeyDer` field remains (`KEY_MIGRATION_INCOMPLETE`).
+
+**No plaintext private key may exist at rest.** Startup is refused (`process.exit(1)`) if any plaintext key is detected after migration. There is no bypass, no warning-only mode, and no fallback.
+
+---
+
+## Secret injection in production
+
+**Kubernetes**: secrets are injected via `secretKeyRef` from Kubernetes Secrets — never in ConfigMaps or environment manifests. The reference Kubernetes deployment (`deploy/kubernetes/overlays/single-node/` or `deploy/kubernetes/overlays/distributed/` — see `deploy/kubernetes/kustomization.yaml` for why there are two overlays instead of one shared entry point) wires up the `openai` provider only and injects: `QODIQA_KEY_ENCRYPTION_KEY`, `OPENAI_API_KEY`, `QODIQA_CLIENT_ID`, `REDIS_PASSWORD` (plus `QODIQA_PG_PASSWORD` in the distributed overlay only). Per-identity signing keys are provisioned separately (`scripts/provision-signing-identity.js`), not injected via this Secret. To deploy with a different provider, add the corresponding key(s) from [Secret inventory](#secret-inventory) to `deploy/kubernetes/base/secret.yaml` and to each overlay's workload manifest (`statefulset.yaml` / `deployment.yaml`) following the same `secretKeyRef` pattern.
+
+**External KMS (Vault Transit / HSM) on Kubernetes**: both `single-node` and `distributed` above run the Dockerfile's default `CMD ["node", "server.js"]`, which never calls `keyProviderFactory.initialize()` — `QODIQA_KMS_PROVIDER` set anywhere in those overlays' ConfigMaps would silently do nothing. `deploy/kubernetes/overlays/examples/vault-transit/` and `.../examples/hsm/` are reference overlays that additionally patch the container to `command: ["node", "start.js"]` (the entry point that actually initializes the external provider before server startup — see `start.js`'s header comment) and inject that provider's own credentials via a separate Secret/ConfigMap scoped to the example overlay only. See `deploy/kubernetes/overlays/examples/README.md` for what they do and do not solve for you, and `docs/security/key-management.md` / `src/infra/keys/providers/` for the underlying provider implementations.
+
+**Docker Compose**: use `--env-file .env.prod` with a file that is not committed to version control. The `deploy/env/production.env.example` file contains only placeholder values and is safe to commit.
+
+**In all environments**: `QODIQA_KEY_ENCRYPTION_KEY` must never be stored on disk in plaintext in production. Use a KMS-backed secret manager (AWS Secrets Manager, GCP Secret Manager, Azure Key Vault, HashiCorp Vault) and inject the value at runtime.
+
+**Dedicated retention role credential**: deployments with `QODIQA_PG_ENABLED=true` additionally require `QODIQA_PG_RETENTION_PASSWORD` — the credential for `qodiqa_retention`, the least-privilege role migration `038_retention_dedicated_role.sql` creates specifically for the automated audit-retention cleanup cycle (`src/core/audit/retention.js`'s `runRetentionCycle()`, via `src/infra/postgres/retentionPool.js`). It is provisioned and rotated exactly like `QODIQA_PG_PASSWORD` (same KMS/secret-manager injection pattern) but is a **separate** credential for a **separate** role — never reuse `QODIQA_PG_PASSWORD`'s value for it, and never grant `qodiqa_retention` membership in `qodiqa_app` or vice versa (that would recreate the broad-privilege exposure this role exists to eliminate). See `docs/operations/audit-chain-integrity-verification.md` for what the role can and cannot do, and `src/core/audit/retentionPrivilegeCheck.js` for the startup check that fails closed if this role's grants or RLS policies are missing or misconfigured.
+
+---
+
+## Secret validation at startup
+
+`runSecretValidation()` runs after the required-var presence checks and `runEnvValidation()`. In production (`NODE_ENV=production`), any finding causes `process.exit(1)` with `SECRET_VALIDATION_FATAL`. In other environments, findings are emitted as `WARN` with `SECRET_VALIDATION_FAILED` and startup continues.
+
+On clean validation: `SECRET_VALIDATION_OK` is emitted.
+
+Checks performed:
+- `QODIQA_KEY_ENCRYPTION_KEY`: uniform-byte patterns (all-zeros, single-char repeat, 2-char repeat)
+- `OPENAI_API_KEY`: placeholder patterns (`sk-xxxx`, `sk-your-`, `sk-placeholder`, etc.). This placeholder check is OpenAI-specific — `ANTHROPIC_API_KEY`, `GEMINI_API_KEY`, `MISTRAL_API_KEY`, `LLAMA_API_KEY`, and `LOCAL_API_KEY` are not scanned for placeholder values by `runSecretValidation()`; if you deploy with one of those providers instead of (or in addition to) OpenAI, review its credential manually.
+- `QODIQA_CLIENT_ID`: known placeholder identifiers (`test`, `demo`, `example`, `default`, etc.)
+- `REDIS_PASSWORD`: known placeholder patterns; minimum 16 characters

@@ -1,0 +1,32 @@
+# HashiCorp Vault Transit reference overlay.
+#
+# Bases on the default single-node topology unmodified, and additionally:
+#   - overrides the container command to `node start.js` (the documented
+#     production entry point that initializes the external KMS provider and
+#     wires its key material in BEFORE server.js's own startup validation
+#     runs — see start.js's header comment). The shipped default topologies
+#     run the Dockerfile's `CMD ["node", "server.js"]`, which never calls
+#     keyProviderFactory.initialize() — this is exactly the gap
+#     identified.
+#   - sets QODIQA_KMS_PROVIDER=vault-transit
+#   - adds the Vault AppRole credentials and Transit/KEK path configuration
+#     src/infra/keys/providers/vault.js requires, via a new Secret/ConfigMap
+#     scoped to this overlay only — base/secret.yaml and base/configmap.yaml
+#     are untouched.
+#
+# See ../README.md for what this overlay does not solve for you.
+#
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+
+resources:
+  - ../../single-node
+  - secret.yaml
+  - configmap.yaml
+  - networkpolicy-vault.yaml   # gateway egress to Vault:8200 (adjust destination)
+
+patches:
+  - path: statefulset-patch.yaml
+    target:
+      kind: StatefulSet
+      name: qodiqa

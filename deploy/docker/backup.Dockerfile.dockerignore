@@ -1,0 +1,63 @@
+# Build-context ALLOW-LIST for deploy/docker/backup.Dockerfile ONLY.
+#
+# BuildKit uses this file instead of the root .dockerignore whenever the
+# build targets deploy/docker/backup.Dockerfile specifically (`<dockerfile-name>.dockerignore`
+# convention). The root .dockerignore intentionally excludes scripts/ and
+# docs/ for the production gateway image (Dockerfile) — this image is the
+# one exception that actually needs them, so it gets its own list rather
+# than weakening the root one.
+#
+# this file used to be a DENY-list whose patterns (no `**/` prefix) matched only at
+# the context root — the defect fixed for the root .dockerignore. Present in the working tree and NOT excluded:
+# `.stryker-tmp-*/sandbox-*/` (copies of .env, .env.prod, .scratch-f16/{collector-key.pem,kek.txt,ops-token.txt},
+# data/keys.json, data/signing-identities.json …) and quarantine/**/{keys,signing-identities}.json. deploy/docker/backup.Dockerfile's
+# `COPY . .` put them in an image layer, and its later `RUN rm -rf` could not remove anything from that earlier layer.
+#
+# Rule (same as the root .dockerignore): EVERYTHING is excluded; only the inputs this image runs are re-included,
+# and nested test/secret material is excluded again at ANY depth afterwards. Adding a file to the image means adding
+# it here deliberately. Inputs, derived from the runtime require() closure of scripts/dr/*.js and
+# scripts/dr/probes/*.js (166 files, all under src/, services/ and scripts/dr/ — re-derived for this change) plus
+# the shell entry points the CronJobs / systemd units run. deploy/docker/backup.Dockerfile's build-time content gate fails the
+# build if a key, certificate, keystore or env file still reaches /app.
+
+*
+
+# ── Runtime sources ──────────────────────────────────────────────────────────
+!package.json
+!package-lock.json
+!src/**
+!services/**
+# reached through the require() closure (src/core/dlp/extensionPoint.js -> enterprise/dlp); the backup never runs DLP but its dependency walk must resolve
+!enterprise/**
+!scripts/pg-backup.sh
+!scripts/pg-wal-archive.sh
+!scripts/backup-audit-log.sh
+# the incremental audit-log backup's byte-range / metadata-chain helper (required by backup-audit-log.sh)
+!scripts/audit-log-backup-chain.js
+!scripts/dr/**
+# docs/ is kept (runbooks referenced by the backup scripts' operator messages — see deploy/docker/backup.Dockerfile header)
+!docs/**
+!LICENSE
+!licenses/THIRD-PARTY.md
+
+# ── Excluded again at ANY depth, whatever was re-included above ─────────────────
+**/__tests__/**
+enterprise/dlp/eval/**
+**/*.test.js
+**/*.spec.js
+**/test-fixtures/**
+**/node_modules/**
+**/.env
+**/.env.*
+**/*.pem
+**/*.key
+**/*.p12
+**/*.pfx
+**/*.crt
+**/keys.json
+**/*-keys.json
+**/mac-keys*.json
+**/signing-identities.json
+**/*.log
+**/*.sqlite
+**/.DS_Store
