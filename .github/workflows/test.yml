@@ -676,7 +676,7 @@ jobs:
         working-directory: sdk/python
         run: |
           pip install -e ".[dev]"
-          pytest sdk/python/tests/test_webhook_conformance.py -v
+          pytest tests/test_webhook_conformance.py -v
       - name: JavaScript SDK conformance
         working-directory: sdk/javascript
         run: |
