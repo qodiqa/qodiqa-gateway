@@ -291,6 +291,8 @@ jobs:
       - run: npm --prefix sdk/javascript ci --ignore-scripts && npm --prefix sdk/javascript run build
       - name: Migrate database
         run: node src/infra/postgres/migrate.js
+      - name: Pull the Redis image used by the disposable-Redis tests
+        run: docker pull redis:7
       - name: Full-suite coverage against the permanent global threshold
         # npm run test:coverage now runs --runInBand (package.json) —
         # this job is the ONLY place in the repo that ran the full 547-file
@@ -417,6 +419,8 @@ jobs:
       - run: npm --prefix sdk/javascript ci --ignore-scripts && npm --prefix sdk/javascript run build
       - name: Migrate database
         run: node src/infra/postgres/migrate.js
+      - name: Pull the Redis image used by the disposable-Redis tests
+        run: docker pull redis:7
       - name: Integration tests
         # this previously ran a raw `npx jest --testPathPatterns="test/"`,
         # which executes ALL suites under test/ in parallel — including the
