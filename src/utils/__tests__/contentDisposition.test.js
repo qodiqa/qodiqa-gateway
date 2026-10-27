@@ -23,6 +23,12 @@ describe('INJ-8 — sanitizeFilename / safeAttachmentHeader', () => {
     expect(sanitizeFilename(malicious)).toBe('evil\\"; evil-param=\\"x');
   });
 
+  test('a trailing backslash cannot escape the closing quote of filename="..."', () => {
+    const v = sanitizeFilename('report\\');          // the input is: report\
+    expect(v).toBe('report\\\\');                    // the output is: report\\
+    expect(sanitizeFilename('a\\"b')).toBe('a\\\\\\"b');   // input a\"b -> output a\\\"b
+  });
+
   test('safeAttachmentHeader produces a well-formed attachment header for an ordinary filename', () => {
     expect(safeAttachmentHeader('report.csv')).toBe('attachment; filename="report.csv"');
   });

@@ -42,7 +42,8 @@ const ATTR_CHAR_RE = /[A-Za-z0-9!#$&+\-.^_`|~]/;
  */
 function sanitizeFilename(filename) {
   const s = String(filename ?? '').replace(CONTROL_CHARS_RE, '');
-  return s.replace(/"/g, '\\"');
+  // backslashes first: a trailing "\" would otherwise escape the closing quote of filename="..."
+  return s.replace(/\\/g, '\\\\').replace(/"/g, '\\"');
 }
 
 // Non-ASCII bytes are not valid in a legacy quoted-string filename param;
