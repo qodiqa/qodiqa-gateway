@@ -31,7 +31,7 @@ const { Client } = require('pg');
 
 const { getFreePort, spawnCapturing, waitForCondition, killProcessTree } = require('./process');
 
-const REPO_ROOT = path.join(__dirname, '..', '..', '..');
+const REPO_ROOT = path.join(__dirname, '..', '..');
 const DEFAULT_TIMEOUT_MS = 25000;
 
 // ── Per-boot dev database cleanup ─────────

@@ -136,7 +136,7 @@ function baseOsEnv() {
  * @param {object} [overrides] variables to set/override on top of the OS-passthrough base
  */
 function dotenvKeyBlock() {
-  const envPath = path.join(__dirname, '..', '..', '..', '.env');
+  const envPath = path.join(__dirname, '..', '..', '.env');
   if (!fs.existsSync(envPath)) return {};
   let parsed;
   try {
@@ -254,7 +254,7 @@ function buildWorkingEnv(opts = {}) {
     "const r = require('./src/core/tenancy/tenantRegistry'); " +
     "try { r.registerTenant(process.env.QODIQA_CLIENT_ID); } catch (e) { if (!/already/i.test(e.message)) throw e; } " +
     'r.exportSeedFixture();',
-  ], { cwd: path.join(__dirname, '..', '..', '..'), env, encoding: 'utf8' });
+  ], { cwd: path.join(__dirname, '..', '..'), env, encoding: 'utf8' });
   if (reg.status !== 0) throw new Error(`tenant seed provisioning failed: ${reg.stderr || reg.stdout}`);
 
   return { env, paths };
