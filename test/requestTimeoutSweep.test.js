@@ -94,13 +94,16 @@ function getFreePort() {
 async function bootIsolatedServer(clientId) {
   const port = await getFreePort();
   const envSnapshot = snapshotEnv(ENV_KEYS_TO_ISOLATE);
+  // The coverage run keeps REDIS_URL unset and names the disposable Redis in QODIQA_TEST_REDIS_URL. The development bootstrap probes
+  // REDIS_URL (default localhost:6379) to decide the replay-protection mode, and the booted server needs the same URL: expose it for
+  // the duration of the boot only.
+  const redisFallback = !process.env.REDIS_URL && !!process.env.QODIQA_TEST_REDIS_URL;
+  if (redisFallback) process.env.REDIS_URL = process.env.QODIQA_TEST_REDIS_URL;
   const { prepareIsolatedEnvironment } = requireDevEnvironmentFresh();
   const { paths } = await prepareIsolatedEnvironment({ clientId, tempPrefix: 'qodiqa-f25-' });
 
   const childEnv = {
     ...process.env,
-    // the coverage run keeps REDIS_URL unset and names the disposable Redis in QODIQA_TEST_REDIS_URL: the booted server needs it
-    ...(!process.env.REDIS_URL && process.env.QODIQA_TEST_REDIS_URL ? { REDIS_URL: process.env.QODIQA_TEST_REDIS_URL } : {}),
     PORT: String(port),
     QODIQA_DEPLOYMENT_MODE: 'single-node',
     QODIQA_PG_ENABLED: 'false',
@@ -110,6 +113,7 @@ async function bootIsolatedServer(clientId) {
     CONNECTIONS_CHECKING_INTERVAL_MS: String(CONNECTIONS_CHECKING_INTERVAL_MS),
   };
   restoreEnv(envSnapshot);
+  if (redisFallback) delete process.env.REDIS_URL;
 
   const outputChunks = [];
   let readyEvent = null;
