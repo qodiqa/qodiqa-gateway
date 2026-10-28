@@ -19,6 +19,10 @@
 
 const net = require('net');
 
+// An abrupt close (TCP reset), so the peer sees ECONNRESET on every platform. A plain destroy() ends the connection with an orderly FIN on Linux,
+// which the PostgreSQL client reports as "Connection terminated unexpectedly" without an error code, while Windows reports ECONNRESET.
+const hardClose = (s) => (typeof s.resetAndDestroy === 'function' ? s.resetAndDestroy() : s.destroy());
+
 function createFaultProxy({ targetHost, targetPort }) {
   const pipes = new Set();
   let mode = 'pass';
@@ -27,7 +31,7 @@ function createFaultProxy({ targetHost, targetPort }) {
 
   const server = net.createServer((client) => {
     accepted++;
-    if (mode === 'refuse') { refused++; client.destroy(); return; }
+    if (mode === 'refuse') { refused++; hardClose(client); return; }
     const upstream = net.connect(targetPort, targetHost);
     const p = { client, upstream, stalled: mode === 'blackhole', held: [] };
     pipes.add(p);
@@ -50,7 +54,7 @@ function createFaultProxy({ targetHost, targetPort }) {
     stats: () => ({ accepted, refused, open: pipes.size }),
     refuse() {
       mode = 'refuse';
-      for (const p of [...pipes]) { p.client.destroy(); p.upstream.destroy(); }
+      for (const p of [...pipes]) { hardClose(p.client); p.upstream.destroy(); }
     },
     blackhole() {
       mode = 'blackhole';
