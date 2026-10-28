@@ -341,7 +341,11 @@ jobs:
           # an operator would (scripts/db/role-credentials.js); without it's gate refuses the production boot and
           # its 9 boot-success tests fail by construction.
           QODIQA_TEST_HARDEN_CLUSTER_ROLES: 'true'
-        run: env -u OPENAI_API_KEY -u QODIQA_CLIENT_ID -u QODIQA_PG_ENABLED npm run test:coverage
+          QODIQA_TEST_REDIS_URL: redis://localhost:56379
+        # REDIS_URL stays unset for the whole run: with it set, suites under src/ open Redis clients that outlive them and a later,
+        # unrelated test fails or Jest does not exit. The two Redis resilience suites read the disposable Redis (the job's service
+        # on 56379) from QODIQA_TEST_REDIS_URL instead.
+        run: env -u OPENAI_API_KEY -u QODIQA_CLIENT_ID -u QODIQA_PG_ENABLED -u REDIS_URL npm run test:coverage
       - name: Upload coverage report
         if: always()
         uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4

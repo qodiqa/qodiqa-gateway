@@ -38,7 +38,7 @@ jest.setTimeout(90_000);
 const DEADLINE = 400; const WATCHDOG = 250; const THRESHOLD = 2;
 
 function target() {
-  const raw = process.env.REDIS_URL;
+  const raw = process.env.REDIS_URL || process.env.QODIQA_TEST_REDIS_URL; // the latter: a run that keeps REDIS_URL unset (the coverage run)
   if (!raw) return null;
   const u = new URL(raw);
   const port = parseInt(u.port || '6379', 10);

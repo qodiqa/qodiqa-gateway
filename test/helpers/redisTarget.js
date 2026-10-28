@@ -9,7 +9,8 @@
 // (`refused` carries the reason) — `reachable()` never even probes it.
 const liveGuard = require('./liveEndpointGuard');
 
-const raw = typeof process.env.REDIS_URL === 'string' ? process.env.REDIS_URL.trim() : '';
+// QODIQA_TEST_REDIS_URL: the same target for a run that must keep REDIS_URL unset (the coverage run)
+const raw = ([process.env.REDIS_URL, process.env.QODIQA_TEST_REDIS_URL].find((v) => typeof v === 'string' && v.trim()) || '').trim();
 let host = null; let port = null; let url = null; let refused = null;
 if (raw) {
   const u = new URL(raw);
