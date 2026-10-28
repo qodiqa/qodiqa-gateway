@@ -9,23 +9,29 @@
 // (`refused` carries the reason) — `reachable()` never even probes it.
 const liveGuard = require('./liveEndpointGuard');
 
-// QODIQA_TEST_REDIS_URL: the same target for a run that must keep REDIS_URL unset (the coverage run)
-const raw = ([process.env.REDIS_URL, process.env.QODIQA_TEST_REDIS_URL].find((v) => typeof v === 'string' && v.trim()) || '').trim();
-let host = null; let port = null; let url = null; let refused = null;
-if (raw) {
-  const u = new URL(raw);
-  host = u.hostname === 'localhost' ? '127.0.0.1' : u.hostname;
-  port = parseInt(u.port || '6379', 10);
-  url = `redis://${host}:${port}`;
-  if (!liveGuard.isExempt(process.env) && liveGuard.isLiveEndpoint(u.hostname, port)) {
-    refused = `REDIS_URL ${u.hostname}:${port} is a LIVE port on this machine — use a disposable Redis (pl-env.sh)`;
+function build(raw) {
+  let host = null; let port = null; let url = null; let refused = null;
+  if (raw) {
+    const u = new URL(raw);
+    host = u.hostname === 'localhost' ? '127.0.0.1' : u.hostname;
+    port = parseInt(u.port || '6379', 10);
+    url = `redis://${host}:${port}`;
+    if (!liveGuard.isExempt(process.env) && liveGuard.isLiveEndpoint(u.hostname, port)) {
+      refused = `REDIS_URL ${u.hostname}:${port} is a LIVE port on this machine — use a disposable Redis (pl-env.sh)`;
+    }
   }
+  /** true only when the target is a non-LIVE Redis that answers a TCP connect; never probes a default address. */
+  async function reachable() {
+    if (!url || refused) return false;
+    return require('../../scripts/lib/redisProbe').probeRedisReachable(url);
+  }
+  return { url, host, port, configured: !!url && !refused, refused, reachable };
 }
 
-/** true only when REDIS_URL names a non-LIVE Redis that answers a TCP connect; never probes a default address. */
-async function reachable() {
-  if (!url || refused) return false;
-  return require('../../scripts/lib/redisProbe').probeRedisReachable(url);
-}
+const fromEnv = (v) => (typeof v === 'string' ? v.trim() : '');
+const target = build(fromEnv(process.env.REDIS_URL));
+// A run that must keep REDIS_URL unset (the coverage run) names the disposable Redis in QODIQA_TEST_REDIS_URL. Only the two Redis
+// resilience suites ask for it: every other suite keeps seeing "no Redis configured", exactly as before.
+target.withTestFallback = () => build(fromEnv(process.env.REDIS_URL) || fromEnv(process.env.QODIQA_TEST_REDIS_URL));
 
-module.exports = { url, host, port, configured: !!url && !refused, refused, reachable };
+module.exports = target;

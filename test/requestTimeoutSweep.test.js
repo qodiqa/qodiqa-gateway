@@ -99,6 +99,8 @@ async function bootIsolatedServer(clientId) {
 
   const childEnv = {
     ...process.env,
+    // the coverage run keeps REDIS_URL unset and names the disposable Redis in QODIQA_TEST_REDIS_URL: the booted server needs it
+    ...(!process.env.REDIS_URL && process.env.QODIQA_TEST_REDIS_URL ? { REDIS_URL: process.env.QODIQA_TEST_REDIS_URL } : {}),
     PORT: String(port),
     QODIQA_DEPLOYMENT_MODE: 'single-node',
     QODIQA_PG_ENABLED: 'false',

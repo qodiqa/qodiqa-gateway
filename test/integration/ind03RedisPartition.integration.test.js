@@ -18,7 +18,7 @@ const crypto = require('crypto');
 
 const DEADLINE = 400; const WATCHDOG = 250; const THRESHOLD = 2;
 
-const REDIS = require('../helpers/redisTarget');
+const REDIS = require('../helpers/redisTarget').withTestFallback();
 
 function proxy(targetPort) {
   let mode = 'pass'; let delayMs = 0;

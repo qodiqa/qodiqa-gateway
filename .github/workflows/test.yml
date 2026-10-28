@@ -4,7 +4,7 @@
 # On every push/PR to main/master/release/hotfix branches: architecture, lint and typecheck, unit tests and the timing-sensitive unit suites.
 # On pushes to main as well: crypto regression, accessibility, the JavaScript and Python SDKs and webhook conformance.
 # Run by hand (workflow_dispatch): Integration Tests, Coverage Gate, the red-team suite, concurrency, fuzz, chaos, compatibility and cross-platform.
-# Integration Tests and Coverage Gate do not pass on GitHub yet: some of their tests depend on the CI environment (script path, database role, CORS, Redis URL).
+# Integration Tests pass on GitHub when run by hand. Coverage Gate does not pass yet: the full run ends with exit code 1 although every test passes and the thresholds are met; the cause has not been found, so the job is run and judged by hand.
 # Separate workflows: documentation checks and the secret and dependency scans run on every push; the Kubernetes manifest checks run when the manifests change; the quickstart smoke test runs on pushes to main and release branches.
 #
 # This workflow exists to close a Critical CI-enforcement gap (TEST-1):
@@ -357,8 +357,7 @@ jobs:
   # ── Integration tests (test/) — live PG+Redis so QODIQA_PG_ENABLED-gated ────
   # tests actually execute instead of silently self-skipping (e.g. rls.test.js
   # RLS-91..100, which previously never ran anywhere in CI).
-  # Manual only: run it after the monthly Actions quota renews or when publishing (gh workflow run test.yml). It passes in a Linux container;
-  # three tests that stop and start a PostgreSQL container (outage and connection-loss scenarios) need Docker control and are validated only on a runner.
+  # Manual only: run it after the monthly Actions quota renews or when publishing (gh workflow run test.yml). It passes on a GitHub-hosted runner.
   integration:
     if: github.event_name == 'workflow_dispatch'
     timeout-minutes: 90
