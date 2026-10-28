@@ -31,10 +31,14 @@
 
 // AI_CHAT_TIMEOUT_MS is read once at module load — must be set before the
 // first require of aiChat.js (or anything that transitively requires it).
-// Generous relative to the provider delays used below (which are all several
-// multiples larger) so the suite stays deterministic under CPU contention
-// from other test suites running in parallel Jest workers.
-process.env.AI_CHAT_TIMEOUT_MS = '200';
+// The budget covers the whole request, not only the provider call: artifact
+// signature check, policy evaluation and the audit write all run inside it. At
+// 200 ms a loaded two-core CI runner could spend the budget before a 20 ms
+// provider answered, and the control case then got 504 instead of 200. 1000 ms
+// leaves the fast path about a second of headroom; the delays of the slow
+// providers below are several multiples of it, so the timeout cases still
+// time out deterministically. What each test asserts is unchanged.
+process.env.AI_CHAT_TIMEOUT_MS = '1000';
 
 jest.mock('../../../core/consent', () => ({
   verify: jest.fn().mockResolvedValue({ pass: true, reason: 'ACTIVE' }),
@@ -274,7 +278,7 @@ describe('timeout cancels in-flight provider work', () => {
     // Well under the provider's 4000ms delay — proves the client isn't held
     // hostage by the abandoned/still-running provider call. Generous margin
     // to stay deterministic under parallel-worker CPU contention.
-    expect(elapsedMs).toBeLessThan(2000);
+    expect(elapsedMs).toBeLessThan(3000);   // the provider takes 4000 ms; the timeout (1000 ms) must end the request well before that
     // Drain this request's background continuation before the next test.
     await providersSettled();
     await waitForDecisions(n0);
@@ -299,7 +303,7 @@ describe('timeout cancels in-flight provider work', () => {
   });
 
   test('audit entry is BLOCK/CANCELLED, never ALLOW, for a cancelled execution', async () => {
-    const app      = makeApp({ providerFn: makeAbortAwareProvider(1000) });
+    const app      = makeApp({ providerFn: makeAbortAwareProvider(4000) });
     const artifact = buildArtifact();
     const n0       = await chainLength();
 
@@ -335,7 +339,7 @@ describe('timeout cancels in-flight provider work', () => {
   test('providerExecutionCancelledTotal is incremented on cancellation', async () => {
     const before = [...metrics.providerExecutionCancelledTotal._values.values()].reduce((a, b) => a + b, 0);
 
-    const app      = makeApp({ providerFn: makeAbortAwareProvider(1000) });
+    const app      = makeApp({ providerFn: makeAbortAwareProvider(4000) });
     const n0       = await chainLength();
     await post(app, buildArtifact());
     await providersSettled();
@@ -351,7 +355,7 @@ describe('timeout cancels in-flight provider work', () => {
     process.on('unhandledRejection', onUnhandled);
 
     try {
-      const app = makeApp({ providerFn: makeAbortAwareProvider(1000) });
+      const app = makeApp({ providerFn: makeAbortAwareProvider(4000) });
       const n0  = await chainLength();
       await post(app, buildArtifact());
       // The abandoned execution rejects on abort; wait for that rejection and
@@ -373,7 +377,7 @@ describe('timeout cancels in-flight provider work', () => {
 
 describe('late-completion guard — non-compliant provider ignores the signal', () => {
   test('a provider that resolves successfully after the timeout is still recorded as CANCELLED, not ALLOW', async () => {
-    const app      = makeApp({ providerFn: makeAbortIgnoringProvider(700) });
+    const app      = makeApp({ providerFn: makeAbortIgnoringProvider(2500) });
     const artifact = buildArtifact();
     const n0       = await chainLength();
 
@@ -402,7 +406,7 @@ describe('late-completion guard — non-compliant provider ignores the signal', 
 });
 
 // — the timeout-during-output-check case lives in
-// aiChatArch03LateTimeout.test.js: it needs a wider budget than this file's 200 ms to be deterministic under load.
+// aiChatArch03LateTimeout.test.js: it needs a wider budget than this file's to be deterministic under load.
 
 // ═════════════════════════════════════════════════════════════════════════════
 // Concurrency
@@ -410,7 +414,7 @@ describe('late-completion guard — non-compliant provider ignores the signal', 
 
 describe('concurrent cancelled requests', () => {
   test('multiple simultaneous timeouts each get their own correct audit record', async () => {
-    const app = makeApp({ providerFn: makeAbortAwareProvider(1000) });
+    const app = makeApp({ providerFn: makeAbortAwareProvider(4000) });
     const n0  = await chainLength();
 
     const responses = await Promise.all(
