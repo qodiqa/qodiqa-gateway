@@ -138,6 +138,8 @@ describeOrSkip('replay durability across a Redis restart (real Redis)', () => {
     for (const name of Object.keys(parsed)) env[name] = '';
     Object.assign(env, {
       NODE_ENV: 'development', STRICT_REPLAY_PROTECTION: 'true', PORT: '0',
+      // the embedding screening models are not part of this repository: without these the server stops on the model check before it reaches the replay gate under test
+      QODIQA_SEM_EMBEDDING_ENABLED: 'false', QODIQA_SEM_FT3_ENABLED: 'false',
       QODIQA_KEY_ENCRYPTION_KEY: crypto.randomBytes(32).toString('hex'), QODIQA_EXECUTION_INVARIANT_SECRET: crypto.randomBytes(32).toString('hex'),
       QODIQA_CLIENT_ID: 'w6rd08', QODIQA_KEYS_PATH: path.join(dir, 'keys.json'), QODIQA_MAC_KEYS_PATH: path.join(dir, 'mac-keys.json'),
       QODIQA_TRANSPARENCY_KEYS_PATH: path.join(dir, 'transparency-keys.json'), QODIQA_AUDIT_LOG: path.join(dir, 'audit.log'),

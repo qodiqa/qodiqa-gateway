@@ -58,6 +58,9 @@ function baseEnv(c) {
   Object.assign(env, {
     NODE_ENV: 'development',
     QODIQA_ENVIRONMENT: 'development',
+    // the embedding screening models are not part of this repository: the replicas run without that layer, as the test process does
+    QODIQA_SEM_EMBEDDING_ENABLED: process.env.QODIQA_SEM_EMBEDDING_ENABLED || 'false',
+    QODIQA_SEM_FT3_ENABLED: process.env.QODIQA_SEM_FT3_ENABLED || 'false',
     QODIQA_KEY_ENCRYPTION_KEY: c.kek,
     QODIQA_EXECUTION_INVARIANT_SECRET: c.invariant,
     QODIQA_CLIENT_ID: c.clientId,
